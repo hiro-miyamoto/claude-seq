@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Miles Davis — Kind of Blue · In a Silent Way · Bitches Brew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #060608;
+  --s0:    #0a0a0e;
+  --s1:    #0f0f16;
+  --bd:    #16161e;
+  --bd2:   #202028;
+  --text:  #c0c0cc;
+  --dim:   #484858;
+  --fog:   #1a1a24;
+
+  /* Miles: muted brass, dark space */
+  --miles: #a09060;   /* muted gold — trumpet */
+  --miles2:'#706040';
+  --tension:'#c84030'; /* red tension */
+  --resolv:'#4080a0'; /* blue resolution */
+  --space: '#080810';
+
+  /* Bass */
+  --bass:  #608070;   /* chambers: warm dark green */
+
+  /* Mode colors */
+  --kob:   #6088a8;   /* Kind of Blue: cool blue */
+  --isw:   #404858;   /* In a Silent Way: deep grey */
+  --bb:    #883030;   /* Bitches Brew: dark red */
+
+  --bone:  #ccc8c0;
+  --paper: #050508;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;}
+
+/* Minimal texture */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 50% 30%,rgba(160,144,96,.015) 0%,transparent 55%);opacity:.8;}
+
+header{
+  padding:.9rem 1.8rem .65rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:flex-end;gap:1.6rem;
+  background:var(--paper);position:relative;z-index:10;
+}
+.hdr-name{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;font-style:italic;color:var(--bone);line-height:1;}
+.hdr-sub{font-size:.38rem;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-top:.2rem;}
+
+/* Tension meter in header */
+.tension-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;}
+.tension-label{font-size:.35rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.tension-bar{width:100px;height:3px;background:var(--s1);overflow:hidden;}
+.tension-fill{height:100%;background:linear-gradient(90deg,var(--resolv),var(--tension));transition:width .5s ease;}
+.tension-val{font-family:'Cormorant Garamond',serif;font-size:.85rem;font-style:italic;color:var(--miles);}
+
+/* Mode selector tabs */
+.mode-tabs{display:flex;gap:0;border-bottom:1px solid var(--bd);background:var(--paper);position:relative;z-index:9;}
+.mode-tab{flex:1;padding:.5rem .6rem;border:none;border-bottom:3px solid transparent;background:transparent;font-family:'Cormorant Garamond',serif;font-size:.85rem;font-style:italic;cursor:pointer;color:var(--dim);transition:all .15s;text-align:center;}
+.mode-tab:hover{color:var(--text);}
+.mode-tab.kob.active{color:var(--kob);border-bottom-color:var(--kob);background:rgba(96,136,168,.04);}
+.mode-tab.isw.active{color:#8090a8;border-bottom-color:#606878;background:rgba(64,72,88,.04);}
+.mode-tab.bb.active{color:#c04040;border-bottom-color:var(--bb);background:rgba(136,48,48,.04);}
+.mode-desc{font-size:.3rem;display:block;color:var(--dim);margin-top:.12rem;letter-spacing:.08em;}
+
+.layout{display:grid;grid-template-columns:210px 1fr;min-height:calc(100vh - 155px);}
+.left{border-right:1px solid var(--bd);padding:.55rem;display:flex;flex-direction:column;gap:.38rem;overflow-y:auto;background:var(--paper);}
+.main{display:flex;flex-direction:column;overflow:hidden;}
+
+.panel{background:var(--s0);border:1px solid var(--bd);padding:.45rem .52rem;}
+.pt{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.85rem;color:var(--dim);margin-bottom:.3rem;display:flex;align-items:center;gap:.22rem;}
+.pt::before{content:'';width:7px;height:1px;background:currentColor;opacity:.35;}
+.pr{display:flex;align-items:center;gap:.25rem;margin-bottom:.12rem;}
+.pr label{font-size:.36rem;color:var(--dim);width:62px;flex-shrink:0;}
+.prv{font-size:.36rem;width:22px;text-align:right;flex-shrink:0;}
+input[type=range]{height:2px;cursor:pointer;flex:1;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.43rem;padding:.06rem .12rem;}
+.btn{padding:.12rem .4rem;border:1px solid var(--bd);background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.42rem;cursor:pointer;transition:all .1s;}
+.btn:hover{border-color:var(--miles);color:var(--miles);}
+.btn.hi{border-color:rgba(160,144,96,.4);color:var(--miles);background:rgba(160,144,96,.05);}
+.midi-dot{width:6px;height:6px;border-radius:50%;background:var(--fog);flex-shrink:0;}
+.midi-dot.on{background:var(--miles);box-shadow:0 0 4px var(--miles);}
+
+.transport{padding:.36rem .85rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.4rem;background:var(--paper);flex-wrap:wrap;}
+
+/* Next note preview */
+.next-panel{padding:.42rem .85rem;border-bottom:1px solid var(--bd);background:var(--s0);display:flex;align-items:center;gap:1.2rem;}
+.next-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.68rem;color:var(--dim);}
+.prev-note{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-style:italic;color:var(--dim);}
+.curr-note{font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;color:var(--miles);transition:all .2s;}
+.next-note{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-style:italic;color:var(--dim);opacity:.4;}
+.arrow{color:var(--dim);font-size:.7rem;opacity:.3;}
+.tension-phrase{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.18rem;}
+.tension-phrase-label{font-size:.3rem;color:var(--dim);letter-spacing:.15em;text-transform:uppercase;}
+.tension-phrase-val{font-family:'Cormorant Garamond',serif;font-size:.95rem;font-style:italic;}
+
+/* Voice grids */
+.voices{flex:1;padding:.55rem .85rem;overflow-y:auto;}
+.voice{margin-bottom:.85rem;}
+.vhead{display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem;}
+.vname{font-family:'Cormorant Garamond',serif;font-size:.85rem;font-style:italic;}
+.vch{font-size:.33rem;color:var(--dim);padding:.04rem .15rem;border:1px solid var(--bd);}
+.vinfo{font-size:.32rem;color:var(--fog);margin-left:auto;}
+
+/* Miles steps — wide, breathing */
+.sgrid{display:flex;gap:3px;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+
+.mstep{
+  flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;padding:.08rem .04rem;
+  border:1px solid transparent;transition:all .1s;
+  position:relative;
+}
+/* Width varies by duration — longer note = wider cell */
+.mstep.dur1{width:28px;}
+.mstep.dur2{width:38px;}
+.mstep.dur4{width:52px;}
+.mstep.dur6{width:68px;}
+.mstep.dur8{width:84px;}
+.mstep.dur12{width:110px;}
+
+.mstep:hover{border-color:var(--bd2);}
+.mstep.playing{border-color:var(--miles)!important;}
+.mstep.silence{background:rgba(6,6,8,.7);border-color:rgba(10,10,14,.9)!important;}
+.mstep.silence.playing{border-color:rgba(160,144,96,.15)!important;}
+.mstep.high-tension{background:rgba(200,64,48,.04);}
+.mstep.resolution{background:rgba(64,128,160,.04);}
+
+/* Tension indicator bar at top of step */
+.tension-bar-step{position:absolute;top:0;left:0;right:0;height:2px;opacity:.7;}
+
+.mbar{border-radius:0;min-height:1px;transition:height .1s;}
+.mname{font-family:'Cormorant Garamond',serif;font-size:.72rem;font-style:italic;color:var(--dim);line-height:1;}
+.mname.on{color:var(--bone);}
+.mname.sil{color:var(--fog);font-size:.5rem;}
+.mnum{font-size:.2rem;color:var(--fog);}
+
+/* Duration label on silence */
+.sil-dur{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:.28rem;color:var(--dim);opacity:.4;}
+
+/* Dock */
+.dock{border-top:1px solid var(--bd);background:var(--paper);position:sticky;bottom:0;z-index:20;}
+.dock-tabs{display:flex;border-bottom:1px solid var(--bd);}
+.dtab{padding:.2rem .42rem;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.36rem;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.14rem;transition:all .1s;white-space:nowrap;}
+.dtab:hover{color:var(--text);}
+.dtab.active{color:var(--text);border-bottom-color:var(--miles);}
+.ddot{width:4px;height:4px;border-radius:50%;opacity:.35;}
+.dtab.active .ddot{opacity:1;}
+.dock-right{margin-left:auto;display:flex;align-items:center;gap:.3rem;padding:0 .5rem;}
+.dock-body{max-height:180px;overflow:hidden;transition:max-height .2s;}
+.dock-body.closed{max-height:0!important;}
+.dpanel{display:none;padding:.36rem .7rem .45rem;}
+.dpanel.active{display:block;}
+.dgrid{display:grid;gap:.36rem;}
+.dg4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dg3{grid-template-columns:1fr 1fr 1fr;}
+.dsub{background:var(--s0);border:1px solid var(--bd);padding:.3rem .38rem;}
+.dst{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.72rem;color:var(--dim);margin-bottom:.16rem;padding-left:.16rem;border-left:1px solid var(--miles);opacity:.55;}
+.drow{display:flex;align-items:center;gap:.18rem;margin-bottom:.1rem;}
+.dl{font-size:.32rem;color:var(--dim);width:52px;flex-shrink:0;}
+.dtrack{flex:1;height:3px;background:var(--s1);overflow:hidden;}
+.dfill{height:100%;transition:width .3s;}
+.dval{font-size:.32rem;width:20px;text-align:right;flex-shrink:0;}
+.dlog{font-size:.33rem;color:var(--dim);line-height:1.9;max-height:60px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-name">Miles Davis</div>
+    <div class="hdr-sub">Kind of Blue · In a Silent Way · Bitches Brew · He Loved Him Madly</div>
+  </div>
+  <div class="tension-wrap">
+    <span class="tension-label">Tension</span>
+    <div class="tension-bar"><div class="tension-fill" id="tensionFill" style="width:30%"></div></div>
+    <span class="tension-val" id="tensionVal">0.30</span>
+  </div>
+</header>
+
+<!-- Mode tabs -->
+<div class="mode-tabs">
+  <button class="mode-tab kob active" id="tabKob" onclick="setMode('kob')">
+    Kind of Blue
+    <span class="mode-desc">MODAL · BREATHING · INEVITABLE</span>
+  </button>
+  <button class="mode-tab isw" id="tabIsw" onclick="setMode('isw')">
+    In a Silent Way
+    <span class="mode-desc">TIMELESS · DISSOLVING · ETERNAL</span>
+  </button>
+  <button class="mode-tab bb" id="tabBb" onclick="setMode('bb')">
+    Bitches Brew
+    <span class="mode-desc">CHAOS · SPEED · DESTRUCTION</span>
+  </button>
+</div>
+
+<div class="layout">
+<div class="left">
+
+  <!-- Tension engine -->
+  <div class="panel" style="border-color:rgba(160,144,96,.2)">
+    <div class="pt" style="color:var(--miles)">張力 — Tension</div>
+    <div style="font-size:.34rem;color:var(--dim);line-height:1.8;margin-bottom:.2rem">
+      前の音が次の音を決める。<br>張力が高いほど遠く、間隔も長い。
+    </div>
+    <div class="pr"><label>Tension</label>
+      <input type="range" id="tensionAmt" min="0" max="100" value="35"
+        style="accent-color:var(--miles)" oninput="onTensionChange()">
+      <span class="prv" id="tensionAmtV" style="color:var(--miles)">35</span></div>
+    <div class="pr"><label>Resolution</label>
+      <input type="range" id="resolvProb" min="0" max="100" value="25">
+      <span class="prv" id="resolvProbV">25</span></div>
+    <div class="pr"><label>Dissolution</label>
+      <input type="range" id="dissolution" min="0" max="100" value="30">
+      <span class="prv" id="dissolutionV">30</span></div>
+    <div class="pr"><label>Approach</label>
+      <input type="range" id="approachProb" min="0" max="80" value="25">
+      <span class="prv" id="approachProbV">25</span>
+      <span style="font-size:.3rem;color:var(--dim);margin-left:2px">%</span></div>
+    <div style="font-size:.3rem;color:var(--dim);line-height:1.7;padding:.08rem 0">
+      クロマチックアプローチ:<br>目標音の半音から滑り込む<br>
+      <span style="color:rgba(160,144,96,.5)">* Bb ON時: MilesとBass両方-2ST</span>
+    </div>
+  </div>
+
+  <!-- Time engine -->
+  <div class="panel">
+    <div class="pt">時間 — Time</div>
+    <div style="font-size:.34rem;color:var(--dim);line-height:1.8;margin-bottom:.2rem">
+      音符間隔が予測を超えた瞬間に<br>次の音が「必然」になる。
+    </div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="80" min="40" max="180"
+        style="width:42px;font-size:.5rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.06rem .1rem">
+      <button class="btn" onclick="tapTempo()" style="font-size:.34rem;padding:.05rem .18rem">TAP</button></div>
+    <div class="pr"><label>Wait min</label>
+      <input type="range" id="waitMin" min="1" max="16" value="2" step="1">
+      <span class="prv" id="waitMinV">2</span></div>
+    <div class="pr"><label>Wait max</label>
+      <input type="range" id="waitMax" min="2" max="48" value="16" step="1">
+      <span class="prv" id="waitMaxV">16</span></div>
+    <div class="pr"><label>Predict break</label>
+      <input type="range" id="predictBreak" min="0" max="100" value="45">
+      <span class="prv" id="predictBreakV">45</span></div>
+    <div class="pr"><label>Steps</label>
+      <select id="stepsSel" style="flex:1">
+        <option value="8">8</option>
+        <option value="12" selected>12</option>
+        <option value="16">16</option>
+      </select></div>
+  </div>
+
+  <!-- Scale -->
+  <div class="panel">
+    <div class="pt">Scale</div>
+    <div class="pr"><label>Root</label>
+      <select id="rootSel" onchange="onRootChange()" style="flex:1;font-size:.42rem">
+        <option value="60">C4</option><option value="61">C#4</option>
+        <option value="62" selected>D4</option><option value="63">Eb4</option>
+        <option value="64">E4</option><option value="65">F4</option>
+        <option value="66">F#4</option><option value="67">G4</option>
+        <option value="68">Ab4</option><option value="69">A4</option>
+        <option value="70">Bb4</option><option value="71">B4</option>
+      </select></div>
+    <div class="pr"><label>Mode</label>
+      <select id="scaleSel" style="flex:1;font-size:.42rem">
+        <option value="dorian" selected>Dorian — So What</option>
+        <option value="mixolydian">Mixolydian — Freddie</option>
+        <option value="aeolian">Aeolian — 暗い</option>
+        <option value="phrygian">Phrygian — Sketches</option>
+        <option value="lydian">Lydian — 浮遊明るい</option>
+        <option value="wholetone">Whole Tone — 重力なし</option>
+        <option value="minpenta">Min Pentatonic — ISW</option>
+        <option value="pentatonic">Maj Pentatonic</option>
+        <option value="blues">Blues — b5の毒</option>
+        <option value="chromatic">Chromatic — フリー</option>
+      </select></div>
+    <div class="pr"><label>Bb Trumpet</label>
+      <button id="btnBb" onclick="toggleBbTrumpet()"
+        style="flex:1;padding:.1rem;border:1px solid var(--bd);background:transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.4rem;cursor:pointer">
+        OFF — 実音
+      </button></div>
+    <div class="pr"><label>Register</label>
+      <select id="registerSel" style="flex:1;font-size:.42rem">
+        <option value="mid" selected>Mid — Miles核</option>
+        <option value="high">High — 鋭い</option>
+        <option value="low">Low — 深い</option>
+        <option value="wide">Wide — 全域</option>
+      </select></div>
+  </div>
+
+  <!-- Bass -->
+  <div class="panel" style="border-color:rgba(96,128,112,.2)">
+    <div class="pt" style="color:var(--bass)">Bass — Paul Chambers</div>
+    <div style="font-size:.34rem;color:var(--dim);line-height:1.8;margin-bottom:.2rem">
+      自律している。Milesの下に。
+    </div>
+    <div class="pr"><label>Density</label>
+      <input type="range" id="bassDens" min="20" max="90" value="65"
+        style="accent-color:var(--bass)">
+      <span class="prv" id="bassDensV" style="color:var(--bass)">65</span></div>
+    <div class="pr"><label>Walk style</label>
+      <select id="walkStyle" style="flex:1;font-size:.42rem">
+        <option value="chambers" selected>Chambers — 歩く</option>
+        <option value="sparse">Sparse — 疎ら</option>
+        <option value="pedal">Pedal — 持続音</option>
+      </select></div>
+    <div class="pr"><label>Ch</label>
+      <select id="bassCh" onchange="saveCh()" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5" selected>Ch 5</option>
+        <option value="10">Ch 10</option><option value="11">Ch 11</option>
+      </select></div>
+  </div>
+
+  <!-- Miles channel -->
+  <div class="panel">
+    <div class="pt">MIDI</div>
+    <div class="pr"><div class="midi-dot" id="midiDot"></div>
+      <span id="midiStat" style="font-size:.38rem;color:var(--dim)">—</span></div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.14rem;font-size:.37rem">↻ Refresh</button>
+    <div class="pr"><label>Miles Ch</label>
+      <select id="milesCh" onchange="saveCh()" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5">Ch 5</option>
+        <option value="10" selected>Ch 10</option><option value="11">Ch 11</option>
+      </select></div>
+    <div class="pr"><label>Miles note</label>
+      <input type="number" id="milesNote" value="60" min="36" max="96"
+        style="width:38px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.05rem .1rem">
+      <span style="font-size:.32rem;color:var(--dim)" id="milesNoteDisp">C4</span></div>
+    <div class="pr"><label>Clock In</label>
+      <select id="clockIn" onchange="selectClock(this.value)" style="flex:1;font-size:.38rem"><option value="">—</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin:.12rem 0;font-size:.37rem">Slave: OFF</button>
+    <button class="btn hi" onclick="exportMIDI()" style="width:100%;font-size:.37rem">↓ MIDI</button>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Out</div>
+    <div class="pr"><label>Device</label>
+      <select id="midiOut" onchange="selectOut(this.value)" style="flex:1;font-size:.37rem"></select></div>
+  </div>
+
+</div>
+
+<div class="main">
+  <div class="transport">
+    <button class="btn hi" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn hi" onclick="generate()" style="font-family:'Cormorant Garamond',serif;font-style:italic">↻ Generate</button>
+    <button class="btn" onclick="generate(true)" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--dim)">↺ New</button>
+    <button class="btn" onclick="genMiles()" style="color:var(--miles);font-size:.4rem">↻ Miles</button>
+    <button class="btn" onclick="genBass()" style="color:var(--bass);font-size:.4rem">↻ Bass</button>
+    <button class="btn" id="btnU" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnR" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="save()" style="color:var(--miles)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--dim)">↑ Load<input type="file" accept=".json" onchange="loadFile(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem">
+      <span style="font-size:.35rem;color:var(--dim)" id="stepDisp">—</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:.52rem;font-style:italic" id="modeDisp" style="color:var(--kob)">Kind of Blue</span>
+    </div>
+  </div>
+
+  <!-- Next note preview -->
+  <div class="next-panel">
+    <span class="next-label">前 → 今 → 次</span>
+    <span class="prev-note" id="prevNote">—</span>
+    <span class="arrow">→</span>
+    <span class="curr-note" id="currNote">—</span>
+    <span class="arrow">→</span>
+    <span class="next-note" id="nextNote">?</span>
+    <div class="tension-phrase">
+      <span class="tension-phrase-label">Tension</span>
+      <span class="tension-phrase-val" id="tensionPhrase" style="color:var(--miles)">—</span>
+    </div>
+  </div>
+
+  <div class="voices">
+    <!-- Miles voice -->
+    <div class="voice">
+      <div class="vhead">
+        <span class="vname" style="color:var(--miles)">Miles — Trumpet</span>
+        <span class="vch">Ch <span id="milesChD">10</span></span>
+        <canvas id="milesCurve" width="130" height="14" style="background:var(--s0);margin-left:.3rem"></canvas>
+        <span class="vinfo" id="milesInfo">—</span>
+      </div>
+      <div class="sgrid" id="milesGrid"></div>
+    </div>
+
+    <!-- Bass voice -->
+    <div class="voice">
+      <div class="vhead">
+        <span class="vname" style="color:var(--bass)">Bass — Chambers</span>
+        <span class="vch">Ch <span id="bassChD">5</span></span>
+        <span style="font-size:.33rem;color:var(--dim);margin-left:.3rem" id="bassInfo2">—</span>
+        <span class="vinfo" id="bassInfo">—</span>
+      </div>
+      <div class="sgrid" id="bassGrid"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Dock -->
+<div class="dock">
+  <div class="dock-tabs">
+    <button class="dtab active" data-p="tension"><span class="ddot" style="background:var(--miles)"></span>Tension</button>
+    <button class="dtab" data-p="time"><span class="ddot" style="background:var(--kob)"></span>Time</button>
+    <button class="dtab" data-p="log"><span class="ddot" style="background:var(--fog)"></span>Log</button>
+    <div class="dock-right">
+      <button onclick="toggleDock()" id="dockBtn" style="background:transparent;border:none;color:var(--dim);font-size:.38rem;cursor:pointer">▲</button>
+    </div>
+  </div>
+  <div class="dock-body" id="dockBody">
+    <div class="dpanel active" id="dp-tension">
+      <div class="dgrid dg4">
+        <div class="dsub">
+          <div class="dst">Tension State</div>
+          <div class="drow"><span class="dl">Current</span><div class="dtrack"><div class="dfill" id="dTenF" style="background:linear-gradient(90deg,var(--resolv),var(--tension))"></div></div><span class="dval" id="dTenV" style="color:var(--miles)">0</span></div>
+          <div class="drow"><span class="dl">Mode</span><span id="dMode" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.75rem;color:var(--kob)">Kind of Blue</span></div>
+          <div class="drow"><span class="dl">Phrase</span><span id="dPhrase" style="font-size:.36rem;color:var(--dim)">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dst">Melody Curve</div>
+          <canvas id="docCurve" height="48" style="width:100%;display:block;background:var(--bg)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dst" style="border-left-color:var(--kob)">マイルスの言葉</div>
+          <div style="font-size:.33rem;color:var(--dim);line-height:1.95">
+            音符の美しさは<br>
+            次の音の選択が全て<br>
+            <span style="color:var(--miles)">予測を超えた瞬間に必然になる</span>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dst">ログ</div>
+          <div id="mainLog" class="dlog"></div>
+        </div>
+      </div>
+    </div>
+    <div class="dpanel" id="dp-time">
+      <div class="dgrid dg3">
+        <div class="dsub">
+          <div class="dst">Time State</div>
+          <div class="drow"><span class="dl">BPM</span><span id="dBpm" style="font-size:.5rem;color:var(--miles)">80</span></div>
+          <div class="drow"><span class="dl">Wait range</span><span id="dWait" style="font-size:.36rem;color:var(--dim)">—</span></div>
+          <div class="drow"><span class="dl">Dissolution</span><div class="dtrack"><div class="dfill" id="dDisF" style="background:var(--isw)"></div></div></div>
+        </div>
+        <div class="dsub">
+          <div class="dst">Bass Curve</div>
+          <canvas id="bassCurve" height="48" style="width:100%;display:block;background:var(--bg)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dst">In a Silent Way</div>
+          <div style="font-size:.33rem;color:var(--dim);line-height:1.95">
+            BPMが消えている<br>悠久<br>
+            <span style="color:#8090a8">時間そのものが溶けている</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dpanel" id="dp-log">
+      <div class="dsub">
+        <div class="dst">Event log</div>
+        <div id="fullLog" class="dlog" style="max-height:120px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  SCALES
+// ══════════════════════════════════════════════════════
+const NOTE = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const SCALES = {
+  dorian:      [0,2,3,5,7,9,10],
+  mixolydian:  [0,2,4,5,7,9,10],
+  aeolian:     [0,2,3,5,7,8,10],
+  phrygian:    [0,1,3,5,7,8,10],   // Sketches of Spain
+  lydian:      [0,2,4,6,7,9,11],
+  wholetone:   [0,2,4,6,8,10],     // 浮遊、重力なし
+  pentatonic:  [0,2,4,7,9],        // major penta
+  minpenta:    [0,3,5,7,10],       // minor penta — ISW土台
+  blues:       [0,3,5,6,7,10],     // b5が毒
+  chromatic:   [0,1,2,3,4,5,6,7,8,9,10,11],
+};
+
+// Register ranges (offset from root)
+const REGISTERS = {
+  mid:  {lo: -2, hi: 14},   // Miles核: C4〜B5 range
+  high: {lo:  5, hi: 22},
+  low:  {lo:-14, hi:  2},
+  wide: {lo:-10, hi: 22},
+};
+
+// Mode presets
+const MODES = {
+  kob: {
+    name: 'Kind of Blue',
+    bpm: 80, scale: 'dorian', register: 'mid',
+    tensionAmt: 35, resolvProb: 30, dissolution: 20,
+    waitMin: 2, waitMax: 14, predictBreak: 40,
+    bassDens: 70, walkStyle: 'chambers',
+    color: 'var(--kob)',
+    desc: '中程度。でも急がない。Soそれ What.',
+  },
+  isw: {
+    name: 'In a Silent Way',
+    bpm: 58, scale: 'minpenta', register: 'mid',
+    tensionAmt: 18, resolvProb: 8, dissolution: 60,
+    waitMin: 3, waitMax: 14, predictBreak: 70,
+    bassDens: 35, walkStyle: 'sparse',
+    color: '#8090a8',
+    desc: '悠久。BPMが消えている。時間が溶ける。',
+  },
+  bb: {
+    name: 'Bitches Brew',
+    bpm: 130, scale: 'blues', register: 'wide',
+    tensionAmt: 78, resolvProb: 10, dissolution: 25,
+    waitMin: 1, waitMax: 8, predictBreak: 25,
+    bassDens: 85, walkStyle: 'chambers',
+    color: 'var(--bb)',
+    desc: 'カオス。速い。破壊と創造。岡本太郎。',
+  },
+};
+
+// ══════════════════════════════════════════════════════
+//  TENSION ENGINE
+//  核心: 前の音が次の音への張力を持つ
+// ══════════════════════════════════════════════════════
+const TENSION_STATE = {
+  value:      0.35,   // current tension (0-1)
+  history:    [],     // tension over time
+  phraseCount: 0,
+
+  // Previous note info (for next note selection)
+  prevMidi:   null,
+  prevDir:    0,      // -1 down, 0 neutral, 1 up
+  prevLeap:   false,
+
+  // Dissolution state (ISW mode)
+  dissolved:  0.0,    // how much time has dissolved
+};
+
+function updateTensionUI(){
+  const t = TENSION_STATE.value;
+  const tf=document.getElementById('tensionFill'); if(tf)tf.style.width=(t*100)+'%';
+  const tv=document.getElementById('tensionVal'); if(tv)tv.textContent=t.toFixed(2);
+  const dtf=document.getElementById('dTenF'); if(dtf)dtf.style.width=(t*100)+'%';
+  const dtv=document.getElementById('dTenV'); if(dtv)dtv.textContent=(t*100).toFixed(0);
+  const tp=document.getElementById('tensionPhrase');
+  if(tp){
+    const label=t<0.25?'low':t<0.5?'mid':t<0.75?'high':'peak';
+    tp.textContent=label;
+    tp.style.color=t<0.35?'var(--resolv)':t>0.7?'var(--tension)':'var(--miles)';
+  }
+}
+
+function onTensionChange(){
+  TENSION_STATE.value = parseInt(document.getElementById('tensionAmt').value)/100;
+  updateTensionUI();
+}
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function getRoot(){   return parseInt(document.getElementById('rootSel').value)||62; }
+function getBpm(){    return parseInt(document.getElementById('bpmIn').value)||80; }
+function getScaleDegs(){ return SCALES[document.getElementById('scaleSel').value]||SCALES.dorian; }
+function getRegister(){ return REGISTERS[document.getElementById('registerSel').value]||REGISTERS.mid; }
+
+function makePool(loOff, hiOff){
+  const root=getRoot();
+  const lo=root+loOff, hi=root+hiOff;
+  const degs=getScaleDegs();
+  const p=[];
+  for(let o=-3;o<=3;o++) degs.forEach(function(d){
+    const m=root+d+o*12;
+    if(m>=lo&&m<=hi) p.push(m);
+  });
+  return [...new Set(p)].sort(function(a,b){return a-b;});
+}
+
+// ══════════════════════════════════════════════════════
+//  MILES NOTE SELECTION ENGINE
+//  核心: 次の音は前の音との張力で決まる
+// ══════════════════════════════════════════════════════
+function selectNextNote(pool, prevMidi, tension, resolvProb){
+  if(!pool.length) return pool[0];
+  if(prevMidi === null) return pool[Math.floor(pool.length*0.5)];
+
+  const prevIdx = pool.reduce(function(best,m,i){
+    return Math.abs(m-prevMidi)<Math.abs(pool[best]-prevMidi)?i:best;
+  }, 0);
+
+  // Tension determines interval size
+  // Low tension: stepwise (1-2 scale degrees)
+  // High tension: large leap (3-6 scale degrees)
+  // Very high: can go anywhere
+
+  const resolve = Math.random() < resolvProb/100;
+
+  if(resolve){
+    // Resolution: move toward root or 5th
+    const root = getRoot();
+    const target = Math.random()<0.6 ? root : root+7;
+    // Find nearest target note
+    let best=prevIdx, bd=999;
+    pool.forEach(function(m,i){
+      if(m%12===target%12){
+        const d=Math.abs(i-prevIdx);
+        if(d<bd){bd=d;best=i;}
+      }
+    });
+    return pool[best];
+  }
+
+  // Interval based on tension
+  const maxInterval = Math.round(1 + tension * (pool.length * 0.6));
+  const minInterval = tension > 0.6 ? Math.round(tension*2) : 1;
+
+  // Direction: tension influences direction
+  // After a leap up, more likely to step down (contrary motion)
+  // After step down, might leap up (Milesian contour)
+  let dirBias;
+  if(TENSION_STATE.prevLeap && TENSION_STATE.prevDir > 0){
+    dirBias = -0.6; // after leap up, bias down
+  } else if(TENSION_STATE.prevLeap && TENSION_STATE.prevDir < 0){
+    dirBias = 0.6; // after leap down, bias up
+  } else {
+    dirBias = (Math.random()-0.5)*0.4;
+  }
+
+  const dir = Math.random() < (0.5 + dirBias) ? 1 : -1;
+  const interval = minInterval + Math.floor(Math.random()*(maxInterval-minInterval+1));
+  const isLeap = interval >= 3;
+
+  let newIdx = Math.max(0, Math.min(pool.length-1, prevIdx + dir*interval));
+
+  // Update state
+  TENSION_STATE.prevDir = dir;
+  TENSION_STATE.prevLeap = isLeap;
+
+  // Update tension: after resolution, drops; after leap, rises
+  if(resolve) TENSION_STATE.value = Math.max(0.05, TENSION_STATE.value - 0.15);
+  else if(isLeap) TENSION_STATE.value = Math.min(0.95, TENSION_STATE.value + 0.05);
+  else TENSION_STATE.value = Math.max(0.05, TENSION_STATE.value - 0.02);
+
+  // Add some organic tension drift
+  TENSION_STATE.value += (Math.random()-0.5)*0.04;
+  TENSION_STATE.value = Math.max(0.05, Math.min(0.95, TENSION_STATE.value));
+
+  return pool[newIdx];
+}
+
+// Get chromatic approach note (half step above or below target)
+function getApproachNote(targetMidi, prevMidi){
+  if(prevMidi===null) return null;
+  const dir = targetMidi > prevMidi ? -1 : 1; // approach from below if going up
+  const approach = targetMidi + dir;
+  // Only use if it's not in the current scale (truly chromatic)
+  const degs = getScaleDegs();
+  const root = getRoot();
+  const inScale = degs.some(function(d){return (approach-root+120)%12===d;});
+  if(!inScale) return approach;
+  // Try other side
+  const approach2 = targetMidi - dir;
+  const inScale2 = degs.some(function(d){return (approach2-root+120)%12===d;});
+  if(!inScale2) return approach2;
+  return null; // both are in scale, skip
+}
+
+// Duration based on tension and mode
+// High tension = shorter notes (urgency)
+// Low tension / ISW = very long notes
+function selectDuration(tension, waitMin, waitMax, dissolution){
+  const dissolved = dissolution/100;
+  // Low tension: longer notes; high tension: short and urgent
+  const baseDur = waitMin + Math.floor((1-tension) * (waitMax-waitMin));
+
+  // Dissolution: occasionally very long pause (ISW feel)
+  // But cap at 2x to prevent 30+ second waits
+  if(dissolved > 0.5 && Math.random() < dissolved * 0.25){
+    return Math.min(waitMax*2, baseDur + Math.floor(Math.random()*waitMin*2));
+  }
+
+  const variation = Math.floor((Math.random()-0.3) * Math.max(1,waitMin*0.5));
+  return Math.max(1, Math.min(waitMax, baseDur + variation));
+}
+
+// Bb trumpet transpose
+let BB_TRANSPOSE = false;
+function toggleBbTrumpet(){
+  BB_TRANSPOSE = !BB_TRANSPOSE;
+  const b=document.getElementById('btnBb');
+  if(b){
+    b.textContent=BB_TRANSPOSE?'ON (Bb管 -2ST)':'OFF (実音)';
+    b.style.color=BB_TRANSPOSE?'var(--miles)':'var(--dim)';
+    b.style.borderColor=BB_TRANSPOSE?'rgba(160,144,96,.4)':'var(--bd)';
+  }
+  log('Bb Trumpet: '+(BB_TRANSPOSE?'ON (-2ST)':'OFF'));
+}
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let currentMode = 'kob';
+let milesSteps=[], bassSteps=[];
+let milesIdx=0, bassIdx=0;
+let playing=false, audioCtx=null, keepNode=null;
+let midiOutPort=null, midiAccess=null;
+let playTimer=null, barCount=0;
+const SLAVE={active:false,running:false,port:null,ppqn:24,pps:6,count:0,bpm:80,alpha:0.15,last:0};
+
+// Groove (same as Jamal but tuned for Miles)
+const GROOVE={mult:1.0,vel:0.0,inertia:0.93,maxDrift:0.04,leanBias:0.0003};
+function grooveTick(){
+  GROOVE.vel=GROOVE.vel*GROOVE.inertia+(Math.random()-0.5)*0.004+GROOVE.leanBias;
+  GROOVE.mult=Math.max(1-GROOVE.maxDrift,Math.min(1+GROOVE.maxDrift,GROOVE.mult+GROOVE.vel));
+  if(Math.random()<0.02) GROOVE.vel+=(Math.random()-0.5)*0.01;
+}
+
+// ══════════════════════════════════════════════════════
+//  GENERATE MILES
+// ══════════════════════════════════════════════════════
+function genMiles(){
+  pushUndo();
+  const reg = getRegister();
+  const pool = makePool(reg.lo, reg.hi);
+  if(!pool.length) return;
+
+  const steps     = parseInt(document.getElementById('stepsSel').value)||12;
+  const tension   = parseInt(document.getElementById('tensionAmt').value)/100;
+  const resolvP   = parseInt(document.getElementById('resolvProb').value);
+  const waitMin   = parseInt(document.getElementById('waitMin').value)||2;
+  const waitMax   = parseInt(document.getElementById('waitMax').value)||16;
+  const dissolv   = parseInt(document.getElementById('dissolution').value);
+  const pBreak    = parseInt(document.getElementById('predictBreak').value)/100;
+
+  milesSteps = [];
+  let prevMidi = TENSION_STATE.prevMidi;
+  let localTension = TENSION_STATE.value;
+  let phrasePos = 0;
+
+  for(let i=0;i<steps;i++){
+    phrasePos++;
+
+    // Silence: based on dissolution and tension
+    // ISW: lots of silence; BB: minimal silence
+    const silProb = (dissolv/100)*0.4 + (1-localTension)*0.15;
+    if(Math.random()<silProb && i>0){
+      const dur = selectDuration(localTension, waitMin, waitMax, dissolv);
+      milesSteps.push({isSil:true, midi:null, dur:dur, vel:0,
+        tension:localTension});
+      continue;
+    }
+
+    // Select next note — guaranteed in scale (pool only contains scale tones)
+    const midi = selectNextNote(pool, prevMidi, localTension, resolvP);
+    // Safety: verify midi is in pool (should always be true)
+    if(!pool.includes(midi) && pool.length){
+      // Fallback to nearest pool note
+      const safeMidi = pool.reduce(function(best,m){
+        return Math.abs(m-midi)<Math.abs(best-midi)?m:best;
+      }, pool[Math.floor(pool.length*0.5)]);
+      // Use safeMidi instead — but selectNextNote already returns pool[idx] so this shouldn't trigger
+    }
+
+    // Duration of this note
+    const dur = selectDuration(localTension, 1, Math.ceil(waitMax*0.4), dissolv*0.5);
+
+    // Velocity: Miles has very controlled dynamics
+    // Soft in ISW, strong in BB, varied in KoB
+    const baseVel = 0.2 + localTension*0.45;
+    const vel = baseVel + (Math.random()-0.5)*0.15;
+
+    // Tension for this note
+    const isTense = localTension > 0.6;
+    const isResolv = TENSION_STATE.prevDir !== 0 && !TENSION_STATE.prevLeap;
+
+    // Chromatic approach stored as flag on main note
+    // Sent as grace note in tick(), NOT as separate step
+    const approachProb = parseInt(document.getElementById('approachProb').value)/100;
+    let appNote = null;
+    if(prevMidi !== null && Math.random() < approachProb && TENSION_STATE.prevLeap){
+      appNote = getApproachNote(midi, prevMidi);
+      if(appNote !== null && (appNote<36 || appNote>96)) appNote = null;
+    }
+
+    milesSteps.push({
+      isSil: false, midi: midi, dur: dur,
+      vel: Math.max(0.08, Math.min(0.88, vel)),
+      tension: localTension,
+      isTense: isTense,
+      isResolv: isResolv,
+      isLeap: TENSION_STATE.prevLeap,
+      approachNote: appNote,  // grace note, sent in tick()
+    });
+
+    prevMidi = midi;
+    localTension = TENSION_STATE.value;
+  }
+
+  // Update tension state
+  TENSION_STATE.prevMidi = prevMidi;
+  TENSION_STATE.phraseCount++;
+
+  buildMilesGrid();
+  drawMilesCurve();
+  updateTensionUI();
+  updateNextNoteDisplay();
+
+  const dph=document.getElementById('dPhrase');
+  if(dph)dph.textContent='phrase '+TENSION_STATE.phraseCount;
+
+  log('Miles ['+currentMode+']: '+milesSteps.filter(function(s){return !s.isSil;}).length+'n '+milesSteps.filter(function(s){return s.isSil;}).length+'s');
+}
+
+// ══════════════════════════════════════════════════════
+//  GENERATE BASS — Paul Chambers style
+// ══════════════════════════════════════════════════════
+function genBass(){
+  pushUndo();
+  const steps   = parseInt(document.getElementById('stepsSel').value)||12;
+  const density = parseInt(document.getElementById('bassDens').value)/100;
+  const style   = document.getElementById('walkStyle').value;
+  const pool    = makePool(-22, -4);
+  if(!pool.length) return;
+
+  bassSteps = [];
+  let pos = Math.floor(pool.length*0.4);
+  let phraseLen = 3+Math.floor(Math.random()*5);
+  let phrasePos = 0;
+
+  for(let i=0;i<steps;i++){
+    phrasePos++;
+    const atBound = phrasePos>=phraseLen;
+    if(atBound){phraseLen=3+Math.floor(Math.random()*5);phrasePos=0;}
+
+    if(Math.random()>density){
+      bassSteps.push({isSil:false,active:false,midi:pool[pos],vel:0,dur:2});
+      continue;
+    }
+
+    let dir, move;
+    if(style==='pedal'){
+      // Stay on root
+      const rootIdx=pool.findIndex(function(m){return m%12===getRoot()%12;});
+      if(rootIdx>=0) pos=rootIdx;
+      dir=0; move=0;
+    } else if(style==='sparse'){
+      // Move rarely
+      if(atBound && Math.random()<0.5){dir=Math.random()<0.5?1:-1;move=1;}
+      else{dir=0;move=0;}
+    } else {
+      // Chambers: walking
+      if(atBound){
+        const mid=Math.floor(pool.length*0.4);
+        dir=pos>mid?-1:1; move=1;
+      } else {
+        dir=Math.random()<0.5?1:-1;
+        move=Math.random()<0.25?2:1;
+      }
+    }
+
+    pos=Math.max(0,Math.min(pool.length-1,pos+dir*move));
+    const midi=pool[pos];
+    const isRoot=midi%12===getRoot()%12;
+    const vel=isRoot?0.45+Math.random()*0.2:0.28+Math.random()*0.18;
+    const dur=style==='pedal'?6:Math.random()<0.6?2:Math.random()<0.5?1:3;
+
+    bassSteps.push({isSil:false,active:true,midi:Math.max(24,Math.min(84,midi)),vel:vel,dur:dur});
+  }
+
+  buildBassGrid();
+  drawBassCurve();
+  const u=[...new Set(bassSteps.filter(function(s){return s.active;}).map(function(s){return s.midi%12;}))];
+  const bi=document.getElementById('bassInfo2');if(bi)bi.textContent=u.length+' notes';
+  log('Bass ['+style+']: '+u.length+' unique');
+}
+
+function generate(reset){
+  if(reset){
+    TENSION_STATE.value = parseInt(document.getElementById('tensionAmt').value)/100;
+    TENSION_STATE.prevMidi = null;
+    TENSION_STATE.prevDir = 0;
+    TENSION_STATE.prevLeap = false;
+    TENSION_STATE.phraseCount = 0;
+  }
+  genMiles();
+  genBass();
+  updateTensionUI();
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD GRIDS
+// ══════════════════════════════════════════════════════
+function buildMilesGrid(){
+  const el=document.getElementById('milesGrid'); if(!el) return;
+  el.innerHTML='';
+  milesSteps.forEach(function(s,i){
+    const d=document.createElement('div');
+    // Width reflects duration — longer note = wider cell
+    const durClass=s.dur<=1?'dur1':s.dur<=2?'dur2':s.dur<=4?'dur4':s.dur<=6?'dur6':s.dur<=8?'dur8':'dur12';
+    if(s.isSil){
+      d.className='mstep silence '+durClass;
+      const bars=Math.min(8,s.dur);
+      const barStr='\u00b7'.repeat(bars);
+      d.innerHTML='<span class="sil-dur">'+barStr+'</span>'
+        +'<span class="mnum">'+(i+1)+'</span>';
+    } else {
+      const tenColor=s.isTense?'rgba(200,64,48,.6)':s.isResolv?'rgba(64,128,160,.6)':'rgba(160,144,96,.4)';
+      d.className='mstep '+durClass+(s.isTense?' high-tension':s.isResolv?' resolution':'');
+      const h=3+Math.round(s.vel*32);
+      const note=s.midi?NOTE[s.midi%12]:'\u2014';
+      d.innerHTML='<div class="tension-bar-step" style="background:'+tenColor+'"></div>'
+        +'<span class="mname on">'+note+'</span>'
+        +'<div class="mbar" style="height:'+h+'px;background:var(--miles);opacity:'+(0.35+s.vel*0.65)+';width:20px"></div>'
+        +(s.isLeap?'<span style="position:absolute;bottom:1px;right:2px;font-size:.18rem;color:var(--miles);opacity:.5">&#8593;</span>':'')
+        +'<span class="mnum">'+(i+1)+'</span>';
+    }
+    d.addEventListener('click',function(){pushUndo();if(!s.isSil)s.active=!s.active;buildMilesGrid();});
+    d.addEventListener('contextmenu',function(ev){
+      ev.preventDefault();
+      if(!s.isSil)s.vel=s.vel>0.5?0.15:0.65;
+      buildMilesGrid();
+    });
+    el.appendChild(d);
+  });
+  const inf=document.getElementById('milesInfo');
+  if(inf){
+    const act=milesSteps.filter(function(s){return !s.isSil;}).length;
+    const sil=milesSteps.filter(function(s){return s.isSil;}).length;
+    inf.textContent=milesSteps.length+'st · '+act+'n · '+sil+'s';
+  }
+  const cd=document.getElementById('milesChD');
+  if(cd){const ce=document.getElementById('milesCh');if(ce)cd.textContent=ce.value;}
+}
+
+function buildBassGrid(){
+  const el=document.getElementById('bassGrid'); if(!el) return;
+  el.innerHTML='';
+  bassSteps.forEach(function(s,i){
+    const d=document.createElement('div');
+    d.className='mstep dur'+(s.dur<=1?'1':s.dur<=2?'2':s.dur<=4?'4':'6')+(s.active?' ':' silence');
+    const h=s.active?3+Math.round(s.vel*28):1;
+    const note=s.midi?NOTE[s.midi%12]:'\u2014';
+    d.innerHTML='<span class="mname'+(s.active?' on':'')+'">'+note+'</span>'
+      +'<div class="mbar" style="height:'+h+'px;background:var(--bass);opacity:'+(0.35+s.vel*0.65)+';width:20px"></div>'
+      +'<span class="mnum">'+(i+1)+'</span>';
+    d.addEventListener('click',function(){pushUndo();s.active=!s.active;buildBassGrid();});
+    el.appendChild(d);
+  });
+  const inf=document.getElementById('bassInfo');
+  if(inf){const act=bassSteps.filter(function(s){return s.active;}).length;inf.textContent=bassSteps.length+'st · '+act+'n';}
+  const cd=document.getElementById('bassChD');
+  if(cd){const ce=document.getElementById('bassCh');if(ce)cd.textContent=ce.value;}
+}
+
+// ══════════════════════════════════════════════════════
+//  CANVAS
+// ══════════════════════════════════════════════════════
+function drawMilesCurve(){
+  const cv=document.getElementById('milesCurve'); if(!cv||!cv.getContext) return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const act=milesSteps.filter(function(s){return !s.isSil;});
+  if(act.length<2) return;
+  const ms=act.map(function(s){return s.midi;});
+  const mn=Math.min.apply(null,ms)-1,mx=Math.max.apply(null,ms)+1;
+  // Draw tension color segments
+  act.forEach(function(s,i){
+    if(i===0) return;
+    const x0=(i-1)/(act.length-1)*W, x1=i/(act.length-1)*W;
+    const y0=H-((act[i-1].midi-mn)/(mx-mn))*(H-3)-1;
+    const y1=H-((s.midi-mn)/(mx-mn))*(H-3)-1;
+    ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);
+    const t=s.tension||0.3;
+    ctx.strokeStyle=t>0.6?'rgba(200,64,48,.7)':t<0.25?'rgba(64,128,160,.7)':'rgba(160,144,96,.6)';
+    ctx.lineWidth=1.3;ctx.stroke();
+  });
+  // Doc curve
+  const dc=document.getElementById('docCurve'); if(!dc||!dc.getContext) return;
+  const W2=dc.parentElement?dc.parentElement.offsetWidth-8:160;dc.width=W2;dc.height=48;
+  const ctx2=dc.getContext('2d');ctx2.clearRect(0,0,W2,48);
+  if(act.length<2) return;
+  act.forEach(function(s,i){
+    if(i===0) return;
+    const x0=(i-1)/(act.length-1)*W2,x1=i/(act.length-1)*W2;
+    const y0=48-((act[i-1].midi-mn)/(mx-mn))*44-2;
+    const y1=48-((s.midi-mn)/(mx-mn))*44-2;
+    ctx2.beginPath();ctx2.moveTo(x0,y0);ctx2.lineTo(x1,y1);
+    const t=s.tension||0.3;
+    ctx2.strokeStyle=t>0.6?'rgba(200,64,48,.65)':t<0.25?'rgba(64,128,160,.65)':'rgba(160,144,96,.55)';
+    ctx2.lineWidth=1.4;ctx2.stroke();
+  });
+}
+
+function drawBassCurve(){
+  const cv=document.getElementById('bassCurve'); if(!cv||!cv.getContext) return;
+  const W=cv.parentElement?cv.parentElement.offsetWidth-8:160;cv.width=W;cv.height=48;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,48);
+  const act=bassSteps.filter(function(s){return s.active;}); if(act.length<2) return;
+  const ms=act.map(function(s){return s.midi;});
+  const mn=Math.min.apply(null,ms)-1,mx=Math.max.apply(null,ms)+1;
+  ctx.beginPath();
+  act.forEach(function(s,i){const x=(i/act.length)*W,y=48-((s.midi-mn)/(mx-mn))*44-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(96,128,112,.55)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+function updateNextNoteDisplay(){
+  if(!milesSteps.length) return;
+  const actSteps=milesSteps.filter(function(s){return !s.isSil;});
+  if(actSteps.length<2) return;
+  const curr=actSteps[Math.min(milesIdx,actSteps.length-1)];
+  const prev=milesIdx>0?actSteps[Math.max(0,milesIdx-1)]:null;
+  const next=actSteps[Math.min(milesIdx+1,actSteps.length-1)];
+  const pn=document.getElementById('prevNote');if(pn)pn.textContent=prev?NOTE[prev.midi%12]:'—';
+  const cn=document.getElementById('currNote');if(cn)cn.textContent=curr?NOTE[curr.midi%12]:'—';
+  const nn=document.getElementById('nextNote');if(nn)nn.textContent=next?NOTE[next.midi%12]:'?';
+
+  // Update Miles note display
+  const mnd=document.getElementById('milesNoteDisp');
+  if(mnd&&curr)mnd.textContent=NOTE[curr.midi%12]+(Math.floor(curr.midi/12)-1);
+}
+
+function onRootChange(){ if(milesSteps.length) generate(false); }
+
+// ══════════════════════════════════════════════════════
+//  MODE
+// ══════════════════════════════════════════════════════
+function setMode(mode){
+  currentMode=mode;
+  const m=MODES[mode]; if(!m) return;
+
+  document.getElementById('bpmIn').value=m.bpm;
+  document.getElementById('scaleSel').value=m.scale;
+  document.getElementById('registerSel').value=m.register;
+  document.getElementById('tensionAmt').value=m.tensionAmt;
+  document.getElementById('tensionAmtV').textContent=m.tensionAmt;
+  document.getElementById('resolvProb').value=m.resolvProb;
+  document.getElementById('resolvProbV').textContent=m.resolvProb;
+  document.getElementById('dissolution').value=m.dissolution;
+  document.getElementById('dissolutionV').textContent=m.dissolution;
+  document.getElementById('waitMin').value=m.waitMin;
+  document.getElementById('waitMinV').textContent=m.waitMin;
+  document.getElementById('waitMax').value=m.waitMax;
+  document.getElementById('waitMaxV').textContent=m.waitMax;
+  document.getElementById('predictBreak').value=m.predictBreak;
+  document.getElementById('predictBreakV').textContent=m.predictBreak;
+  document.getElementById('bassDens').value=m.bassDens;
+  document.getElementById('bassDensV').textContent=m.bassDens;
+  document.getElementById('walkStyle').value=m.walkStyle;
+
+  // Update tabs
+  ['kob','isw','bb'].forEach(function(k){
+    const t=document.getElementById('tab'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(t)t.classList.toggle('active',k===mode);
+  });
+
+  // Update tension
+  TENSION_STATE.value = m.tensionAmt/100;
+  updateTensionUI();
+
+  // Update displays
+  const md=document.getElementById('modeDisp');
+  if(md){md.textContent=m.name;md.style.color=m.color;}
+  const dm=document.getElementById('dMode');
+  if(dm){dm.textContent=m.name;dm.style.color=m.color;}
+
+  // ISW: dissolution slider visual
+  const ddf=document.getElementById('dDisF');
+  if(ddf)ddf.style.width=m.dissolution+'%';
+
+  generate(true);
+  log('Mode: '+m.name+' — '+m.desc);
+}
+
+// ══════════════════════════════════════════════════════
+//  PLAYBACK
+// ══════════════════════════════════════════════════════
+function getACtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function keepAlive(){const ctx=getACtx();if(keepNode)return;keepNode=ctx.createOscillator();const g=ctx.createGain();g.gain.value=0;keepNode.connect(g);g.connect(ctx.destination);keepNode.start();}
+const _wC='const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type===\'set\'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type===\'clear\'){clearTimeout(T[id]);delete T[id]}};';
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wC],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=function(e){const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){_tw=null;}return _tw;}
+function bgTO(fn,ms){
+  const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();
+  const w=getTW();
+  if(w){const id=_tn++;const dl=ctx.currentTime+ms/1000;_tc[id]=function(){const rem=(dl-ctx.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id:id,delay:Math.max(0,ms-5)});return{c:false,cancel:function(){w.postMessage({type:'clear',id:id});delete _tc[id];}};}
+  const dl=ctx.currentTime+ms/1000;const tid={c:false};let t=null;
+  function chk(){if(tid.c)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(chk,rem<25?1:Math.max(1,rem-20));}}
+  t=setTimeout(chk,Math.max(1,ms-20));tid.cancel=function(){tid.c=true;if(t)clearTimeout(t);};return tid;
+}
+document.addEventListener('visibilitychange',function(){
+  const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();
+  if(!document.hidden&&midiOutPort)for(let c=0;c<16;c++)midiOutPort.send([0xB0|c,123,0]);
+});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){
+  const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();
+  keepAlive();playing=true;milesIdx=0;bassIdx=0;barCount=0;
+  document.getElementById('btnPlay').textContent='\u25a0 Stop';
+  document.body.classList.add('playing');
+  tick();
+}
+function stopAll(){
+  playing=false;if(playTimer){playTimer.c=true;playTimer=null;}
+  document.getElementById('btnPlay').textContent='\u25b6 Play';
+  document.body.classList.remove('playing');
+  milesIdx=0;bassIdx=0;
+  if(midiOutPort)for(let c=0;c<16;c++)midiOutPort.send([0xB0|c,123,0]);
+  document.querySelectorAll('.mstep.playing').forEach(function(e){e.classList.remove('playing');});
+}
+
+let _tc5=0;
+function tick(){
+  if(!playing)return;
+  if(SLAVE.active&&SLAVE.running){playing=true;return;}
+
+  grooveTick();
+  const bpm=getBpm();
+  const cur=milesSteps[milesIdx%Math.max(1,milesSteps.length)];
+  const ratio=cur?cur.dur:4;
+  // Miles: each "dur unit" = quarter note
+  const baseMs=Math.max(30,60000/bpm*(ratio/4));
+  const ms=baseMs*GROOVE.mult;
+
+  // Highlight
+  const mi=milesIdx%Math.max(1,milesSteps.length);
+  const bi=bassIdx%Math.max(1,bassSteps.length);
+  document.querySelectorAll('#milesGrid .mstep').forEach(function(e,i){e.classList.toggle('playing',i===mi);});
+  document.querySelectorAll('#bassGrid .mstep').forEach(function(e,i){e.classList.toggle('playing',i===bi);});
+
+  // Update next note display
+  updateNextNoteDisplay();
+
+  const curStep=milesSteps[mi];
+
+  // Miles: silence = no MIDI, but timing continues
+  if(curStep && !curStep.isSil && midiOutPort){
+    const chEl=document.getElementById('milesCh');
+    const ch=(parseInt(chEl?chEl.value:10)||10)-1;
+    const m2=Math.max(0,Math.min(127,curStep.midi+(BB_TRANSPOSE?-2:0)));
+    const offset=Math.max(0,(Math.random()-0.6)*12);
+    const vel=Math.max(1,Math.min(110,Math.round(curStep.vel*105+8)));
+    const noteDur=Math.max(30,ms*0.78+Math.random()*ms*0.1);
+
+    // Grace note (chromatic approach) — fires ~40ms before main note
+    if(curStep.approachNote){
+      const am=Math.max(0,Math.min(127,curStep.approachNote+(BB_TRANSPOSE?-2:0)));
+      const graceDur=Math.min(35, ms*0.15);
+      setTimeout(function(){
+        try{midiOutPort.send([0x90|ch,am,Math.max(1,vel-30)]);
+          setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,am,0]);}catch(e){}},graceDur);
+        }catch(e){}
+      },Math.max(0,offset-40));
+    }
+
+    setTimeout(function(){
+      try{midiOutPort.send([0x90|ch,m2,vel]);setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,m2,0]);}catch(e){}},noteDur);}catch(e){}
+    },offset);
+  }
+
+  // Bass — apply same Bb transpose as Miles
+  const basStep=bassSteps[bi];
+  if(basStep&&basStep.active&&midiOutPort){
+    const chEl=document.getElementById('bassCh');
+    const ch=(parseInt(chEl?chEl.value:5)||5)-1;
+    const bassOffset=8+Math.random()*18;
+    const bm=Math.max(0,Math.min(127,basStep.midi+(BB_TRANSPOSE?-2:0)));
+    const bv=Math.max(1,Math.min(105,Math.round(basStep.vel*98+8)));
+    const bDur=Math.max(20,ms*(basStep.dur/4)*0.72);
+    setTimeout(function(){
+      try{midiOutPort.send([0x90|ch,bm,bv]);setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,bm,0]);}catch(e){}},bDur);}catch(e){}
+    },bassOffset);
+  }
+
+  // Update tension display
+  updateTensionUI();
+
+  const sd=document.getElementById('stepDisp');if(sd)sd.textContent=(barCount+1)+':'+(milesIdx%4+1);
+
+  milesIdx++;if(milesIdx>=milesSteps.length){milesIdx=0;barCount++;onLoopEnd();}
+  bassIdx++;if(bassIdx>=Math.max(1,bassSteps.length))bassIdx=0;
+  _tc5++;
+
+  playTimer=bgTO(tick,ms);
+}
+
+function onLoopEnd(){
+  // Tension evolution
+  TENSION_STATE.value += (Math.random()-0.5)*0.05;
+  TENSION_STATE.value = Math.max(0.05,Math.min(0.95,TENSION_STATE.value));
+  // Auto-evolve: only generate bass occasionally, Miles continues
+  // Don't auto-genMiles — it resets the sequence mid-play
+}
+
+// ══════════════════════════════════════════════════════
+//  MIDI
+// ══════════════════════════════════════════════════════
+function initMIDI(){if(!navigator.requestMIDIAccess){setMS(false,'N/A');return;}navigator.requestMIDIAccess().then(function(ma){midiAccess=ma;ma.onstatechange=function(){popPorts();popIn();};popPorts();popIn();}).catch(function(){setMS(false,'denied');});}
+function popPorts(){const sel=document.getElementById('midiOut');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.outputs.forEach(function(p,id){const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(function(o){if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectOut(sel.value);}});}
+function popIn(){const sel=document.getElementById('clockIn');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.inputs.forEach(function(p,id){const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;}
+function selectOut(id){if(!id){midiOutPort=null;setMS(false,'\u2014');return;}midiOutPort=midiAccess?midiAccess.outputs.get(id):null;if(midiOutPort)setMS(true,midiOutPort.name);}
+function setMS(ok,n){const d=document.getElementById('midiDot'),s=document.getElementById('midiStat');if(d)d.classList.toggle('on',ok);if(s){s.textContent=ok?'\u2713 '+n:n;s.style.color=ok?'var(--miles)':'var(--dim)';}}
+function selectClock(id){if(SLAVE.port)SLAVE.port.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.port=midiAccess.inputs.get(id);if(SLAVE.port)SLAVE.port.onmidimessage=onClock;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const b=document.getElementById('btnSlave');if(b){b.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';b.style.color=SLAVE.active?'var(--miles)':'';}if(!SLAVE.active&&playing)tick();}
+function onClock(e){const d=e.data[0];if(d===0xFA){SLAVE.running=true;SLAVE.count=0;if(playTimer){playTimer.c=true;playTimer=null;}playing=true;milesIdx=0;bassIdx=0;barCount=0;keepAlive();const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();document.getElementById('btnPlay').textContent='\u25a0 Stop';document.body.classList.add('playing');return;}if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;keepAlive();document.getElementById('btnPlay').textContent='\u25a0 Stop';document.body.classList.add('playing');}return;}if(d===0xFC){SLAVE.running=false;playing=false;if(playTimer){playTimer.c=true;playTimer=null;}document.getElementById('btnPlay').textContent='\u25b6 Play';document.body.classList.remove('playing');if(midiOutPort)for(let c=0;c<16;c++)midiOutPort.send([0xB0|c,123,0]);return;}if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;const now=e.timeStamp||performance.now();if(SLAVE.last>0){const iv=now-SLAVE.last;const b=60000/(iv*SLAVE.ppqn);if(b>20&&b<200)SLAVE.bpm=SLAVE.bpm*(1-SLAVE.alpha)+b*SLAVE.alpha;}SLAVE.last=now;SLAVE.count++;if(SLAVE.count>=SLAVE.pps){SLAVE.count=0;slaveStep();}if(SLAVE.count===0){const bi=document.getElementById('bpmIn');if(bi)bi.value=Math.round(SLAVE.bpm);}}
+function slaveStep(){
+  if(!playing)return;
+  grooveTick();
+  const ms=60000/SLAVE.bpm/4;
+  const mi=milesIdx%Math.max(1,milesSteps.length);
+  const bi=bassIdx%Math.max(1,bassSteps.length);
+  const cs=milesSteps[mi];
+  if(cs&&!cs.isSil&&midiOutPort){
+    const chEl=document.getElementById('milesCh');
+    const ch=(parseInt(chEl?chEl.value:10)||10)-1;
+    const vel=Math.max(1,Math.min(110,Math.round(cs.vel*105+8)));
+    const dur=Math.max(30,ms*0.78);
+    const off=Math.max(0,(Math.random()-0.6)*12);
+    const csm=Math.max(0,Math.min(127,cs.midi+(BB_TRANSPOSE?-2:0)));
+    setTimeout(function(){try{midiOutPort.send([0x90|ch,csm,vel]);setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,cs.midi,0]);}catch(e){}},dur);}catch(e){}},off);
+  }
+  const bs=bassSteps[bi];
+  if(bs&&bs.active&&midiOutPort){
+    const chEl=document.getElementById('bassCh');
+    const ch=(parseInt(chEl?chEl.value:5)||5)-1;
+    const bm2=Math.max(0,Math.min(127,bs.midi+(BB_TRANSPOSE?-2:0)));
+    const bv=Math.max(1,Math.min(105,Math.round(bs.vel*98+8)));
+    const bdur=Math.max(20,ms*(bs.dur/4)*0.72);
+    setTimeout(function(){try{midiOutPort.send([0x90|ch,bm2,bv]);setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,bm2,0]);}catch(e){}},bdur);}catch(e){}},8+Math.random()*18);
+  }
+  milesIdx++;if(milesIdx>=milesSteps.length){milesIdx=0;barCount++;onLoopEnd();}
+  bassIdx++;if(bassIdx>=Math.max(1,bassSteps.length))bassIdx=0;
+  const ri=milesIdx%Math.max(1,milesSteps.length);
+  document.querySelectorAll('#milesGrid .mstep').forEach(function(e,i){e.classList.toggle('playing',i===ri);});
+  updateTensionUI();
+}
+
+function exportMIDI(){
+  const bpm=getBpm(),tpb=480,usb=Math.round(60000000/bpm);
+  function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}
+  function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}
+  function i16(v){return[(v>>8)&0xFF,v&0xFF];}
+  const tracks=[[milesSteps,'milesCh'],[bassSteps,'bassCh']];
+  const td=tracks.map(function(pr){
+    const ss=pr[0],ci=pr[1];
+    const chEl=document.getElementById(ci);
+    const ch=(parseInt(chEl?chEl.value:10)||10)-1;
+    const ev=[];let t=0;
+    ss.forEach(function(s){
+      const stk=Math.round(tpb*(s.dur/4));
+      if(!s.isSil&&s.midi&&(s.active!==false)){
+        ev.push([t,[0x90|ch,s.midi,Math.round(s.vel*100+8)]]);
+        ev.push([t+Math.round(stk*.78),[0x80|ch,s.midi,0]]);
+      }
+      t+=stk;
+    });
+    ev.sort(function(a,b){return a[0]-b[0];});let lt=0;const d=[];
+    d.push.apply(d,[0,0xFF,0x51,0x03].concat(i32(usb).slice(1)));
+    ev.forEach(function(it){d.push.apply(d,wv(it[0]-lt).concat(it[1]));lt=it[0];});
+    d.push(0,0xFF,0x2F,0);return d;
+  });
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1].concat(i16(td.length)).concat(i16(tpb));
+  const all=hdr.slice();td.forEach(function(d){all.push.apply(all,[0x4D,0x54,0x72,0x6B].concat(i32(d.length)).concat(d));});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([new Uint8Array(all)],{type:'audio/midi'}));
+  a.download='miles_'+currentMode+'_t'+Math.round(TENSION_STATE.value*100)+'.mid';a.click();
+}
+
+// ══════════════════════════════════════════════════════
+//  UNDO / REDO / SAVE / LOAD
+// ══════════════════════════════════════════════════════
+const UMAX=30;let _us=[],_rs=[];
+function cap(){return{miles:JSON.parse(JSON.stringify(milesSteps)),bass:JSON.parse(JSON.stringify(bassSteps)),tension:JSON.parse(JSON.stringify(TENSION_STATE)),mode:currentMode,root:document.getElementById('rootSel').value,bpm:getBpm()};}
+function pushUndo(){_us.push(cap());if(_us.length>UMAX)_us.shift();_rs=[];updUB();}
+function applyS(s){milesSteps=JSON.parse(JSON.stringify(s.miles));bassSteps=JSON.parse(JSON.stringify(s.bass));if(s.tension)Object.assign(TENSION_STATE,s.tension);document.getElementById('rootSel').value=s.root;document.getElementById('bpmIn').value=s.bpm;buildMilesGrid();buildBassGrid();drawMilesCurve();drawBassCurve();updateTensionUI();updUB();}
+function undo(){if(!_us.length)return;_rs.push(cap());applyS(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(cap());applyS(_rs.pop());}
+function updUB(){const u=document.getElementById('btnU'),r=document.getElementById('btnR');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function save(){const s=cap();s._tool='MilesDavis';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download='miles_'+currentMode+'.json';a.click();}
+function loadFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(ev){try{const s=JSON.parse(ev.target.result);pushUndo();applyS(s);}catch(err){alert(err.message);}};r.readAsText(f);e.target.value='';}
+function saveCh(){['milesCh','bassCh'].forEach(function(id){const el=document.getElementById(id);if(el)try{localStorage.setItem('miles_'+id,el.value);}catch(e){}});}
+function loadCh(){['milesCh','bassCh'].forEach(function(id){const el=document.getElementById(id);if(!el)return;try{const v=localStorage.getItem('miles_'+id);if(v)el.value=v;}catch(e){}});}
+
+let _taps=[];
+function tapTempo(){const n=Date.now();_taps.push(n);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const g=_taps.slice(1).map(function(t,i){return t-_taps[i];});const a=g.reduce(function(x,y){return x+y;},0)/g.length;const b=Math.round(60000/a);if(b>20&&b<200)document.getElementById('bpmIn').value=b;}}
+
+function log(msg){const l=document.getElementById('mainLog');if(!l)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(160,144,96,.6);display:block';l.insertBefore(s,l.firstChild);while(l.children.length>6)l.removeChild(l.lastChild);const fl=document.getElementById('fullLog');if(!fl)return;const s2=document.createElement('span');s2.textContent=msg;s2.style.cssText='color:rgba(160,144,96,.6);display:block';fl.insertBefore(s2,fl.firstChild);while(fl.children.length>12)fl.removeChild(fl.lastChild);}
+
+document.querySelectorAll('input[type=range]').forEach(function(el){
+  const v=el.id+'V';el.addEventListener('input',function(){const vv=document.getElementById(v);if(vv)vv.textContent=el.value;});
+});
+
+(function(){document.querySelectorAll('.dtab[data-p]').forEach(function(tab){tab.addEventListener('click',function(){const p=tab.dataset.p;if(tab.classList.contains('active')){toggleDock();return;}document.querySelectorAll('.dtab').forEach(function(t){t.classList.remove('active');});tab.classList.add('active');document.querySelectorAll('.dpanel').forEach(function(pp){pp.classList.remove('active');});const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');const db=document.getElementById('dockBody');if(db){db.classList.remove('closed');document.getElementById('dockBtn').textContent='\u25b2';}});});})();
+let dockOpen=true;
+function toggleDock(){dockOpen=!dockOpen;const b=document.getElementById('dockBody'),btn=document.getElementById('dockBtn');if(b)b.classList.toggle('closed',!dockOpen);if(btn)btn.textContent=dockOpen?'\u25b2':'\u25bc';}
+
+document.addEventListener('keydown',function(e){
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();e.shiftKey?redo():undo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();generate(false);}
+  if(e.code==='KeyN'&&e.target.tagName!=='INPUT'){e.preventDefault();generate(true);}
+});
+
+function init(){
+  loadCh();
+  setMode('kob');
+}
+init();
+</script>
+</body>
+</html>
