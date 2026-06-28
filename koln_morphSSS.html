@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>構造変容シーケンサー</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@300;400;600&display=swap');
+:root{
+  --ink:#0d1b2a;--ink2:#16263a;--deep:#060f18;--paper:#f4f1ea;--mist:#7a8a9a;--mist2:#4a5a6a;
+  --gold:#b08d57;--glow:rgba(176,141,87,0.55);
+  --top:#d8c48a;--inner:#6a8caf;--bass:#c77b4a;--outer:#b06a8a;
+  --line:rgba(176,141,87,0.22);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--deep);color:var(--paper);font-family:'JetBrains Mono',monospace;font-size:13px;height:100%}
+.masthead{padding:0.7rem 1.3rem;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:1rem}
+.masthead h1{font-family:'IM Fell English',serif;font-weight:400;font-size:1.5rem;color:var(--paper)}
+.masthead .sub{font-family:'IM Fell English',serif;font-style:italic;font-size:0.78rem;color:var(--mist)}
+.masthead .dims{font-size:0.58rem;color:var(--gold);letter-spacing:0.04em;opacity:.7;margin-left:auto}
+.wrap{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 52px)}
+.controls{background:var(--ink);border-right:1px solid var(--line);overflow-y:auto;padding:1rem}
+.stage{display:flex;flex-direction:column;overflow:hidden;background:var(--deep)}
+.group{border:1px solid var(--line);border-radius:4px;padding:0.7rem;margin-bottom:0.7rem}
+.gt{font-family:'IM Fell English',serif;font-style:italic;font-size:0.92rem;color:var(--gold);margin-bottom:0.6rem}
+.row{display:flex;align-items:center;justify-content:space-between;gap:0.6rem;margin-bottom:0.45rem}
+.row label{font-size:0.64rem;color:var(--mist);letter-spacing:0.03em}
+input,select{background:var(--ink2);color:var(--paper);border:1px solid var(--line);border-radius:3px;padding:0.25rem 0.45rem;font-family:inherit;font-size:0.66rem}
+input[type=number]{width:3rem}
+input[type=range]{accent-color:var(--gold);flex:1}
+.btn{background:transparent;border:1px solid var(--gold);color:var(--gold);padding:0.4rem 0.8rem;border-radius:4px;font-family:inherit;font-size:0.66rem;cursor:pointer;letter-spacing:0.03em}
+.btn:hover{background:var(--gold);color:var(--deep)}
+.btn.ghost{border-color:var(--line);color:var(--mist)}
+.btn.ghost:hover{border-color:var(--gold);color:var(--paper)}
+.btn.main{width:100%;padding:0.55rem;font-size:0.8rem;margin-top:0.3rem}
+.dropzone{border:1.5px dashed var(--line);border-radius:6px;padding:1.4rem 0.8rem;text-align:center;color:var(--mist);font-size:0.68rem;cursor:pointer;transition:all .2s;font-family:'IM Fell English',serif;font-style:italic}
+.dropzone:hover,.dropzone.over{border-color:var(--gold);color:var(--gold);background:rgba(176,141,87,0.06)}
+.stat{font-size:0.64rem;color:var(--mist);line-height:1.8}
+.stat b{color:var(--top);font-weight:400}
+.legend{display:flex;gap:0.9rem;font-size:0.58rem;color:var(--mist);padding:0.5rem 1.3rem;border-bottom:1px solid var(--line)}
+.legend .vl{display:flex;align-items:center;gap:0.35rem}
+.dot{width:8px;height:8px;border-radius:50%}
+.statebar{display:flex;gap:1.2rem;padding:0.45rem 1.3rem;font-size:0.62rem;color:var(--mist);border-bottom:1px solid var(--line)}
+.statebar b{color:var(--top);font-weight:400}
+canvas{display:block}
+.hint{font-size:0.58rem;color:var(--mist2);font-style:italic;font-family:'IM Fell English',serif;line-height:1.5;margin-top:0.4rem}
+.dimchk{font-size:0.6rem;color:var(--mist);display:flex;align-items:center;gap:3px}.dimchk input{accent-color:var(--gold)}
+</style></head>
+<body>
+<div class="masthead">
+  <h1>構造変容シーケンサー</h1>
+  <span class="sub">the structure, transfigured</span>
+  <span class="dims">本物を抽出し、骨格を保って変容する</span>
+</div>
+<div class="wrap">
+  <div class="controls">
+    <div class="group">
+      <div class="gt">① MIDIファイル投入</div>
+      <div class="dropzone" id="drop">.mid をここにドロップ<br>またはクリックして選択</div>
+      <input type="file" id="fileInput" accept=".mid,.midi" style="display:none">
+      <div class="hint">解剖台と同じSMF解析。テキスト変換なしで直読み</div>
+    </div>
+    <div class="group">
+      <div class="gt">② 抽出された不変骨格</div>
+      <div class="stat" id="skeleton">未読込</div>
+    </div>
+    <div class="group">
+      <div class="gt">⊕ 磁場の根(主音)を補正</div>
+      <div class="row"><label>根をずらす</label><select id="fieldOffset" style="flex:1">
+        <option value="0">自動検出のまま(検出根基準)</option>
+        <option value="7">+7半音 → C#へ(C#ドリアン用)</option>
+        <option value="-5">-5半音 → C#へ(下方向)</option>
+        <option value="2">+2半音</option>
+        <option value="-2">-2半音</option>
+        <option value="5">+5半音</option>
+        <option value="-7">-7半音</option>
+      </select></div>
+      <div class="row"><label>または直接</label><input type="number" id="fieldOffsetN" value="0" min="-11" max="11" style="width:4rem"><span style="font-size:.55rem;color:var(--mist)">半音</span></div>
+      <div id="fieldRootInfo" style="margin-top:0.4rem;font-size:0.58rem;color:var(--mist)"></div>
+      <div style="font-size:.62rem;color:var(--mist);margin:.2rem 0">検出された主磁場: <b id="detectInfo" style="color:var(--top)">—</b></div>
+      <div class="hint">自動検出はペダル(最長低音)を拾う。真の主音と違う時、<br>君の耳で補正(半音単位)。検出根は読み込んだ曲から推定される。</div>
+    </div>
+    <div class="group">
+      <div class="gt">⊿ ST変換(響きの色を変える)</div>
+      <div class="row"><label>変換</label><select id="xfMode" style="flex:1">
+        <option value="none">なし(本物のまま)</option>
+        <option value="transpose">(a) 移調 — 距離を完全保存</option>
+        <option value="invert">(b) 反転 — 鏡像、音程逆転</option>
+        <option value="role">(c) 役割保存 — 色だけ変える</option>
+      </select></div>
+      <div class="row" id="transposeRow" style="display:none"><label>移調量</label>
+        <input type="number" id="transposeN" value="0" min="-12" max="12" style="width:4rem"><span style="font-size:.58rem;color:var(--mist)">半音</span></div>
+      <div class="row" id="rolePresetRow" style="display:none"><label>プリセット</label>
+        <select id="rolePreset" style="flex:1;font-size:.62rem"></select></div>
+      <div class="row" id="roleRow" style="display:none"><label>源→先</label>
+        <input type="text" id="roleTable" value="0,1,5,8 → 0,2,4,7" style="flex:1;font-size:.6rem"></div>
+      <div class="row" id="roleModeRow" style="display:none"><label>補間</label><select id="roleMode" style="flex:1">
+        <option value="mono">単調 — 上昇順を保つ(推奨)</option>
+        <option value="fold">折りたたみ — 劇的だが順序が崩れる</option>
+      </select></div>
+      <div class="row"><label><input type="checkbox" id="useTimeField" checked> 時間変化する磁場を使う</label></div>
+      <div class="hint">骨格(リズム/オクターブ/vel/声部)は保持。STだけ写像<br>(c)は「0,1,5,8→0,2,4,7」のように役割の並びで対応</div>
+      <div id="mapTable" style="margin-top:0.5rem;font-size:0.56rem;font-family:'JetBrains Mono',monospace;color:var(--mist);line-height:1.5"></div>
+    </div>
+    <div class="group">
+      <div class="gt">◇ 次元(3-5-7-11-13)を積む</div>
+      <div class="row"><label>モード</label><select id="dimMode" style="flex:1">
+        <option value="off">なし</option>
+        <option value="add">加算 — 高次の音を足す</option>
+        <option value="subtract">減算 — 骨組みだけ残す</option>
+      </select></div>
+      <div class="row" style="flex-wrap:wrap;gap:0.4rem">
+        <label class="dimchk"><input type="checkbox" class="dimD" value="3" checked> 3rd</label>
+        <label class="dimchk"><input type="checkbox" class="dimD" value="5" checked> 5th</label>
+        <label class="dimchk"><input type="checkbox" class="dimD" value="7"> 7th</label>
+        <label class="dimchk"><input type="checkbox" class="dimD" value="9"> 9th</label>
+        <label class="dimchk"><input type="checkbox" class="dimD" value="11"> 11th</label>
+        <label class="dimchk"><input type="checkbox" class="dimD" value="13"> 13th</label>
+      </div>
+      <div class="row" id="subLimitRow" style="display:none"><label>残す数</label>
+        <input type="number" id="subLimit" value="2" min="1" max="6" style="width:3.5rem"></div>
+      <div id="dimInfo" style="margin-top:0.4rem;font-size:0.56rem;font-family:'JetBrains Mono',monospace;color:var(--mist);line-height:1.5"></div>
+      <div class="hint">11th=ST17, 13th=ST21 = オクターブ上のST5,9を積む<br>高次倍音を可聴域に降ろす=自然な広がり。中声部CH2に</div>
+    </div>
+    <div class="group">
+      <div class="gt">⟁ 次元の発火条件</div>
+      <div style="font-size:.55rem;color:var(--mist2);margin-bottom:4px">◇次元(3-5-7-11-13)をいつ積むか</div>
+      <div class="row"><label>条件</label><select id="condTrigger" style="flex:1">
+        <option value="always">常時</option>
+        <option value="velocity">旋律速度が閾値超(微分)</option>
+        <option value="solo_run">単音がN個続いた後</option>
+        <option value="landing">特定STに着地</option>
+        <option value="leap">跳躍した時</option>
+        <option value="peak">★フレーズの頂点(加速度0交差)</option>
+        <option value="valley">▽フレーズの谷</option>
+        <option value="fast_climb">疾走して登る時(速度)</option>
+      </select></div>
+      <div class="row cParam" id="cp_velocity" style="display:none"><label>速度閾値</label><input type="number" id="speedThresh" value="5" min="1" max="12" style="width:3.5rem"><span style="font-size:.55rem;color:var(--mist)">半音</span></div>
+      <div class="row cParam" id="cp_solo_run" style="display:none"><label>単音継続数</label><input type="number" id="soloRunN" value="3" min="1" max="10" style="width:3.5rem"></div>
+      <div class="row cParam" id="cp_landing" style="display:none"><label>着地ST</label><input type="number" id="landingST" value="7" min="0" max="11" style="width:3.5rem"><span style="font-size:.55rem;color:var(--mist)">7=5度</span></div>
+      <div class="row cParam" id="cp_leap" style="display:none"><label>跳躍最小</label><input type="number" id="leapMin" value="7" min="2" max="12" style="width:3.5rem"><span style="font-size:.55rem;color:var(--mist)">半音</span></div>
+      <div class="row cParam" id="cp_peak" style="display:none"><label>平滑化</label><input type="number" id="smoothN" value="1" min="0" max="5" style="width:3.5rem"><span style="font-size:.55rem;color:var(--mist)">音(ノイズ除去)</span></div>
+      <div class="row cParam" id="cp_valley" style="display:none"><label>平滑化</label><input type="number" id="smoothN2" value="1" min="0" max="5" style="width:3.5rem"><span style="font-size:.55rem;color:var(--mist)">音</span></div>
+      <div class="row cParam" id="cp_fast_climb" style="display:none"><label>速度閾</label><input type="number" id="climbThresh" value="3" min="1" max="12" style="width:3.5rem"></div>
+      <div class="hint">条件が成立した瞬間だけ、次元音とST外音を積む</div>
+    </div>
+    <div class="group">
+      <div class="gt">✦ ST外を自分で指定</div>
+      <input type="text" id="customOuter" placeholder="例: 17, 21 (11th,13th)" style="width:100%;font-size:.62rem">
+      <div id="customInfo" style="margin-top:0.4rem;font-size:0.56rem;font-family:'JetBrains Mono',monospace;color:var(--mist);line-height:1.5"></div>
+      <div class="row" style="margin-top:6px"><label>発火条件</label><select id="cond2Trigger" style="flex:1;font-size:.62rem">
+        <option value="always">常時</option>
+        <option value="velocity">旋律速度が閾値超</option>
+        <option value="solo_run">単音がN個続いた後</option>
+        <option value="landing">特定STに着地</option>
+        <option value="leap">跳躍した時</option>
+        <option value="peak">★フレーズの頂点</option>
+        <option value="valley">▽フレーズの谷</option>
+        <option value="fast_climb">疾走して登る時</option>
+      </select></div>
+      <div class="row cParam2" id="c2_velocity" style="display:none"><label>速度閾</label><input type="number" id="c2speedThresh" value="5" min="1" max="12" style="width:3.5rem"></div>
+      <div class="row cParam2" id="c2_solo_run" style="display:none"><label>単音数</label><input type="number" id="c2soloRunN" value="3" min="1" max="10" style="width:3.5rem"></div>
+      <div class="row cParam2" id="c2_landing" style="display:none"><label>着地ST</label><input type="number" id="c2landingST" value="7" min="0" max="11" style="width:3.5rem"></div>
+      <div class="row cParam2" id="c2_leap" style="display:none"><label>跳躍最小</label><input type="number" id="c2leapMin" value="7" min="2" max="12" style="width:3.5rem"></div>
+      <div class="hint">磁場根からのST数値をカンマ区切り(11th=17,13th=21)。<br>★次元とは別条件。例:頂点で13th、跳躍でST外、と分けられる</div>
+    </div>
+    <div class="group">
+      <div class="gt">♬ リズム外部演算</div>
+      <div class="row"><label>Scale ×</label><input type="range" id="rhyScale" min="25" max="300" value="100"><span class="val" id="rhyScaleV" style="color:var(--top);font-size:.62rem;width:2.5rem;text-align:right">1.0x</span></div>
+      <div class="row"><label>Swing</label><input type="range" id="rhySwing" min="0" max="80" value="0"><span class="val" id="rhySwingV" style="color:var(--top);font-size:.62rem;width:2.5rem;text-align:right">0</span></div>
+      <div class="row"><label><input type="checkbox" id="rhyInvert"> Invert(間隔を逆行)</label></div>
+      <div class="hint">比率を壊さない外部演算。×=伸縮(比率保存)<br>Swing=間隔を長短交互 / Invert=音の間隔を逆順に</div>
+    </div>
+    <div class="group">
+      <div class="gt">③ ボイス → MIDI CH</div>
+      <div class="row"><label>CH1 上声部</label><input type="number" id="ch1" value="1" min="1" max="16"></div>
+      <div class="row"><label>CH2 中声部</label><input type="number" id="ch2" value="2" min="1" max="16"></div>
+      <div class="row"><label>CH3 下(drone)</label><input type="number" id="ch3" value="3" min="1" max="16"></div>
+      <div class="row"><label>CH4 磁場外ST</label><input type="number" id="ch4" value="4" min="1" max="16"></div>
+    </div>
+    <div class="group">
+      <div class="gt">④ 再生</div>
+      <div class="row"><label>出力</label><select id="port" style="flex:1"></select></div>
+      <div class="row"><label>入力</label><select id="portIn" style="flex:1"></select></div>
+      <div class="row"><label>Live変容</label>
+        <label style="font-size:.85em;display:flex;align-items:center;gap:.3rem;flex:1">
+          <input type="checkbox" id="liveOn"> Bus2入力を磁場/次元音/ST外音で即興変容
+        </label>
+      </div>
+      <div class="row"><label>Live磁場</label>
+        <select id="liveField" style="flex:1" title="再生中は時間磁場、停止中はこの固定磁場で変容">
+          <option value="auto" selected>再生位置に追従</option>
+          <option value="0">C(ST0)</option><option value="1">C#</option><option value="2">D</option>
+          <option value="3">D#</option><option value="4">E</option><option value="5">F</option>
+          <option value="6">F#</option><option value="7">G</option><option value="8">G#</option>
+          <option value="9">A</option><option value="10">A#</option><option value="11">B</option>
+        </select>
+      </div>
+      <div class="row"><label>Live録音</label>
+        <button class="btn" id="liveRecBtn" onclick="LIVE.recording?liveRecStop():liveRecStart()" style="flex:1">● 録音開始</button>
+        <button class="btn" onclick="liveRecClear()" title="録音を消す">クリア</button>
+        <span id="liveRecInfo" style="color:var(--top);font-size:.62rem;margin-left:.3rem">0音</span>
+      </div>
+      <div class="hint">弾いた生入力を録音。書き出し/分析は«今の設定»で変容して反映(実験を残さず最終形を出力)</div>
+      <div class="row"><label>速度</label><input type="range" id="speed" min="25" max="200" value="100"><span id="speedV" style="color:var(--top);font-size:0.62rem">100%</span></div>
+      <button class="btn main" id="play">▶ そのまま再生</button>
+      <div class="hint">まず本物が正しく鳴るか。変容軸はこの土台に乗せる</div>
+    </div>
+    <div class="group">
+      <div class="gt">⎙ 保存・書き出し・履歴</div>
+      <div class="row" style="flex-wrap:wrap;gap:0.4rem">
+        <button class="btn ghost" id="btnUndo" style="flex:1">↶ Undo</button>
+        <button class="btn ghost" id="btnRedo" style="flex:1">↷ Redo</button>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:0.4rem;margin-top:0.4rem">
+        <button class="btn" id="btnSaveJSON" style="flex:1">情景をJSON保存</button>
+        <button class="btn ghost" id="btnLoadJSON" style="flex:1">JSON読込</button>
+      </div>
+      <input type="file" id="jsonInput" accept=".json" style="display:none">
+      <button class="btn" id="btnExportMIDI" style="width:100%;margin-top:0.4rem">変換結果を.mid書き出し</button>
+      <div class="hint">情景の蓄積に。JSON=設定の再現、.mid=Abletonへ</div>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="legend">
+      <span class="vl"><span class="dot" style="background:#d8c48a"></span>CH1 上</span>
+      <span class="vl"><span class="dot" style="background:#6a8caf"></span>CH2 中</span>
+      <span class="vl"><span class="dot" style="background:#c77b4a"></span>CH3 下drone</span>
+      <span class="vl"><span class="dot" style="background:#b06a8a"></span>CH4 磁場外ST</span>
+    </div>
+    <div class="statebar">
+      <span>時刻 <b id="tLabel">—</b></span>
+      <span>磁場 <b id="fLabel">—</b></span>
+      <span>音 <b id="nLabel">—</b></span>
+      <span>進行 <b id="pLabel">—</b></span>
+    </div>
+    <canvas id="terrain" style="flex:1 1 auto;min-height:0;width:100%;height:auto"></canvas>
+    <div id="xsectionPanel" style="flex:0 0 auto;max-height:38%;border-top:1px solid var(--line);padding:8px 14px;overflow-y:auto;font-size:.6rem;background:var(--ink)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <span style="font-family:'IM Fell English',serif;font-style:italic;color:var(--gold)">◈ ST断面(学習)</span>
+        <label style="font-size:.58rem;color:var(--mist)">窓</label><input type="range" id="xWin" min="2" max="15" value="6" style="width:100px"><span id="xWinV" style="color:var(--top);font-size:.58rem">6s</span>
+      </div>
+      <div id="xsection">.mid を読むと表示</div>
+    </div>
+  </div>
+</div>
+<script>
+const NN=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const nm=m=>NN[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const g=id=>document.getElementById(id);
+const SCALE_KOLN=[0,2,3,5,7,9,10];
+
+
+// ═══ 次元(3-5-7-11-13)転換エンジン ═══
+// 君の洞察: 11th=ST17, 13th=ST21 はオクターブ上のST5,9を積む話
+const DIM_ST={ 3:4, 5:7, 7:10, 9:14, 11:17, 13:21 }; // 度数→ルートからの実半音(オクターブ込み)
+const DIMX={ mode:'off', dims:[3,5,7], voiceLimit:0 }; // off/add/subtract
+// あるノートの時刻・磁場で、次元音(中声部に積む追加音)のmidi配列を返す
+function dimensionNotes(n){
+  if(DIMX.mode==='off') return [];
+  const root=fieldAt(n.sec);
+  // 基準: 旋律音の下に和音を積む。高次(11th=+17,13th=+21)も
+  // 収まるよう、基準rootを旋律より約2オクターブ下に置く
+  let baseOct=Math.floor((n.midi-root)/12)-2;
+  // 高次STも音域に入るよう基準を調整(13th=+21が n.midi を超えないように)
+  let base=root+baseOct*12;
+  // baseが低すぎ/高すぎを補正(中声部の快適域 midi 48-72 に寄せる)
+  while(base+21>n.midi+2 && base>36) base-=12;   // 13thが旋律を超えない
+  while(base+4<40) base+=12;                      // 低すぎ防止
+  const out=[];
+  for(const d of DIMX.dims){
+    const st=DIM_ST[d]; if(st===undefined) continue;
+    let m=base+st;
+    if(Math.abs(m-n.midi)===1) continue;          // 旋律と半音衝突禁止
+    if(out.some(o=>Math.abs(o-m)===1)) continue;  // 次元音同士も
+    if(out.includes(m)) continue;                  // 重複排除
+    if(m>=28&&m<=96) out.push(m);
+  }
+  out.sort((a,b)=>a-b);
+  if(DIMX.mode==='subtract'){
+    const lim=DIMX.voiceLimit||2;
+    return out.slice(0,lim); // 低次(下)から残す
+  }
+  return out;
+}
+
+
+// ═══ 条件発火エンジン(条件×作用の論理実験)═══
+const COND={
+  trigger:'always',   // always/velocity/solo_run/landing/leap
+  landingST:7,        // 着地条件のST(5度=7)
+  leapMin:7,          // 跳躍条件の最小半音
+  soloRunN:3,         // 単音継続数
+  speedThresh:5,      // 旋律速度(半音/音)の閾値
+  customOuter:[],     // 自分で指定するST外の音(ST数値の配列)
+};
+// 発火判定に必要な履歴
+const COND2={ trigger:'always', landingST:7, leapMin:7, soloRunN:3, speedThresh:5 }; // ST外音用の独立条件
+const HIST={ lastMidi:null, soloCount:0, lastSoloSec:-99 };
+// ═══ 微分・フレーズ頂点検出(運動への追従)═══
+const DERIV={ peakSecs:new Set(), valleySecs:new Set(), velAt:{}, smooth:1 };
+function computeContour(){
+  DERIV.peakSecs=new Set(); DERIV.valleySecs=new Set(); DERIV.velAt={};
+  if(!APP.notes||APP.notes.length<3) return;
+  // 旋律輪郭 = 各オンセット時刻の最高音
+  const byOnset={};
+  for(const n of APP.notes){ const k=n.sec.toFixed(2); if(!byOnset[k]||n.midi>byOnset[k].midi) byOnset[k]={sec:n.sec,midi:n.midi}; }
+  const contour=Object.values(byOnset).sort((a,b)=>a.sec-b.sec);
+  const n=contour.length; if(n<3) return;
+  // 平滑化(移動平均)
+  const sm=contour.map((c,i)=>{ const lo=Math.max(0,i-DERIV.smooth),hi=Math.min(n,i+DERIV.smooth+1);
+    let s=0; for(let j=lo;j<hi;j++) s+=contour[j].midi; return s/(hi-lo); });
+  // 1階微分(速度)
+  const vel=[]; for(let i=0;i<n-1;i++) vel.push(sm[i+1]-sm[i]);
+  contour.forEach((c,i)=>{ DERIV.velAt[c.sec.toFixed(2)]= i<vel.length?vel[i]:0; });
+  // 加速度ゼロ交差: 速度が+→-で頂点, -→+で谷
+  for(let i=1;i<vel.length;i++){
+    if(vel[i-1]>0 && vel[i]<=0) DERIV.peakSecs.add(contour[i].sec.toFixed(2));
+    if(vel[i-1]<0 && vel[i]>=0) DERIV.valleySecs.add(contour[i].sec.toFixed(2));
+  }
+}
+
+// このノートで条件が成立するか
+function condFires(n, polyAtOnset, cond){
+  cond = cond || COND;
+  const t=cond.trigger;
+  if(t==='always') return true;
+  const root=fieldAt(n.sec);
+  const st=((n.midi-root)%12+12)%12;
+  if(t==='velocity'){
+    const sp = HIST.lastMidi!=null ? Math.abs(n.midi-HIST.lastMidi) : 0;
+    return sp>=cond.speedThresh;
+  }
+  if(t==='solo_run'){
+    return polyAtOnset===1 && HIST.soloCount>=cond.soloRunN;
+  }
+  if(t==='landing'){
+    return st===cond.landingST;
+  }
+  if(t==='leap'){
+    return HIST.lastMidi!=null && Math.abs(n.midi-HIST.lastMidi)>=cond.leapMin;
+  }
+  if(t==='peak'){
+    return DERIV.peakSecs.has(n.sec.toFixed(2));
+  }
+  if(t==='valley'){
+    return DERIV.valleySecs.has(n.sec.toFixed(2));
+  }
+  if(t==='fast_climb'){
+    const v=DERIV.velAt[n.sec.toFixed(2)]||0;
+    return v>=cond.speedThresh*0.5;
+  }
+  return false;
+}
+// 履歴更新
+function updateHist(n, polyAtOnset){
+  if(polyAtOnset===1){ HIST.soloCount++; } else { HIST.soloCount=0; }
+  HIST.lastMidi=n.midi;
+}
+// その時刻のオンセット同時発音数を数える
+function polyAt(sec){
+  let c=0; for(const n of APP.notes){ if(Math.abs(n.sec-sec)<0.03) c++; if(n.sec>sec+0.1)break; }
+  return c;
+}
+// そのオンセットで最高音(=旋律)か判定
+function isTopVoice(n){
+  let top=-1;
+  for(const m of APP.notes){ if(Math.abs(m.sec-n.sec)<0.03 && m.midi>top) top=m.midi; if(m.sec>n.sec+0.1)break; }
+  return n.midi>=top;
+}
+
+// 自分で指定したST外の音(ST数値配列)を、磁場根から実音高で返す
+function customOuterNotes(n){
+  if(!COND.customOuter.length) return [];
+  const root=fieldAt(n.sec);
+  const baseOct=Math.floor((n.midi-root)/12)-1;
+  const out=[];
+  for(const st of COND.customOuter){
+    let m=root+baseOct*12+st;
+    while(m>n.midi-2) m-=12; // 旋律の下に
+    if(Math.abs(m-n.midi)===1) continue;
+    if(out.some(o=>Math.abs(o-m)===1)) continue;
+    if(m>=28&&m<=96) out.push(m);
+  }
+  return out;
+}
+
+
+// ═══ リズム外部演算エンジン(比率を壊さない外部変換)═══
+// 設計: リズムは芸術領域。×÷/Swing/Invert の外部演算だけ
+const RHY={ scale:1, swing:0, invert:false };
+// 変換後の再生スケジュールを作る(元のsecは保持=磁場判定用)
+function buildSchedule(){
+  if(!APP.notes||!APP.notes.length||!APP.skeleton){ APP.sched=[]; return; }
+  const T0=APP.skeleton.T0, notes=APP.notes;
+  let rel=notes.map(n=>n.sec-T0);   // 相対オンセット
+  let durs=notes.map(n=>n.dur);
+  // ── Invert: 音と音の間隔(IOI)を逆順に(ピッチ順は保つ)──
+  if(RHY.invert && rel.length>1){
+    const gaps=[]; for(let i=1;i<rel.length;i++) gaps.push(rel[i]-rel[i-1]);
+    gaps.reverse();
+    const nr=[0]; for(let i=0;i<gaps.length;i++) nr.push(nr[i]+gaps[i]);
+    rel=nr;
+  }
+  // ── Swing: 連続する間隔を長短交互(1+s)(1-s)。グリッド不要 ──
+  if(RHY.swing>0 && rel.length>1){
+    const s=RHY.swing;
+    const gaps=[]; for(let i=1;i<rel.length;i++) gaps.push(rel[i]-rel[i-1]);
+    for(let i=0;i<gaps.length;i++) gaps[i]*=(i%2===0)?(1+s):(1-s);
+    const nr=[rel[0]]; for(let i=0;i<gaps.length;i++) nr.push(nr[i]+gaps[i]);
+    rel=nr;
+  }
+  // ── Scale ×k: 全時間を×k。比率を完全保存 ──
+  if(RHY.scale!==1){ rel=rel.map(o=>o*RHY.scale); durs=durs.map(d=>d*RHY.scale); }
+  APP.sched=rel.map((o,i)=>({ sec:notes[i].sec, playSec:T0+o, midi:notes[i].midi, vel:notes[i].vel, dur:durs[i] }));
+  APP.sched.sort((a,b)=>a.playSec-b.playSec);
+  APP.playT0=T0;
+  APP.playT1=APP.sched.length?APP.sched[APP.sched.length-1].playSec:T0;
+}
+
+// ═══ 磁場進行マップ(解剖台で抽出した実データ)═══
+let FIELD_MAP=[
+  [364,6],[416,2],[429,1],[455,5],[468,4],[507,3],[520,4],[533,3],
+  [546,4],[559,3],[572,2],[611,4],[624,3],[676,8],[793,5],[806,8],
+  [832,9],[845,8],[858,5],[884,5]
+]; // [sec, root_pc] — 初期値はKöln(.mid読込で実際の曲から再推定される)
+let DETECTED_ROOT=6;  // 検出された主磁場(最頻の低音pc)。初期F#は読込で上書き
+// ★読み込んだ曲の低音から磁場の旅を推定(Köln固定マップを置き換える)
+function estimateFieldMap(notes, win=5, lowMax=null){
+  if(!notes||!notes.length) return;
+  // 低音域の閾値を曲に適応: 最低音から約1.5オクターブ上まで(固定F#前提を廃止)
+  if(lowMax===null){
+    const lowest=Math.min(...notes.map(n=>n.midi));
+    lowMax=lowest+18;
+  }
+  const tmin=Math.min(...notes.map(n=>n.sec)), tmax=Math.max(...notes.map(n=>n.sec+(n.dur||0)));
+  const raw=[]; let t=tmin;
+  while(t<tmax){
+    const w={}; let any=false;
+    notes.forEach(n=>{ if(t<=n.sec && n.sec<t+win && n.midi<=lowMax){ const pc=((n.midi%12)+12)%12; w[pc]=(w[pc]||0)+(n.dur||0.2); any=true; } });
+    if(any){ let pc=0,mx=0; for(const k in w){ if(w[k]>mx){mx=w[k];pc=+k;} } raw.push([+t.toFixed(2),pc]); }
+    t+=win/2;
+  }
+  if(!raw.length) return;
+  // 連続する同pcを畳む
+  const map=[]; let last=null;
+  raw.forEach(([tt,pc])=>{ if(pc!==last){ map.push([tt,pc]); last=pc; } });
+  FIELD_MAP=map;
+  // 主磁場 = 全体で最も低音時間が長いpc
+  const tot={}; notes.forEach(n=>{ if(n.midi<=lowMax){ const pc=((n.midi%12)+12)%12; tot[pc]=(tot[pc]||0)+(n.dur||0.2); } });
+  let bp=0,bm=0; for(const k in tot){ if(tot[k]>bm){bm=tot[k];bp=+k;} }
+  DETECTED_ROOT=bp;
+  // 表示更新
+  const el=g('detectInfo'); if(el){ const NNx=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']; el.textContent=NNx[((bp+FIELDADJ.offset)%12+12)%12]; }
+}
+const FIELDADJ={ offset:0 }; // 磁場根の手動補正(半音)
+function fieldAt(sec){
+  let r=DETECTED_ROOT;  // 既定=検出された主磁場(旧F#固定を廃止)
+  for(const [t,pc] of FIELD_MAP){ if(sec>=t) r=pc; else break; }
+  return ((r+FIELDADJ.offset)%12+12)%12;
+}
+// ═══ ST変換エンジン ═══
+const XF={ mode:'none', // none/transpose/invert/role
+  transposeN:0, roleTable:{0:0,1:2,5:4,8:7}, roleMode:'mono' }; // mono(単調)/fold(折りたたみ)
+// ═══ 役割写像プリセット(音楽理論的に意味のある21種)═══
+const ROLE_PRESETS=[
+  ['── 明暗(長短)──', null],
+  ['短調→長調', '3,8 → 4,9'],
+  ['長調→短調', '4,9 → 3,8'],
+  ['ドリアン→イオニアン', '3 → 4'],
+  ['エオリアン→ドリアン', '8 → 9'],
+  ['── モード変換 ──', null],
+  ['→リディアン(♯11)', '5 → 6'],
+  ['→ミクソリディアン(♭7)', '11 → 10'],
+  ['→フリジアン(♭9)', '2 → 1'],
+  ['→ロクリアン(♭5)', '2,7 → 1,6'],
+  ['── 緊張⇄協和 ──', null],
+  ['緊張を協和へ(例)', '1,5,8 → 2,4,7'],
+  ['協和を緊張へ', '2,4,9 → 1,5,8'],
+  ['全テンション解決', '1,6,8,11 → 0,7,7,0'],
+  ['── 倍音・色彩 ──', null],
+  ['リディアン♯11強調', '5,11 → 6,11'],
+  ['ペンタトニック化', '1,3,6,8,11 → 0,2,7,9,0'],
+  ['ブルース化', '2,4,9 → 3,3,10'],
+  ['── 反転(役割)──', null],
+  ['3度の反転', '3,4 → 4,3'],
+  ['上部構造の反転', '8,9,10,11 → 9,8,11,10'],
+  ['── スケール畳み ──', null],
+  ['全音→ドリアン', '1,2,3,4,5,6,7,8,9,10,11 → 0,2,3,3,5,7,7,9,9,10,10'],
+  ['全音→メジャー', '1,2,3,4,5,6,7,8,9,10,11 → 0,2,4,4,5,5,7,7,9,11,11'],
+  ['全音→ペンタ', '1,2,3,4,5,6,7,8,9,10,11 → 0,2,2,4,4,7,7,7,9,9,0'],
+  ['── 移調 ──', null],
+  ['全体+全音', '0,1,2,3,4,5,6,7,8,9,10,11 → 2,3,4,5,6,7,8,9,10,11,0,1'],
+  ['全体-全音', '0,1,2,3,4,5,6,7,8,9,10,11 → 10,11,0,1,2,3,4,5,6,7,8,9'],
+];
+
+// 役割保存の写像(単調補間 or 折りたたみ)
+function roleMap(st){
+  const tbl=XF.roleTable;
+  if(tbl[st]!==undefined) return ((tbl[st]%12)+12)%12;
+  const keys=Object.keys(tbl).map(Number).sort((a,b)=>a-b);
+  if(!keys.length) return st;
+  if(XF.roleMode==='fold'){
+    // 折りたたみ: 最近傍キー+差分(劇的だが順序崩れあり)
+    let best=keys[0],bd=99;
+    for(const k of keys){ const d=Math.abs(k-st); if(d<bd){bd=d;best=k;} }
+    return ((tbl[best]+(st-best))%12+12)%12;
+  }
+  // 単調補間(既定): アンカー間を線形補間、上昇順を保つ
+  // オクターブ閉じ: src=0を補い、src=12→(最初のdst+12)を仮想アンカーに
+  let pts=keys.map(k=>[k,tbl[k]]);
+  if(pts[0][0]!==0) pts.unshift([0,0]);
+  pts.push([12, pts[0][1]+12]);
+  for(let i=0;i<pts.length-1;i++){
+    const [s0,d0]=pts[i],[s1,d1]=pts[i+1];
+    if(st>=s0&&st<=s1){
+      if(s1===s0) return ((d0%12)+12)%12;
+      const frac=(st-s0)/(s1-s0);
+      return ((Math.round(d0+frac*(d1-d0))%12)+12)%12;
+    }
+  }
+  return st;
+}
+// 各音にST変換を適用し、新しいmidiを返す(オクターブ・声部は保つ)
+function transformNote(n, useTimeField){
+  if(XF.mode==='none') return n.midi;
+  const root = useTimeField ? fieldAt(n.sec) : DETECTED_ROOT;
+  const st = ((n.midi-root)%12+12)%12;
+  const oct = Math.floor((n.midi-root)/12); // 元のオクターブ位置を保持
+  let newSt;
+  if(XF.mode==='transpose'){
+    // (a)移調: ST全体を+n。距離完全保存。これは実質root移動と等価
+    return n.midi + XF.transposeN;
+  } else if(XF.mode==='invert'){
+    // (b)反転: 鏡像 st→(12-st)%12
+    newSt = (12-st)%12;
+  } else if(XF.mode==='role'){
+    newSt = roleMap(st);
+  } else newSt=st;
+  // 新midi = root + オクターブ + 変換後ST(オクターブ配置の骨格を保つ)
+  return root + oct*12 + newSt;
+}
+
+
+// ═══ ST断面分析(学習用・リアルタイム)═══
+const SCALE_DB=[
+  ['Ionian',[0,2,4,5,7,9,11]],['Dorian',[0,2,3,5,7,9,10]],['Phrygian',[0,1,3,5,7,8,10]],
+  ['Lydian',[0,2,4,6,7,9,11]],['Mixolydian',[0,2,4,5,7,9,10]],['Aeolian',[0,2,3,5,7,8,10]],
+  ['Locrian',[0,1,3,5,6,8,10]],['HarmMinor',[0,2,3,5,7,8,11]],['MelMinor',[0,2,3,5,7,9,11]],
+  ['HarmMajor',[0,2,4,5,7,8,11]],['PhrygDom',[0,1,4,5,7,8,10]],['LydDom',[0,2,4,6,7,9,10]],
+  ['Altered',[0,1,3,4,6,8,10]],['WholeTone',[0,2,4,6,8,10]],['Dim(HW)',[0,1,3,4,6,7,9,10]],
+  ['Dim(WH)',[0,2,3,5,6,8,9,11]],['MajPenta',[0,2,4,7,9]],['MinPenta',[0,3,5,7,10]],
+  ['Blues',[0,3,5,6,7,10]],['Chromatic',[0,1,2,3,4,5,6,7,8,9,10,11]],
+];
+function identifyScale(sts){
+  if(!sts||!sts.length) return {list:[], outsideOnly:false};
+  const set=new Set(sts);
+  const matches=SCALE_DB.map(([name,scale])=>{
+    const ss=new Set(scale);
+    const allIn=sts.every(x=>ss.has(x));
+    const used=scale.filter(x=>set.has(x)).length;
+    return {name,scaleLen:scale.length,allIn,used};
+  }).filter(c=>c.allIn && c.name!=='Chromatic')
+    .sort((a,b)=>(a.scaleLen-b.scaleLen)||a.name.localeCompare(b.name));
+  return { list: matches.map(m=>({name:m.name,used:m.used,total:m.scaleLen})), outsideOnly: matches.length===0 };
+}
+// 再生位置の窓(±WINSEC)で、変換後の音のST集合を取り、断面を更新
+const XSEC={ winSec:6 };
+function updateCrossSection(playT){
+  const el=g('xsection'); if(!el) return;
+  const src = (typeof analysisSource==='function') ? analysisSource() : (APP.sched||[]);
+  if(!src.length){ el.innerHTML='<span style="color:var(--mist2)">.mid読込 または Live録音で表示</span>'; return; }
+  const tf=g('useTimeField')?g('useTimeField').checked:true;
+  // playT付近の窓に鳴っている音を集める(変換後のmidi)
+  const win=src.filter(n=>n.playSec>=playT-XSEC.winSec && n.playSec<=playT+0.1);
+  if(!win.length){ el.innerHTML='<span style="color:var(--mist2)">—</span>'; return; }
+  // 窓の代表磁場(playT時点)
+  const repNote=win[win.length-1];
+  const root=fieldAt(repNote.sec);
+  const NN2=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  // 変換後のST集合
+  const sts=[...new Set(win.map(n=>{ const m=transformNote(n,tf); return ((m-root)%12+12)%12; }))].sort((a,b)=>a-b);
+  const id=identifyScale(sts);
+  // 表示
+  const ROLE=['根','♭9','9','♭3','3','11','♯11','5','♭13','13','♭7','7'];
+  let html=`<div style="color:var(--gold);margin-bottom:3px">磁場 <b style="color:var(--top)">${NN2[root]}</b> / 窓内ST: ${sts.length}個</div>`;
+  // STを色付きチップで(支柱/色/半音)
+  html+='<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px">';
+  for(let st=0;st<12;st++){
+    const on=sts.includes(st);
+    const isPillar=(st===0||st===7);
+    const col=on?(isPillar?'var(--top)':'var(--inner)'):'#2a2620';
+    const tc=on?'#0d1b2a':'#555';
+    html+=`<span style="background:${col};color:${tc};padding:1px 3px;border-radius:2px;font-size:.54rem" title="${ROLE[st]}">${st}</span>`;
+  }
+  html+='</div>';
+  // 候補スケール
+  if(id.outsideOnly){
+    html+='<div style="color:var(--outer)">混成/クロマチック(どの旋法にも収まらない)</div>';
+  } else {
+    html+='<div style="color:var(--mist)">候補(タイト順):</div>';
+    id.list.slice(0,4).forEach(sc=>{
+      const tight = sc.used===sc.total;
+      html+=`<div style="color:${tight?'var(--top)':'var(--inner)'}">${NN2[root]} ${sc.name} <span style="color:var(--mist2)">(${sc.used}/${sc.total})${tight?' ✓確定':''}</span></div>`;
+    });
+  }
+  el.innerHTML=html;
+}
+
+// ═══ 状態の保存・復元・Undo/Redo・MIDI書き出し ═══
+const UNDO={ stack:[], ptr:-1, max:50, suppress:false };
+// 現在の全パラメータをオブジェクトに
+function captureState(){
+  return {
+    xf:{mode:XF.mode,transposeN:XF.transposeN,roleTable:{...XF.roleTable},roleMode:XF.roleMode},
+    dim:{mode:DIMX.mode,dims:[...DIMX.dims],voiceLimit:DIMX.voiceLimit},
+    cond:{trigger:COND.trigger,landingST:COND.landingST,leapMin:COND.leapMin,soloRunN:COND.soloRunN,speedThresh:COND.speedThresh,customOuter:[...COND.customOuter]}, cond2:{trigger:COND2.trigger,landingST:COND2.landingST,leapMin:COND2.leapMin,soloRunN:COND2.soloRunN,speedThresh:COND2.speedThresh},
+    rhy:{scale:RHY.scale,swing:RHY.swing,invert:RHY.invert},
+    deriv:{smooth:DERIV.smooth}, field:{offset:FIELDADJ.offset},
+    ui:{ roleTable:g('roleTable')?g('roleTable').value:'', customOuter:g('customOuter')?g('customOuter').value:'' }
+  };
+}
+// オブジェクトから全パラメータを復元しUIに反映
+function restoreState(st){
+  if(!st)return;
+  UNDO.suppress=true;
+  Object.assign(XF,st.xf); XF.roleTable={...st.xf.roleTable};
+  Object.assign(DIMX,st.dim); DIMX.dims=[...st.dim.dims];
+  Object.assign(COND,st.cond); COND.customOuter=[...st.cond.customOuter]; if(st.cond2){Object.assign(COND2,st.cond2); if(g('cond2Trigger')){g('cond2Trigger').value=COND2.trigger; g('cond2Trigger').dispatchEvent(new Event('change'));}}
+  Object.assign(RHY,st.rhy);
+  DERIV.smooth=st.deriv.smooth; if(st.field){FIELDADJ.offset=st.field.offset; if(g('fieldOffsetN'))g('fieldOffsetN').value=st.field.offset; if(g('fieldOffset'))g('fieldOffset').value=st.field.offset;}
+  // UI反映
+  g('xfMode').value=XF.mode; g('transposeN').value=XF.transposeN; g('roleMode').value=XF.roleMode;
+  if(st.ui.roleTable)g('roleTable').value=st.ui.roleTable;
+  g('xfMode').dispatchEvent(new Event('change'));
+  g('dimMode').value=DIMX.mode; g('dimMode').dispatchEvent(new Event('change'));
+  document.querySelectorAll('.dimD').forEach(c=>{ c.checked=DIMX.dims.includes(+c.value); });
+  g('condTrigger').value=COND.trigger; g('condTrigger').dispatchEvent(new Event('change'));
+  if(g('speedThresh'))g('speedThresh').value=COND.speedThresh;
+  if(g('landingST'))g('landingST').value=COND.landingST;
+  if(g('leapMin'))g('leapMin').value=COND.leapMin;
+  if(g('soloRunN'))g('soloRunN').value=COND.soloRunN;
+  if(st.ui.customOuter)g('customOuter').value=st.ui.customOuter;
+  g('rhyScale').value=Math.round(RHY.scale*100); g('rhySwing').value=Math.round(RHY.swing*100); g('rhyInvert').checked=RHY.invert;
+  if(g('smoothN'))g('smoothN').value=DERIV.smooth;
+  // 再計算
+  if(typeof updateMapTable==='function')updateMapTable();
+  if(typeof updateDimInfo==='function')updateDimInfo();
+  if(typeof updateCustomInfo==='function')updateCustomInfo();
+  if(typeof applyRhythm==='function'){ RHY.scale=+g('rhyScale').value/100;RHY.swing=+g('rhySwing').value/100;RHY.invert=g('rhyInvert').checked; }
+  computeContour(); buildSchedule();
+  if(APP.skeleton&&!APP.playing)drawAll(APP.playT0);
+  UNDO.suppress=false;
+}
+// Undo履歴に push
+function pushUndo(){
+  if(UNDO.suppress)return;
+  UNDO.stack=UNDO.stack.slice(0,UNDO.ptr+1);
+  UNDO.stack.push(captureState());
+  if(UNDO.stack.length>UNDO.max)UNDO.stack.shift();
+  UNDO.ptr=UNDO.stack.length-1;
+}
+function doUndo(){ if(UNDO.ptr>0){ UNDO.ptr--; restoreState(UNDO.stack[UNDO.ptr]); } }
+function doRedo(){ if(UNDO.ptr<UNDO.stack.length-1){ UNDO.ptr++; restoreState(UNDO.stack[UNDO.ptr]); } }
+
+// JSON保存/読込
+function saveJSON(){
+  const data=captureState();
+  data._meta={name:'koln_morph_scene',saved:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='scene_'+Date.now()+'.json'; a.click();
+}
+function loadJSON(file){
+  const r=new FileReader();
+  r.onload=e=>{ try{ const d=JSON.parse(e.target.result); restoreState(d); pushUndo(); }catch(err){ alert('読込失敗: '+err.message); } };
+  r.readAsText(file);
+}
+
+// ═══ MIDI書き出し(変換後のスケジュールを.midに)═══
+function exportMIDI(){
+  const src = (typeof analysisSource==='function') ? analysisSource() : (APP.sched||[]);
+  if(!src.length){ alert('先に.midを読み込むか、Live録音してください'); return; }
+  const tf=g('useTimeField')?g('useTimeField').checked:true;
+  const PPQ=480, tempo=500000; // 120bpm基準(secベースで書く)
+  // 変換後の各音を(tick, ch, midi, vel, durTick)に
+  const evs=[];
+  const secToTick=sec=>Math.round((sec)/(tempo/1e6)*PPQ);
+  const T0ref = src.length?src[0].playSec:0;
+  for(const n of src){
+    const v=voiceOf(n,fieldAt(n.sec));
+    const ch=[+g('ch1').value,+g('ch2').value,+g('ch3').value,+g('ch4').value][v-1]-1;
+    let midi=transformNote(n,tf); midi=Math.max(0,Math.min(127,midi));
+    const t0=secToTick(n.playSec-T0ref), t1=secToTick(n.playSec-T0ref+n.dur);
+    evs.push({t:t0,type:0x90,ch,midi,vel:Math.max(1,Math.min(127,n.vel))});
+    evs.push({t:t1,type:0x80,ch,midi,vel:0});
+    // 次元音・ST外音も書き出し(条件発火を考慮)
+    if(isTopVoice(n)){
+      const poly=polyAt(n.sec);
+      let extras=[];
+      if(DIMX.mode!=='off' && condFires(n,poly,COND)) extras=extras.concat(dimensionNotes(n));
+      if(COND.customOuter && COND.customOuter.length && condFires(n,poly,COND2)) extras=extras.concat(customOuterNotes(n));
+      const ch2=+g('ch2').value-1;
+      extras.forEach(dm=>{ evs.push({t:t0,type:0x90,ch:ch2,midi:dm,vel:Math.round(n.vel*0.5)}); evs.push({t:t1,type:0x80,ch:ch2,midi:dm,vel:0}); });
+    }
+  }
+  evs.sort((a,b)=>a.t-b.t||a.type-b.type);
+  // SMF生成
+  function vlq(n){ let b=[n&0x7f]; n>>=7; while(n){ b.unshift((n&0x7f)|0x80); n>>=7; } return b; }
+  const track=[];
+  track.push(0,0xff,0x51,0x03,(tempo>>16)&0xff,(tempo>>8)&0xff,tempo&0xff);
+  let last=0;
+  for(const e of evs){ const dt=e.t-last; last=e.t; track.push(...vlq(dt),e.type|e.ch,e.midi,e.vel); }
+  track.push(0,0xff,0x2f,0x00);
+  const trkLen=track.length;
+  const header=[0x4d,0x54,0x68,0x64,0,0,0,6,0,0,0,1,(PPQ>>8)&0xff,PPQ&0xff];
+  const trkHeader=[0x4d,0x54,0x72,0x6b,(trkLen>>24)&0xff,(trkLen>>16)&0xff,(trkLen>>8)&0xff,trkLen&0xff];
+  const bytes=new Uint8Array([...header,...trkHeader,...track]);
+  const blob=new Blob([bytes],{type:'audio/midi'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='morph_'+Date.now()+'.mid'; a.click();
+}
+
+const APP={notes:[],skeleton:null,midiOut:null,playing:false,startWall:0,idx:0,timer:null,drawTimer:null};
+
+function parseMidiArrayBuffer(buf){
+  const dv=new DataView(buf);
+  let p=0;
+  const u32=()=>{const v=dv.getUint32(p);p+=4;return v;};
+  const u16=()=>{const v=dv.getUint16(p);p+=2;return v;};
+  const u8 =()=>{const v=dv.getUint8(p);p+=1;return v;};
+  const str=(n)=>{let s='';for(let i=0;i<n;i++)s+=String.fromCharCode(u8());return s;};
+  const vlq=()=>{let v=0,c;do{c=u8();v=(v<<7)|(c&0x7f);}while(c&0x80);return v;};
+
+  if(str(4)!=='MThd') throw new Error('Not a MIDI file');
+  u32(); // header length
+  u16(); // format
+  const ntracks=u16();
+  const div=u16(); // ticks per quarter
+
+  // collect tempo map and note events (in ticks)
+  let tempos=[{tick:0, usPerQuarter:500000}]; // default 120bpm
+  const notes=[]; // {tick, dur(ticks), midi, vel}
+
+  for(let t=0;t<ntracks;t++){
+    if(str(4)!=='MTrk'){ break; }
+    const len=u32(); const end=p+len;
+    let tick=0, running=0;
+    const on={}; // key=midi -> {tick,vel}
+    while(p<end){
+      tick+=vlq();
+      let status=dv.getUint8(p);
+      if(status&0x80){ p++; running=status; }
+      else { status=running; }
+      const type=status&0xf0;
+      if(status===0xff){ // meta
+        const meta=u8(); const mlen=vlq();
+        if(meta===0x51){ // tempo
+          const us=(u8()<<16)|(u8()<<8)|u8();
+          tempos.push({tick, usPerQuarter:us});
+        } else { p+=mlen; }
+      } else if(status===0xf0||status===0xf7){ const sl=vlq(); p+=sl; }
+      else if(type===0x90){ // note on
+        const midi=u8(), vel=u8();
+        if(vel>0){ on[midi]=on[midi]||[]; on[midi].push({tick,vel}); }
+        else { closeNote(on,notes,midi,tick); }
+      } else if(type===0x80){ const midi=u8(); u8(); closeNote(on,notes,midi,tick); }
+      else if(type===0xc0||type===0xd0){ u8(); }
+      else if(type===0xa0||type===0xb0||type===0xe0){ u8();u8(); }
+      else { /* unknown, skip a byte to avoid infinite loop */ }
+    }
+    // close any hanging notes
+    for(const m in on){ while(on[m]&&on[m].length) closeNote(on,notes,parseInt(m),tick); }
+    p=end;
+  }
+  function closeNote(on,notes,midi,tick){
+    if(on[midi]&&on[midi].length){ const s=on[midi].shift(); notes.push({tick:s.tick,dur:Math.max(1,tick-s.tick),midi,vel:s.vel}); }
+  }
+
+  // convert ticks → seconds using tempo map
+  tempos.sort((a,b)=>a.tick-b.tick);
+  function tickToSec(tk){
+    let sec=0, last=0, us=500000;
+    for(const tp of tempos){
+      if(tp.tick>tk) break;
+      sec += (tp.tick-last)/div*(us/1e6);
+      last=tp.tick; us=tp.usPerQuarter;
+    }
+    sec += (tk-last)/div*(us/1e6);
+    return sec;
+  }
+  function tickToBeats(tk){ return tk/div; }
+
+  const out=notes.map(n=>{
+    const sec=tickToSec(n.tick);
+    const durSec=tickToSec(n.tick+n.dur)-sec;  // durを秒で
+    return {sec, midi:n.midi, dur:Math.max(0.05,durSec), vel:n.vel, hand:n.midi<60?'L':'R'};
+  }).sort((a,b)=>a.sec-b.sec);
+  return out;
+}
+
+// 骨格抽出
+function extractSkeleton(notes){
+  if(!notes.length) return null;
+  const T0=notes[0].sec,T1=notes.at(-1).sec;
+  const lowPcs={};
+  notes.filter(n=>n.midi<55).forEach(n=>{lowPcs[n.midi%12]=(lowPcs[n.midi%12]||0)+n.dur;});
+  const field=+(Object.entries(lowPcs).sort((a,b)=>b[1]-a[1])[0]?.[0]??6);
+  const durs=notes.map(n=>n.dur);const avgDur=durs.reduce((a,b)=>a+b,0)/durs.length;
+  const avgVel=notes.reduce((a,n)=>a+n.vel,0)/notes.length;
+  const W=(T1-T0)/8;const stCounts=[];
+  for(let w=0;w<8;w++){const seg=notes.filter(n=>n.sec>=T0+w*W&&n.sec<T0+(w+1)*W);
+    stCounts.push(new Set(seg.map(n=>((n.midi-field)%12+12)%12)).size);}
+  const onsets={};notes.forEach(n=>{const k=n.sec.toFixed(2);onsets[k]=(onsets[k]||0)+1;});
+  const maxPoly=Math.max(...Object.values(onsets));
+  const outer=notes.filter(n=>!SCALE_KOLN.includes(((n.midi-field)%12+12)%12)).length;
+  return{T0,T1,dur:T1-T0,count:notes.length,field,avgDur,avgVel,stCounts,maxPoly,outerCount:outer,
+    pitchLo:Math.min(...notes.map(n=>n.midi)),pitchHi:Math.max(...notes.map(n=>n.midi))};
+}
+function voiceOf(n,field){const st=((n.midi-field)%12+12)%12;
+  if(!SCALE_KOLN.includes(st))return 4;if(n.midi<55)return 3;if(n.midi>67)return 1;return 2;}
+function showSkeleton(sk){
+  if(!sk){g('skeleton').textContent='抽出失敗';return;}
+  const trend=sk.stCounts[7]>sk.stCounts[0]?'少→多 ↗':'横ばい';
+  g('skeleton').innerHTML=`<b>音数</b> ${sk.count} / <b>長さ</b> ${sk.dur.toFixed(1)}秒<br>
+    <b>磁場</b> ${NN[sk.field]} / <b>音域</b> ${nm(sk.pitchLo)}〜${nm(sk.pitchHi)}<br>
+    <b>平均音価</b> ${sk.avgDur.toFixed(2)}秒 / <b>平均vel</b> ${sk.avgVel.toFixed(0)}<br>
+    <b>最大同時</b> ${sk.maxPoly}音 / <b>磁場外ST</b> ${sk.outerCount}個<br>
+    <b>ST数推移</b> ${sk.stCounts.join('-')} ${trend}`;
+}
+// 地形
+const TER={ctx:null,W:0,H:0};
+function initTer(){const c=g('terrain');if(!c)return;c.width=c.clientWidth;c.height=c.clientHeight;TER.ctx=c.getContext('2d');TER.W=c.width;TER.H=c.height;}
+const VCOL={1:'#d8c48a',2:'#6a8caf',3:'#c77b4a',4:'#b06a8a'};
+function drawAll(playT){
+  const x=TER.ctx;if(!x)return;
+  // データ源: Live録音があればそれ、無ければファイル再生
+  const liveMode = (typeof analysisSource==='function') && LIVE.recorded.length>0;
+  const sched = liveMode ? analysisSource() : APP.sched;
+  const sk = liveMode ? liveSkeleton(sched) : APP.skeleton;
+  if(!sched||!sched.length||!sk)return;
+  const W=TER.W,H=TER.H,p=14;x.clearRect(0,0,W,H);
+  const lo=sk.pitchLo-2,hi=sk.pitchHi+2;
+  const pT0= liveMode?0:APP.playT0, pSpan=(liveMode?(sk.T1||1):(APP.playT1-APP.playT0))||1;
+  if(liveMode && playT===undefined) playT=pT0+pSpan;  // Live: 全体表示
+  const X=t=>p+(t-pT0)/pSpan*(W-p*2),Y=m=>H-p-(m-lo)/(hi-lo||1)*(H-p*2);
+  x.strokeStyle='rgba(176,141,87,0.08)';for(let m=Math.ceil(lo/12)*12;m<=hi;m+=12){x.beginPath();x.moveTo(p,Y(m));x.lineTo(W-p,Y(m));x.stroke();}
+  const tf=g('useTimeField')?g('useTimeField').checked:true;
+  sched.forEach(n=>{const v=voiceOf(n,fieldAt(n.sec));x.fillStyle=VCOL[v];x.globalAlpha=n.playSec<=playT?1:0.22;
+    const dm=transformNote(n,tf);
+    x.fillRect(X(n.playSec),Y(dm)-1.5,Math.max(2,(n.dur/pSpan)*(W-p*2)*0.5),3);});
+  x.globalAlpha=1;
+  if(playT>pT0 && !liveMode){x.strokeStyle='rgba(216,196,138,0.7)';x.lineWidth=1;x.beginPath();x.moveTo(X(playT),p);x.lineTo(X(playT),H-p);x.stroke();}
+}
+function sendNote(n){
+  const v=voiceOf(n,fieldAt(n.sec)); // 時間ごとの磁場で声部判定
+  const ch=[+g('ch1').value,+g('ch2').value,+g('ch3').value,+g('ch4').value][v-1];
+  const useTimeField=g('useTimeField')?g('useTimeField').checked:true;
+  let midi=transformNote(n, useTimeField);
+  midi=Math.max(21,Math.min(108,midi)); // 音域ガード
+  if(APP.midiOut){const vel=Math.max(1,Math.min(127,n.vel));
+    APP.midiOut.send([0x90|(ch-1),midi,vel]);
+    setTimeout(()=>{if(APP.midiOut)APP.midiOut.send([0x80|(ch-1),midi,0]);},Math.max(60,n.dur*1000*0.9));
+    // ═══ 条件発火: 次元音/ST外音を中声部CH2に積む ═══
+    if(isTopVoice(n)){ // 旋律(最高音)の時のみ判定
+      const poly=polyAt(n.sec);
+      const isSolo = poly===1;
+      const ch2=+g('ch2').value;
+      const dvel = Math.round(vel * (isSolo?0.4:0.55));
+      let extras=[];
+      // 次元音: COND(次元用条件)で発火
+      if(DIMX.mode!=='off' && condFires(n, poly, COND)) extras=extras.concat(dimensionNotes(n));
+      // ST外音: COND2(ST外用条件)で発火
+      if(COND.customOuter && COND.customOuter.length && condFires(n, poly, COND2)) extras=extras.concat(customOuterNotes(n));
+      extras.forEach(dm=>{
+        APP.midiOut.send([0x90|(ch2-1),dm,dvel]);
+        setTimeout(()=>{if(APP.midiOut)APP.midiOut.send([0x80|(ch2-1),dm,0]);},Math.max(60,n.dur*1000*0.85));
+      });
+      updateHist(n, poly);
+    }
+  }
+}
+// 音の進行: setTimeout(タブが裏でも止まらない)
+function audioTick(){
+  if(!APP.playing)return;
+  const spd=+g('speed').value/100;
+  const elapsed=(performance.now()-APP.startWall)/1000*spd+APP.playT0;
+  while(APP.idx<APP.sched.length&&APP.sched[APP.idx].playSec<=elapsed){sendNote(APP.sched[APP.idx]);APP.idx++;}
+  if(APP.idx>=APP.sched.length){APP.playing=false;g('play').textContent='▶ そのまま再生';allNotesOff();return;}
+  APP.timer=setTimeout(audioTick,15);
+}
+// 描画: requestAnimationFrame(見えてる時だけでいい)
+function drawTick(){
+  if(!APP.playing)return;
+  const spd=+g('speed').value/100;
+  const elapsed=(performance.now()-APP.startWall)/1000*spd+APP.playT0;
+  drawAll(elapsed);
+  g('tLabel').textContent=elapsed.toFixed(1)+'s';g('fLabel').textContent=NN[APP.skeleton.field];
+  g('nLabel').textContent=APP.idx+'/'+APP.notes.length;
+  if(typeof updateCrossSection==='function') updateCrossSection(elapsed);
+  g('pLabel').textContent=Math.round((elapsed-APP.skeleton.T0)/APP.skeleton.dur*100)+'%';
+  APP.drawTimer=requestAnimationFrame(drawTick);
+}
+function playLoop(){ audioTick(); drawTick(); }
+// パニック: 全chの全ノートをオフ(鳴りっぱなし防止)
+function allNotesOff(){
+  if(!APP.midiOut)return;
+  for(let ch=0;ch<16;ch++){ APP.midiOut.send([0xb0|ch,0x7b,0]); APP.midiOut.send([0xb0|ch,0x78,0]); }
+}
+// ファイル読込
+function loadArrayBuffer(ab,name){
+  try{
+    APP.notes=parseMidiArrayBuffer(ab);
+    if(!APP.notes.length){g('skeleton').textContent='音符が見つかりません';return;}
+    estimateFieldMap(APP.notes);   // ★読み込んだ曲から磁場の旅を推定(Köln固定を置換)
+    APP.skeleton=extractSkeleton(APP.notes);
+    computeContour();
+    buildSchedule();
+    showSkeleton(APP.skeleton);initTer();drawAll(APP.playT0);
+    if(typeof updateCrossSection==='function') updateCrossSection(APP.playT0+XSEC.winSec);
+  }catch(e){g('skeleton').textContent='解析失敗: '+e.message;}
+}
+function handleFile(file){const r=new FileReader();r.onload=e=>loadArrayBuffer(e.target.result,file.name);r.readAsArrayBuffer(file);}
+const drop=g('drop');
+drop.addEventListener('click',()=>g('fileInput').click());
+g('fileInput').addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+
+
+// ST写像表の明示(学習用): 全12STが何に写るか
+const ST_NAMES=['根','♭9','9','♭3','3','11','♯11','5','♭13','13','♭7','7'];
+function updateMapTable(){
+  const el=g('mapTable'); if(!el)return;
+  if(XF.mode==='none'){ el.innerHTML='<span style="color:var(--mist2)">変換なし(本物のST維持)</span>'; return; }
+  let rows='<div style="color:var(--gold);margin-bottom:2px">現ST → 変換後ST</div>';
+  for(let st=0;st<12;st++){
+    // ダミーノート(検出磁場=DETECTED_ROOT, オクターブ中央)でST写像を見る
+    const dummy={sec:364, midi:6+60+st, dur:0.5, vel:64}; // root+5oct+st
+    const m=transformNote(dummy, false); // 単一磁場(検出根)で写像だけ見る
+    const newSt=((m-DETECTED_ROOT)%12+12)%12;
+    const changed = newSt!==st;
+    const col = changed?'var(--top)':'var(--mist2)';
+    rows+=`<div style="color:${col}">ST${String(st).padStart(2)} ${ST_NAMES[st].padEnd(3)} → ST${String(newSt).padStart(2)} ${ST_NAMES[newSt]}</div>`;
+  }
+  el.innerHTML=rows;
+}
+
+
+
+
+// リズム演算UI連動
+function applyRhythm(){
+  RHY.scale=+g('rhyScale').value/100;
+  RHY.swing=+g('rhySwing').value/100;
+  RHY.invert=g('rhyInvert').checked;
+  g('rhyScaleV').textContent=RHY.scale.toFixed(2)+'x';
+  g('rhySwingV').textContent=g('rhySwing').value;
+  buildSchedule();
+  if(APP.skeleton && !APP.playing) drawAll(APP.playT0); // 再生中はdrawTickが描く
+}
+['rhyScale','rhySwing'].forEach(id=>{const e=g(id);if(e)e.addEventListener('input',applyRhythm);});
+g('rhyInvert').addEventListener('change',applyRhythm);
+
+
+// ST外用条件(COND2)の連動
+g('cond2Trigger').addEventListener('change',()=>{
+  COND2.trigger=g('cond2Trigger').value;
+  document.querySelectorAll('.cParam2').forEach(e=>e.style.display='none');
+  const p=g('c2_'+COND2.trigger); if(p)p.style.display='flex';
+});
+['c2speedThresh','c2soloRunN','c2landingST','c2leapMin'].forEach(id=>{
+  const e=g(id); if(e)e.addEventListener('input',()=>{ COND2[id.replace('c2','').replace(/^./,c=>c.toLowerCase())]=+e.value; });
+});
+
+// 条件発火UI連動
+g('condTrigger').addEventListener('change',()=>{
+  COND.trigger=g('condTrigger').value;
+  document.querySelectorAll('.cParam').forEach(e=>e.style.display='none');
+  const p=g('cp_'+COND.trigger); if(p)p.style.display='flex';
+});
+['speedThresh','soloRunN','landingST','leapMin'].forEach(id=>{
+  const e=g(id); if(e)e.addEventListener('input',()=>{ COND[id]=+e.value; });
+});
+['smoothN','smoothN2'].forEach(id=>{ const e=g(id); if(e)e.addEventListener('input',()=>{ DERIV.smooth=+e.value; computeContour(); if(APP.skeleton&&!APP.playing)drawAll(APP.playT0); }); });
+g('climbThresh') && g('climbThresh').addEventListener('input',()=>{ COND.speedThresh=+g('climbThresh').value; });
+function updateCustomInfo(){
+  const NN2=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  const el=g('customInfo'); if(!el)return;
+  if(!COND.customOuter.length){ el.innerHTML='<span style="color:var(--mist2)">指定なし</span>'; return; }
+  let r='<div style="color:var(--gold)">磁場根から積む音:</div>';
+  COND.customOuter.forEach(st=>{
+    const oct=st>=12?` (+${Math.floor(st/12)}oct)`:'';
+    const names={6:'♯11',8:'♭13',10:'♭7',11:'♮7',14:'9th',17:'11th',21:'13th'};
+    r+=`<div style="color:var(--top)">ST${st} = ${NN2[st%12]}${oct} ${names[st]||''}</div>`;
+  });
+  el.innerHTML=r;
+}
+g('customOuter').addEventListener('input',()=>{
+  COND.customOuter=g('customOuter').value.split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x)&&x>=0&&x<=36);
+  updateCustomInfo();
+});
+
+// 次元UI連動
+function updateDimInfo(){
+  const el=g('dimInfo'); if(!el)return;
+  if(DIMX.mode==='off'){ el.innerHTML='<span style="color:var(--mist2)">次元なし</span>'; return; }
+  const NN2=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  let rows='<div style="color:var(--gold);margin-bottom:2px">積むST(磁場根から):</div>';
+  for(const d of DIMX.dims){
+    const st=DIM_ST[d]; if(st===undefined)continue;
+    const oct=st>=12?` (+${Math.floor(st/12)}oct)`:'';
+    rows+=`<div style="color:var(--top)">${d}th = ST${st} = pc${st%12} ${NN2[st%12]}${oct}</div>`;
+  }
+  el.innerHTML=rows;
+}
+function syncDims(){
+  DIMX.dims=[...document.querySelectorAll('.dimD:checked')].map(c=>+c.value);
+  updateDimInfo(); if(APP.skeleton)drawAll(APP.skeleton.T0);
+}
+g('dimMode').addEventListener('change',()=>{
+  DIMX.mode=g('dimMode').value;
+  g('subLimitRow').style.display = DIMX.mode==='subtract'?'flex':'none';
+  updateDimInfo();
+});
+document.querySelectorAll('.dimD').forEach(c=>c.addEventListener('change',syncDims));
+g('subLimit').addEventListener('input',()=>{ DIMX.voiceLimit=+g('subLimit').value; });
+
+
+// 磁場根オフセット連動
+function updateFieldRoot(){
+  const NN2=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  const base=DETECTED_ROOT; // 検出された主磁場
+  const adj=((base+FIELDADJ.offset)%12+12)%12;
+  const el=g('fieldRootInfo');
+  if(el) el.innerHTML=`検出 ${NN2[((DETECTED_ROOT)%12+12)%12]} → 補正後の基準根: <b style="color:var(--top)">${NN2[adj]}</b>`;
+  computeContour(); buildSchedule();
+  if(APP.skeleton&&!APP.playing)drawAll(APP.playT0);
+  if(typeof updateMapTable==='function')updateMapTable();
+}
+g('fieldOffset').addEventListener('change',()=>{ FIELDADJ.offset=+g('fieldOffset').value; g('fieldOffsetN').value=FIELDADJ.offset; updateFieldRoot(); });
+g('fieldOffsetN').addEventListener('input',()=>{ FIELDADJ.offset=+g('fieldOffsetN').value; updateFieldRoot(); });
+
+// ST変換UI連動
+g('xfMode').addEventListener('change',()=>{
+  XF.mode=g('xfMode').value;
+  g('transposeRow').style.display = XF.mode==='transpose'?'flex':'none';
+  g('rolePresetRow').style.display = XF.mode==='role'?'flex':'none';
+  g('roleRow').style.display = XF.mode==='role'?'flex':'none';
+  g('roleModeRow').style.display = XF.mode==='role'?'flex':'none';
+  updateMapTable();
+  if(APP.skeleton)drawAll(APP.skeleton.T0);
+});
+g('transposeN').addEventListener('input',()=>{ XF.transposeN=+g('transposeN').value; updateMapTable(); if(APP.skeleton&&!APP.playing)drawAll(APP.playT0); });
+
+// 役割プリセット初期化
+(function initRolePresets(){
+  const sel=g('rolePreset'); if(!sel)return;
+  ROLE_PRESETS.forEach((p,i)=>{
+    const o=document.createElement('option');
+    if(p[1]===null){ o.disabled=true; o.textContent=p[0]; o.style.color='#888'; }
+    else { o.value=i; o.textContent=p[0]; }
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change',()=>{
+    const p=ROLE_PRESETS[+sel.value];
+    if(p&&p[1]){
+      g('roleTable').value=p[1];
+      g('roleTable').dispatchEvent(new Event('input')); // 既存パーサで反映
+    }
+  });
+})();
+
+g('roleMode').addEventListener('change',()=>{ XF.roleMode=g('roleMode').value; updateMapTable(); if(APP.skeleton&&!APP.playing)drawAll(APP.playT0); });
+g('roleTable').addEventListener('input',()=>{
+  // "0,1,5,8 → 0,2,4,7" をパース
+  const m=g('roleTable').value.split(/[→=]/);
+  if(m.length===2){
+    const from=m[0].split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+    const to=m[1].split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+    if(from.length===to.length&&from.length){
+      const tbl={}; from.forEach((f,i)=>tbl[f]=to[i]); XF.roleTable=tbl;
+      updateMapTable(); if(APP.skeleton)drawAll(APP.skeleton.T0);
+    }
+  }
+});
+
+g('speed').addEventListener('input',()=>g('speedV').textContent=g('speed').value+'%');
+g('xWin').addEventListener('input',()=>{ XSEC.winSec=+g('xWin').value; g('xWinV').textContent=g('xWin').value+'s'; });
+g('play').addEventListener('click',()=>{
+  if(APP.playing){APP.playing=false;clearTimeout(APP.timer);cancelAnimationFrame(APP.drawTimer);allNotesOff();g('play').textContent='▶ そのまま再生';return;}
+  if(!APP.notes.length){g('skeleton').textContent='先に.midを読み込んでください';return;}
+  APP.playing=true;buildSchedule();APP.idx=0;APP.startWall=performance.now();g('play').textContent='■ 停止';playLoop();
+});
+if(navigator.requestMIDIAccess){navigator.requestMIDIAccess().then(a=>{
+  const s=g('port');[...a.outputs.values()].forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.name;s.appendChild(op);});
+  s.addEventListener('change',()=>APP.midiOut=a.outputs.get(s.value));
+  if(s.options.length)APP.midiOut=a.outputs.get(s.options[0].value);
+  // ═══ リアルタイムMIDI入力(Bus2) → 変容エンジン ═══
+  const si=g('portIn');
+  function bindInput(id){
+    [...a.inputs.values()].forEach(inp=>inp.onmidimessage=null);  // 全解除
+    const inp=a.inputs.get(id); if(inp) inp.onmidimessage=onLiveMidi;
+  }
+  [...a.inputs.values()].forEach(inp=>{const op=document.createElement('option');op.value=inp.id;op.textContent=inp.name;si.appendChild(op);});
+  si.addEventListener('change',()=>bindInput(si.value));
+  // Bus2を自動選択(名前にBus 2/IAC等を含むものを優先)
+  if(si.options.length){
+    let pick=si.options[0].value;
+    for(const inp of a.inputs.values()){ if(/bus\s*2|iac/i.test(inp.name)){ pick=inp.id; break; } }
+    si.value=pick; bindInput(pick);
+  }
+  a.onstatechange=()=>{
+    // 入力ポートの抜き差しに追従(名前ベース再バインド)
+    if(si.value && a.inputs.get(si.value)) bindInput(si.value);
+  };
+}).catch(()=>{});}
+
+// Live変容: 入力ノートを「今の磁場」で変容し、声部CHへ即出力
+const LIVE={held:{}, recorded:[], recOpen:{}, recT0:0, recording:false};  // recorded=生入力[{midi,vel,sec,dur}], recOpen=押下中の録音開始
+function liveRecStart(){ LIVE.recorded=[]; LIVE.recOpen={}; LIVE.recT0=performance.now(); LIVE.recording=true; updateLiveRecUI&&updateLiveRecUI(); }
+function liveRecStop(){ 
+  // 開きっぱなしのノートを閉じる
+  const now=(performance.now()-LIVE.recT0)/1000;
+  for(const k in LIVE.recOpen){ const r=LIVE.recOpen[k]; r.dur=Math.max(0.05, now-r.sec); }
+  LIVE.recOpen={}; LIVE.recording=false; updateLiveRecUI&&updateLiveRecUI();
+  if(typeof refreshLiveAnalysis==='function') refreshLiveAnalysis();
+}
+function liveRecClear(){ LIVE.recorded=[]; LIVE.recOpen={}; updateLiveRecUI&&updateLiveRecUI(); if(typeof refreshLiveAnalysis==='function') refreshLiveAnalysis(); }
+// ★Live録音を sched形式 {sec,playSec,midi,vel,dur} に変換(生入力。変容は表示側でtransformNote)
+function liveRecToSched(){
+  if(!LIVE.recorded.length) return [];
+  const T0=LIVE.recorded[0].sec;
+  return LIVE.recorded.map(r=>({ sec:r.sec, playSec:r.sec-T0, midi:r.midi, vel:r.vel, dur:r.dur||0.3 }))
+                      .sort((a,b)=>a.playSec-b.playSec);
+}
+// 分析・描画・書き出しが見るデータ源: Live録音があればそれ、無ければファイル再生
+function analysisSource(){
+  if(LIVE.recorded.length){ return liveRecToSched(); }
+  return APP.sched||[];
+}
+// Live録音から骨格(音域)を即席で作る(描画のY軸用)
+function liveSkeleton(sched){
+  if(!sched.length) return null;
+  const ms=sched.map(n=>n.midi);
+  return { T0:0, pitchLo:Math.min(...ms), pitchHi:Math.max(...ms),
+           T1:sched[sched.length-1].playSec+1 };
+}
+// Live分析の再描画(録音停止時やパラメータ変更時に呼ぶ)
+function refreshLiveAnalysis(){
+  const sched=analysisSource(); if(!sched.length) return;
+  try{ drawAll(); }catch(e){}
+  try{ updateCrossSection(sched[sched.length-1].playSec); }catch(e){}
+}
+function updateLiveRecUI(){
+  const el=g('liveRecInfo'); if(el) el.textContent = (LIVE.recording?'● 録音中 ':'') + LIVE.recorded.length + '音';
+  const btn=g('liveRecBtn'); if(btn){ btn.textContent = LIVE.recording?'■ 録音停止':'● 録音開始'; }
+}
+function liveFieldNow(){
+  const sel=g('liveField'); 
+  if(sel && sel.value!=='auto') return ((parseInt(sel.value)+FIELDADJ.offset)%12+12)%12;
+  // auto: 再生中なら再生位置の磁場、停止中は検出された主磁場
+  const sec = APP.playing ? (performance.now()-APP.startWall)/1000 : 0;
+  return APP.playing ? fieldAt(sec) : ((DETECTED_ROOT+FIELDADJ.offset)%12+12)%12;
+}
+function onLiveMidi(ev){
+  if(!g('liveOn')||!g('liveOn').checked) return;
+  if(!APP.midiOut) return;
+  const [st,d1,d2]=ev.data;
+  const cmd=st&0xf0;
+  if(cmd===0x90 && d2>0){
+    const field=liveFieldNow();
+    const sec = APP.playing ? (performance.now()-APP.startWall)/1000 : 0;
+    // 疑似note(変容関数が要求する形)
+    const n={midi:d1, vel:d2, sec:sec, dur:0.5};
+    const useTimeField = g('useTimeField')?g('useTimeField').checked:true;
+    let outMidi = transformNote(n, useTimeField);
+    outMidi = Math.max(21,Math.min(108,outMidi));
+    const v = voiceOf({midi:outMidi}, field);
+    const ch=[+g('ch1').value,+g('ch2').value,+g('ch3').value,+g('ch4').value][v-1];
+    APP.midiOut.send([0x90|(ch-1), outMidi, d2]);
+    LIVE.held[d1]={outMidi, ch};
+    // ★録音: 生入力(変容前)を時刻付きで記録。書き出し時に«今の設定»で変容するため。
+    if(LIVE.recording){
+      const rt=(performance.now()-LIVE.recT0)/1000;
+      const rec={midi:d1, vel:d2, sec:rt, dur:0.5};  // durは仮、note offで確定
+      LIVE.recorded.push(rec); LIVE.recOpen[d1]=rec;
+      updateLiveRecUI();
+    }
+    // ═══ 次元音/ST外音を即興付加(旋律=最高音的に毎入力で判定) ═══
+    const poly = Object.keys(LIVE.held).length;
+    const ch2=+g('ch2').value;
+    const dvel=Math.round(d2*(poly<=1?0.4:0.55));
+    let extras=[];
+    if(typeof DIMX!=='undefined' && DIMX.mode!=='off' && condFires(n, poly, COND)) extras=extras.concat(dimensionNotes(n));
+    if(COND.customOuter && COND.customOuter.length && condFires(n, poly, COND2)) extras=extras.concat(customOuterNotes(n));
+    extras.forEach(dm=>{ dm=Math.max(21,Math.min(108,dm));
+      APP.midiOut.send([0x90|(ch2-1),dm,dvel]);
+      if(!LIVE.held['x'+dm]) LIVE.held['x'+dm]={outMidi:dm,ch:ch2,extra:true};
+    });
+  } else if(cmd===0x80 || (cmd===0x90 && d2===0)){
+    const h=LIVE.held[d1];
+    if(h){ APP.midiOut.send([0x80|(h.ch-1), h.outMidi, 0]); delete LIVE.held[d1]; }
+    // ★録音: note offで長さ確定
+    if(LIVE.recording && LIVE.recOpen[d1]){
+      const rt=(performance.now()-LIVE.recT0)/1000;
+      LIVE.recOpen[d1].dur=Math.max(0.05, rt-LIVE.recOpen[d1].sec);
+      delete LIVE.recOpen[d1];
+    }
+    // extra音も全部閉じる(簡易: 残ったextraをここで掃除)
+    for(const k in LIVE.held){ if(LIVE.held[k].extra){ const e=LIVE.held[k]; APP.midiOut.send([0x80|(e.ch-1),e.outMidi,0]); delete LIVE.held[k]; } }
+  }
+}
+window.addEventListener('beforeunload',allNotesOff);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden && APP.playing) allNotesOff(); }); // 裏に回ったら一旦パニック(鳴りっぱなし防止)、音の進行はsetTimeoutで継続
+
+// 保存・履歴ボタン連動
+g('btnUndo').addEventListener('click',doUndo);
+g('btnRedo').addEventListener('click',doRedo);
+g('btnSaveJSON').addEventListener('click',saveJSON);
+g('btnLoadJSON').addEventListener('click',()=>g('jsonInput').click());
+g('jsonInput').addEventListener('change',e=>{ if(e.target.files[0])loadJSON(e.target.files[0]); });
+g('btnExportMIDI').addEventListener('click',exportMIDI);
+// キーボード Ctrl+Z / Ctrl+Shift+Z
+window.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){ e.preventDefault(); doUndo(); }
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){ e.preventDefault(); doRedo(); }
+});
+// 主要パラメータ変更でUndo履歴に記録(変更後)
+['xfMode','transposeN','roleTable','roleMode','rolePreset','dimMode','condTrigger','customOuter','rhyScale','rhySwing','rhyInvert','smoothN'].forEach(id=>{
+  const e=g(id); if(e)e.addEventListener('change',()=>setTimeout(pushUndo,10));
+});
+document.querySelectorAll('.dimD').forEach(c=>c.addEventListener('change',()=>setTimeout(pushUndo,10)));
+// 初期状態を記録
+setTimeout(pushUndo,300);
+
+window.addEventListener('resize',()=>{initTer();if(APP.skeleton)drawAll(APP.skeleton.T0);});
+
+// ═══ シーク: 地形クリックで再生位置を動かす ═══
+function seekTo(playSec){
+  if(!APP.sched||!APP.sched.length)return;
+  playSec=Math.max(APP.playT0, Math.min(APP.playT1, playSec));
+  let i=0; while(i<APP.sched.length && APP.sched[i].playSec<playSec) i++;
+  APP.idx=i;
+  const spd=+g('speed').value/100;
+  APP.startWall = performance.now() - (playSec-APP.playT0)/spd*1000;
+  allNotesOff();
+  drawAll(playSec);
+  g('tLabel').textContent=playSec.toFixed(1)+'s';
+  g('pLabel').textContent=Math.round((playSec-APP.playT0)/((APP.playT1-APP.playT0)||1)*100)+'%';
+  if(typeof updateCrossSection==='function') updateCrossSection(playSec);
+}
+function canvasXtoSec(clientX){
+  const c=g('terrain'); const rect=c.getBoundingClientRect();
+  const px=(clientX-rect.left)*(c.width/rect.width);
+  const p=14, W=c.width;
+  const frac=(px-p)/(W-p*2);
+  return APP.playT0 + frac*((APP.playT1-APP.playT0)||1);
+}
+(function initSeek(){
+  const c=g('terrain'); if(!c)return;
+  let dragging=false;
+  c.style.cursor='pointer';
+  c.addEventListener('mousedown',e=>{ if(!APP.skeleton)return; dragging=true; seekTo(canvasXtoSec(e.clientX)); });
+  c.addEventListener('mousemove',e=>{ if(dragging&&APP.skeleton) seekTo(canvasXtoSec(e.clientX)); });
+  window.addEventListener('mouseup',()=>dragging=false);
+})();
+
+setTimeout(initTer,100);
+updateMapTable();
+</script>
+</body></html>
