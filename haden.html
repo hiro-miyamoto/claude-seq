@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Charlie Haden — Silence Sequencer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #060508;
+  --s0:    #0c0a10;
+  --s1:    #141018;
+  --s2:    #1c1824;
+  --bd:    #282030;
+  --text:  #c8c0d0;
+  --dim:   #504860;
+  --gold:  #a08840;
+  --ivory: #d8d0b8;
+  --breath:#405848;
+  --tension:#6040a0;
+  --release:#304858;
+  --dead:  #181420;
+  --note:  #c0a860;
+  --space: #303848;
+  --re-c:  #ff6b35;
+  --sh-c:  #4fc3f7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 120%,rgba(96,64,160,.05) 0%,transparent 60%);pointer-events:none;z-index:0;}
+
+header{padding:1rem 1.5rem .7rem;border-bottom:1px solid var(--bd);display:flex;align-items:flex-end;gap:1.5rem;position:relative;z-index:10;}
+.hdr-name{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;letter-spacing:.05em;color:var(--ivory);line-height:1;}
+.hdr-sub{font-size:.48rem;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-top:.2rem;}
+
+/* Space pressure meter */
+.pressure-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;flex-shrink:0;}
+.pressure-label{font-size:.4rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.pressure-outer{width:120px;height:6px;background:var(--s1);border-radius:3px;overflow:hidden;border:1px solid var(--bd);}
+.pressure-fill{height:100%;background:linear-gradient(90deg,var(--release),var(--tension));transition:width .4s;width:0%;}
+
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 150px);z-index:1;position:relative;}
+.left-panel{border-right:1px solid var(--bd);padding:.7rem;display:flex;flex-direction:column;gap:.5rem;overflow-y:auto;}
+.panel{background:var(--s0);border:1px solid var(--bd);border-radius:3px;padding:.55rem .65rem;}
+.panel-title{font-size:.42rem;letter-spacing:.25em;text-transform:uppercase;color:var(--dim);margin-bottom:.42rem;display:flex;align-items:center;gap:.3rem;}
+.panel-title::before{content:'';width:2px;height:9px;background:var(--gold);border-radius:1px;}
+.pr{display:flex;align-items:center;gap:.3rem;margin-bottom:.18rem;}
+.pr label{font-size:.4rem;color:var(--dim);width:56px;flex-shrink:0;}
+.pr-val{font-size:.42rem;width:24px;text-align:right;flex-shrink:0;}
+input[type=range]{height:3px;accent-color:var(--gold);cursor:pointer;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.5rem;padding:.12rem .25rem;border-radius:2px;}
+.btn{padding:.18rem .55rem;border:1px solid var(--bd);border-radius:2px;background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.5rem;cursor:pointer;transition:all .12s;}
+.btn:hover{border-color:var(--gold);color:var(--gold);}
+.btn.gold{border-color:rgba(160,136,64,.5);color:var(--gold);background:rgba(160,136,64,.07);}
+.midi-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:all .3s;}
+.midi-dot.connected{background:var(--breath);box-shadow:0 0 6px var(--breath);}
+
+.main-area{display:flex;flex-direction:column;overflow:hidden;}
+.transport{padding:.45rem .9rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.6rem;background:var(--s0);flex-wrap:wrap;}
+
+/* ── SILENCE GRID — 主体 ── */
+.silence-area{flex:1;padding:.7rem .9rem;overflow-y:auto;}
+
+/* Silence type legend */
+.silence-legend{display:flex;gap:.6rem;margin-bottom:.6rem;flex-wrap:wrap;}
+.sil-chip{display:flex;align-items:center;gap:.25rem;font-size:.4rem;cursor:pointer;padding:.18rem .4rem;border-radius:2px;border:1px solid transparent;transition:all .15s;}
+.sil-chip.active{border-color:currentColor;}
+.sil-dot{width:8px;height:8px;border-radius:50%;}
+
+/* Voice block */
+.voice-block{margin-bottom:1rem;}
+.voice-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;}
+.voice-label{font-size:.44rem;letter-spacing:.18em;text-transform:uppercase;}
+.voice-info{font-size:.4rem;color:var(--dim);margin-left:auto;}
+
+/* THE SILENCE GRID */
+.sil-grid{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+
+.sil-step{
+  flex-shrink:0;width:52px;height:72px;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  padding:.25rem .15rem .2rem;
+  border-radius:3px;cursor:pointer;
+  border:1px solid transparent;
+  transition:all .15s;
+  position:relative;
+  user-select:none;
+}
+.sil-step:hover{border-color:var(--bd);}
+.sil-step.playing{border-color:var(--gold) !important;box-shadow:0 0 8px rgba(160,136,64,.2);}
+
+/* Silence types as background */
+.sil-step.dead    {background:var(--dead);border-color:rgba(24,20,32,.8);}
+.sil-step.breath  {background:rgba(64,88,72,.12);border-color:rgba(64,88,72,.3);}
+.sil-step.tension {background:rgba(96,64,160,.1);border-color:rgba(96,64,160,.25);}
+.sil-step.release {background:rgba(48,72,88,.12);border-color:rgba(48,72,88,.3);}
+.sil-step.note    {background:rgba(192,168,96,.08);border-color:rgba(192,168,96,.3);}
+
+/* Step content */
+.sil-type-label{font-size:.34rem;letter-spacing:.08em;text-transform:uppercase;line-height:1;}
+.sil-note-display{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;line-height:1;color:var(--dim);}
+.sil-note-display.active{color:var(--ivory);}
+.sil-vel-bar{width:36px;height:3px;background:var(--s2);border-radius:1px;overflow:hidden;}
+.sil-vel-fill{height:100%;border-radius:1px;transition:width .15s;}
+.sil-num{font-size:.3rem;color:rgba(80,72,96,.5);}
+
+/* Duration indicator */
+.sil-dur{position:absolute;bottom:4px;right:4px;font-size:.28rem;color:var(--dim);}
+
+/* Note ghost — shows what note would fall here */
+.sil-ghost{position:absolute;top:4px;right:4px;font-size:.3rem;color:rgba(160,136,64,.3);font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+/* Pressure visualization between steps */
+.pressure-track{display:flex;align-items:center;height:8px;gap:0;margin:.15rem 0;}
+.pressure-segment{height:100%;flex:1;border-radius:1px;transition:background .3s;}
+
+/* Engine Dock */
+.engine-dock{border-top:1px solid var(--bd);background:var(--s0);position:sticky;bottom:0;z-index:20;}
+.dock-tabbar{display:flex;align-items:stretch;border-bottom:1px solid var(--bd);overflow-x:auto;scrollbar-width:none;}
+.dock-tab{padding:.26rem .55rem;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.42rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.22rem;transition:all .15s;white-space:nowrap;}
+.dock-tab:hover{color:var(--text);}
+.dock-tab.active{color:var(--text);border-bottom-color:var(--tc,var(--gold));}
+.dock-tdot{width:5px;height:5px;border-radius:50%;opacity:.5;}
+.dock-tab.active .dock-tdot{opacity:1;}
+.dock-minibar{display:flex;align-items:center;gap:.45rem;padding:0 .7rem;margin-left:auto;flex-shrink:0;}
+.mini-lbl{font-size:.35rem;color:var(--dim);}
+.mini-bar{width:28px;height:3px;background:var(--s1);border-radius:2px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:2px;transition:width .2s;width:0%;}
+.dock-panels{max-height:200px;overflow:hidden;transition:max-height .25s cubic-bezier(.4,0,.2,1);}
+.dock-panels.collapsed{max-height:0!important;}
+.dock-panel{display:none;padding:.45rem .7rem .6rem;}
+.dock-panel.active{display:block;}
+.dpg{display:grid;gap:.45rem;}
+.dpg-2{grid-template-columns:1fr 1fr;}
+.dpg-3{grid-template-columns:1fr 1fr 1fr;}
+.dpg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dsub{background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:3px;padding:.42rem .5rem;}
+.dsub-t{font-size:.38rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.3rem;padding-left:.28rem;border-left:2px solid currentColor;}
+.dg-row{display:flex;align-items:center;gap:.28rem;margin-bottom:.18rem;}
+.dg-lbl{font-size:.38rem;color:var(--dim);width:52px;flex-shrink:0;}
+.dg-track{flex:1;height:4px;background:var(--s1);border-radius:2px;overflow:hidden;}
+.dg-fill{height:100%;border-radius:2px;transition:width .15s;width:0%;}
+.dg-val{font-size:.38rem;width:20px;text-align:right;flex-shrink:0;}
+.dg-log{font-size:.38rem;color:var(--dim);line-height:1.8;max-height:64px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="flex:1">
+    <div class="hdr-name">Charlie Haden</div>
+    <div class="hdr-sub">Silence Sequencer · 間を設計する · Space as Primary Voice · Liberation Harmony</div>
+  </div>
+  <div class="pressure-wrap">
+    <span class="pressure-label">空間圧力 Space Pressure</span>
+    <div class="pressure-outer"><div class="pressure-fill" id="pressureFill"></div></div>
+    <span style="font-size:.4rem;color:var(--tension)" id="pressureVal">0%</span>
+  </div>
+</header>
+
+<div class="layout">
+<div class="left-panel">
+
+  <!-- Scale / Root -->
+  <div class="panel">
+    <div class="panel-title">Root / Scale</div>
+    <div class="pr"><label>Root</label>
+      <select id="rootSel" onchange="onRootChange()" style="flex:1">
+        <option value="48">C3</option><option value="49">C#3</option><option value="50">D3</option>
+        <option value="51">D#3</option><option value="52">E3</option><option value="53">F3</option>
+        <option value="54">F#3</option><option value="55" selected>G3</option>
+        <option value="56">G#3</option><option value="57">A3</option>
+        <option value="58">A#3</option><option value="59">B3</option>
+      </select>
+    </div>
+    <div class="pr"><label>Scale</label>
+      <select id="scaleSel" onchange="onRootChange()" style="flex:1">
+        <option value="dorian">Dorian</option>
+        <option value="minor" selected>Natural Minor</option>
+        <option value="major">Major</option>
+        <option value="blues">Blues</option>
+        <option value="wholetone">Whole Tone</option>
+        <option value="pentatonic">Pentatonic</option>
+        <option value="lydian">Lydian</option>
+        <option value="phrygian">Phrygian</option>
+        <option value="liberation">Liberation (Haden)</option>
+      </select>
+    </div>
+    <div class="pr"><label>Register</label>
+      <select id="registerSel" style="flex:1">
+        <option value="-12">Sub (-1 oct)</option>
+        <option value="0" selected>Bass</option>
+        <option value="12">Mid (+1 oct)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Silence design -->
+  <div class="panel">
+    <div class="panel-title">沈黙の設計</div>
+    <div style="font-size:.4rem;color:var(--dim);line-height:1.8;margin-bottom:.35rem">
+      右クリック: 沈黙タイプを変更<br>
+      左クリック: note ↔ silence切り替え
+    </div>
+    <div class="pr"><label>Dead ratio</label><input type="range" id="deadRatio" min="0" max="80" value="45" style="flex:1" oninput="document.getElementById('deadRatioV').textContent=this.value+'%';generateSilence()"><span class="pr-val" id="deadRatioV" style="color:var(--dim)">45%</span></div>
+    <div class="pr"><label>Breath</label><input type="range" id="breathRatio" min="0" max="50" value="20" style="flex:1" oninput="document.getElementById('breathRatioV').textContent=this.value+'%';generateSilence()"><span class="pr-val" id="breathRatioV" style="color:var(--breath)">20%</span></div>
+    <div class="pr"><label>Tension</label><input type="range" id="tensionRatio" min="0" max="40" value="15" style="flex:1" oninput="document.getElementById('tensionRatioV').textContent=this.value+'%';generateSilence()"><span class="pr-val" id="tensionRatioV" style="color:var(--tension)">15%</span></div>
+    <div class="pr"><label>Release</label><input type="range" id="releaseRatio" min="0" max="40" value="10" style="flex:1" oninput="document.getElementById('releaseRatioV').textContent=this.value+'%';generateSilence()"><span class="pr-val" id="releaseRatioV" style="color:var(--release)">10%</span></div>
+  </div>
+
+  <!-- Note gravity -->
+  <div class="panel">
+    <div class="panel-title">音符の重力</div>
+    <div style="font-size:.4rem;color:var(--dim);line-height:1.7;margin-bottom:.3rem">
+      沈黙と沈黙の間に落ちてくる音の選ばれ方
+    </div>
+    <div class="pr"><label>Root pull</label><input type="range" id="rootPull" min="0" max="100" value="60" style="flex:1" oninput="document.getElementById('rootPullV').textContent=this.value"><span class="pr-val" id="rootPullV" style="color:var(--gold)">60</span></div>
+    <div class="pr"><label>Motion</label><input type="range" id="motionAmt" min="0" max="100" value="35" style="flex:1" oninput="document.getElementById('motionAmtV').textContent=this.value"><span class="pr-val" id="motionAmtV" style="color:var(--note)">35</span></div>
+    <div class="pr"><label>Leap</label><input type="range" id="leapAmt" min="0" max="100" value="20" style="flex:1" oninput="document.getElementById('leapAmtV').textContent=this.value"><span class="pr-val" id="leapAmtV" style="color:var(--tension)">20</span></div>
+    <div class="pr"><label>Decay</label>
+      <select id="decayMode" style="flex:1">
+        <option value="long" selected>Long (Haden)</option>
+        <option value="medium">Medium</option>
+        <option value="short">Short</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Space pressure params -->
+  <div class="panel" style="border-color:rgba(96,64,160,.2)">
+    <div class="panel-title" style="color:var(--tension)">空間圧力エンジン</div>
+    <div style="font-size:.4rem;color:var(--dim);line-height:1.7;margin-bottom:.3rem">
+      沈黙が積み重なるほど<br>次の音符への圧力が高まる
+    </div>
+    <div class="pr"><label>Sensitivity</label><input type="range" id="spSens" min="1" max="100" value="55" style="flex:1;accent-color:var(--tension)" oninput="document.getElementById('spSensV').textContent=this.value"><span class="pr-val" id="spSensV" style="color:var(--tension)">55</span></div>
+    <div class="pr"><label>Release</label><input type="range" id="spRelease" min="1" max="100" value="40" style="flex:1;accent-color:var(--release)" oninput="document.getElementById('spReleaseV').textContent=this.value"><span class="pr-val" id="spReleaseV" style="color:var(--release)">40</span></div>
+    <canvas id="pressureCanvas" height="36" style="width:100%;display:block;border-radius:2px;background:rgba(0,0,0,.3);margin-top:.3rem"></canvas>
+  </div>
+
+  <!-- Tempo & MIDI -->
+  <div class="panel">
+    <div class="panel-title">Tempo / MIDI</div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="60" min="20" max="200" style="width:52px;font-size:.54rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.1rem .25px;border-radius:2px">
+      <button class="btn" onclick="tapTempo()" style="font-size:.42rem;padding:.1rem .3rem">TAP</button>
+    </div>
+    <div class="pr"><label>Steps</label>
+      <select id="stepsSel" onchange="onStepsChange()" style="flex:1">
+        <option value="8">8</option><option value="11">11</option><option value="13">13</option>
+        <option value="16" selected>16</option><option value="19">19</option><option value="23">23</option>
+      </select>
+    </div>
+    <div style="margin:.3rem 0 .15rem;padding-top:.25rem;border-top:1px solid var(--bd);font-size:.38rem;color:var(--dim)">MIDI</div>
+    <div class="pr" style="margin-bottom:.25rem">
+      <div class="midi-dot" id="midiDot"></div>
+      <span id="midiStatus" style="font-size:.45rem;color:var(--dim)">Not connected</span>
+    </div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.25rem;font-size:.46rem">⟳ Refresh</button>
+    <div class="pr"><label>Out</label><select id="midiDevSel" onchange="selectMidiOut(this.value)" style="flex:1;font-size:.44rem"></select></div>
+    <div class="pr"><label>Bass Ch</label>
+      <select id="bassCh" style="flex:1;font-size:.44rem">
+        <option value="1" selected>Ch 1</option><option value="2">Ch 2</option><option value="3">Ch 3</option><option value="4">Ch 4</option><option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option><option value="9">Ch 9</option><option value="10">Ch 10</option><option value="11">Ch 11</option><option value="12">Ch 12</option><option value="13">Ch 13</option><option value="14">Ch 14</option><option value="15">Ch 15</option><option value="16">Ch 16</option>
+      </select>
+    </div>
+    <div class="pr"><label>Harmony Ch</label>
+      <select id="harmCh" style="flex:1;font-size:.44rem">
+        <option value="1">Ch 1</option><option value="2" selected>Ch 2</option><option value="3">Ch 3</option><option value="4">Ch 4</option><option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option><option value="9">Ch 9</option><option value="10">Ch 10</option><option value="11">Ch 11</option><option value="12">Ch 12</option><option value="13">Ch 13</option><option value="14">Ch 14</option><option value="15">Ch 15</option><option value="16">Ch 16</option>
+      </select>
+    </div>
+    <div class="pr"><label>Ableton</label><select id="midiClockSel" onchange="selectClockIn(this.value)" style="flex:1;font-size:.44rem"><option value="">— Clock In —</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin-top:.25rem;font-size:.46rem">Slave: OFF</button>
+    <button class="btn gold" onclick="exportMIDI()" style="width:100%;margin-top:.25rem;font-size:.46rem">↓ Export MIDI</button>
+      <button class="btn" onclick="exportCurrentScaleScl()" style="width:100%;margin-top:.22rem;font-size:.46rem;color:var(--breath)">↓ Export SCL (current Scale)</button>
+      <button class="btn" onclick="exportAllScalesScl()" style="width:100%;margin-top:.18rem;font-size:.44rem;color:rgba(64,88,72,.5)">↓ Export All Scales SCL</button>
+  </div>
+
+</div><!-- /left -->
+
+<div class="main-area">
+  <!-- Transport -->
+  <div class="transport">
+    <button class="btn gold" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn" onclick="generateSilence()">⟳ Redesign Silence</button>
+    <button class="btn" onclick="invertSilence()" style="color:var(--tension)">⇄ Invert</button>
+    <button class="btn" id="btnUndo" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnRedo" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="saveStateJSON()" style="color:var(--gold)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--breath)">↑ Load<input type="file" accept=".json" onchange="loadStateJSON(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem">
+      <span style="font-size:.42rem;color:var(--dim)" id="stepDisplay">—</span>
+      <span style="font-size:.44rem;color:var(--note)" id="silTypeDisplay">—</span>
+    </div>
+  </div>
+
+  <div class="silence-area">
+
+    <!-- Legend -->
+    <div class="silence-legend">
+      <div class="sil-chip" id="chip-dead" onclick="setDrawMode('dead')" style="color:var(--dim)">
+        <div class="sil-dot" style="background:var(--dead);border:1px solid var(--dim)"></div>Dead silence
+      </div>
+      <div class="sil-chip active" id="chip-breath" onclick="setDrawMode('breath')" style="color:var(--breath)">
+        <div class="sil-dot" style="background:rgba(64,88,72,.4)"></div>Breath
+      </div>
+      <div class="sil-chip" id="chip-tension" onclick="setDrawMode('tension')" style="color:var(--tension)">
+        <div class="sil-dot" style="background:rgba(96,64,160,.4)"></div>Tension hold
+      </div>
+      <div class="sil-chip" id="chip-release" onclick="setDrawMode('release')" style="color:var(--release)">
+        <div class="sil-dot" style="background:rgba(48,72,88,.4)"></div>Release
+      </div>
+      <div class="sil-chip" id="chip-note" onclick="setDrawMode('note')" style="color:var(--note)">
+        <div class="sil-dot" style="background:rgba(192,168,96,.4)"></div>Note (音符)
+      </div>
+      <span style="font-size:.4rem;color:var(--dim);margin-left:auto">Draw: <span id="drawModeLabel" style="color:var(--breath)">breath</span></span>
+    </div>
+
+    <!-- Bass voice (primary — silence design) -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label" style="color:var(--ivory)">Bass — Primary Space</span>
+        <canvas id="bassSpaceCanvas" width="160" height="24" style="border-radius:2px;background:rgba(0,0,0,.3)"></canvas>
+        <span class="voice-info" id="bassInfo">16 steps</span>
+      </div>
+      <!-- Space pressure track -->
+      <div class="pressure-track" id="bassPressureTrack"></div>
+      <div class="sil-grid" id="bassGrid"></div>
+    </div>
+
+    <!-- Harmony voice (responds to bass space) -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label" style="color:var(--space)">Harmony — Breathes with Bass</span>
+        <span class="voice-info" id="harmInfo">16 steps</span>
+      </div>
+      <div class="sil-grid" id="harmGrid"></div>
+    </div>
+
+  </div><!-- /silence-area -->
+</div><!-- /main-area -->
+</div><!-- /layout -->
+
+<!-- Engine Dock -->
+<div class="engine-dock">
+  <div class="dock-tabbar">
+    <button class="dock-tab active" data-panel="space" style="--tc:var(--tension)"><span class="dock-tdot" style="background:var(--tension)"></span>空間圧力</button>
+    <button class="dock-tab" data-panel="liberation" style="--tc:var(--gold)"><span class="dock-tdot" style="background:var(--gold)"></span>Liberation</button>
+    <button class="dock-tab" data-panel="shadow" style="--tc:var(--sh-c)"><span class="dock-tdot" style="background:var(--sh-c)"></span>Shadow Arc</button>
+    <div class="dock-minibar">
+      <span class="mini-lbl">P</span><div class="mini-bar"><div class="mini-fill" id="miniP" style="background:var(--tension)"></div></div>
+      <span class="mini-lbl">S</span><div class="mini-bar"><div class="mini-fill" id="miniS" style="background:var(--sh-c)"></div></div>
+      <span style="font-size:.38rem;color:var(--dim);padding-left:.3rem" id="miniState">—</span>
+      <button onclick="toggleDock()" id="dockColBtn" style="background:transparent;border:none;color:var(--dim);font-size:.48rem;cursor:pointer">▲</button>
+    </div>
+  </div>
+  <div class="dock-panels" id="dockPanels">
+
+    <!-- Space Pressure -->
+    <div class="dock-panel active" id="dp-space">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--tension)">空間圧力</div>
+          <div class="dg-row"><span class="dg-lbl">圧力</span><div class="dg-track"><div class="dg-fill" id="spF" style="background:var(--tension)"></div></div><span class="dg-val" id="spV" style="color:var(--tension)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">連続沈黙</span><div class="dg-track"><div class="dg-fill" id="conSilF" style="background:var(--release)"></div></div><span class="dg-val" id="conSilV" style="color:var(--release)">0</span></div>
+          <div style="font-size:.38rem;color:var(--dim);margin-top:.2rem">State: <span id="spState" style="font-style:italic">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--tension)">圧力履歴</div>
+          <canvas id="spCanvas" height="44" style="width:100%;display:block;border-radius:2px;background:rgba(0,0,0,.3)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--tension)">空間操作</div>
+          <div style="display:flex;flex-direction:column;gap:.25rem">
+            <button onclick="forceSilence()" style="border:1px solid rgba(96,64,160,.4);color:var(--tension);background:transparent;font-family:inherit;font-size:.44rem;padding:.22rem;border-radius:2px;cursor:pointer">■ Force Silence</button>
+            <button onclick="forceNote()" style="border:1px solid rgba(192,168,96,.4);color:var(--note);background:transparent;font-family:inherit;font-size:.44rem;padding:.22rem;border-radius:2px;cursor:pointer">♩ Force Note</button>
+            <button onclick="expandSilence()" style="border:1px solid rgba(48,72,88,.4);color:var(--release);background:transparent;font-family:inherit;font-size:.44rem;padding:.22rem;border-radius:2px;cursor:pointer">⬌ Expand Silence</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--tension)">ログ</div>
+          <div id="spLog" class="dg-log"><span style="color:rgba(96,64,160,.4)">— 空間待機中 —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liberation Harmony -->
+    <div class="dock-panel" id="dp-liberation">
+      <div class="dpg dpg-3">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--gold)">Liberation Harmony</div>
+          <div style="font-size:.38rem;color:var(--dim);line-height:1.8;margin-bottom:.3rem">
+            Hadenの政治的音楽観:<br>
+            解決しない和声 = 解放されない緊張<br>
+            長い不協和が空間に蓄積する
+          </div>
+          <div class="dg-row"><span class="dg-lbl">Tension hold</span><input type="range" id="libTension" min="0" max="100" value="65" style="flex:1;accent-color:var(--tension)" oninput="document.getElementById('libTensionV').textContent=this.value"><span class="dg-val" id="libTensionV" style="color:var(--tension)">65</span></div>
+          <div class="dg-row"><span class="dg-lbl">Resolve delay</span><input type="range" id="libResolve" min="0" max="100" value="80" style="flex:1" oninput="document.getElementById('libResolveV').textContent=this.value"><span class="dg-val" id="libResolveV" style="color:var(--gold)">80</span></div>
+          <div class="dg-row"><span class="dg-lbl">Dissonance</span><input type="range" id="libDis" min="0" max="100" value="40" style="flex:1" oninput="document.getElementById('libDisV').textContent=this.value"><span class="dg-val" id="libDisV" style="color:var(--release)">40</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--gold)">Presets</div>
+          <div style="display:flex;flex-direction:column;gap:.22rem">
+            <button onclick="setLibPreset('haden')" style="border:1px solid rgba(160,136,64,.4);color:var(--gold);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer;font-style:italic">Haden — Missouri Sky</button>
+            <button onclick="setLibPreset('liberation')" style="border:1px solid rgba(96,64,160,.35);color:var(--tension);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer;font-style:italic">Liberation Orchestra</button>
+            <button onclick="setLibPreset('monk')" style="border:1px solid rgba(64,88,72,.4);color:var(--breath);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer;font-style:italic">Monk-space</button>
+            <button onclick="setLibPreset('spiritual')" style="border:1px solid rgba(48,72,88,.4);color:var(--release);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer;font-style:italic">Spiritual Folk</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--gold)">空間圧力 × Harmony</div>
+          <div style="font-size:.38rem;color:var(--dim);line-height:1.8">
+            圧力が高まると harmonyが<br>
+            不協和方向に引っ張られる<br><br>
+            解放のとき、和声が<br>
+            一瞬だけ解決する
+          </div>
+          <div class="dg-row" style="margin-top:.3rem"><span class="dg-lbl">Coupling</span><input type="range" id="libCoupling" min="0" max="100" value="50" style="flex:1" oninput="document.getElementById('libCouplingV').textContent=this.value"><span class="dg-val" id="libCouplingV" style="color:var(--gold)">50</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shadow Arc -->
+    <div class="dock-panel" id="dp-shadow">
+      <div class="dpg dpg-3">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--sh-c)">Haden 演奏弧</div>
+          <div style="display:flex;gap:2px;height:18px;margin:.25rem 0;border-radius:2px;overflow:hidden">
+            <div id="ss0" onclick="ssJump(0)" style="flex:2;background:rgba(48,72,88,.15);color:var(--release);font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Opening</div>
+            <div id="ss1" onclick="ssJump(1)" style="flex:2;background:rgba(96,64,160,.1);color:var(--tension);font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Build</div>
+            <div id="ss2" onclick="ssJump(2)" style="flex:2;background:rgba(160,136,64,.1);color:var(--gold);font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Peak</div>
+            <div id="ss3" onclick="ssJump(3)" style="flex:2;background:rgba(48,72,88,.12);color:var(--release);font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Return</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.3rem;margin-bottom:.25rem">
+            <span style="font-size:.36rem;color:var(--dim)">現在:</span>
+            <span id="ssLabel" style="font-size:.46rem;color:var(--sh-c);font-style:italic;font-family:'Cormorant Garamond',serif">Opening</span>
+          </div>
+          <canvas id="ssCanvas" height="44" style="width:100%;display:block;border-radius:2px;background:rgba(0,0,0,.3)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--sh-c)">弧の引力</div>
+          <div class="dg-row"><span class="dg-lbl">Pull</span><div class="dg-track"><div class="dg-fill" id="ssPF" style="background:var(--sh-c)"></div></div><span class="dg-val" id="ssPV" style="color:var(--sh-c)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Drift</span><div class="dg-track"><div class="dg-fill" id="ssDF" style="background:#b39ddb"></div></div><span class="dg-val" id="ssDV" style="color:#b39ddb">0</span></div>
+          <div class="dg-row" style="margin-top:.3rem"><span class="dg-lbl">強度</span><input type="range" id="ssStr" min="0" max="100" value="45" style="flex:1" oninput="document.getElementById('ssStrV').textContent=this.value"><span class="dg-val" id="ssStrV" style="color:var(--sh-c)">45</span></div>
+          <div class="dg-row"><span class="dg-lbl">自動進行</span><input type="range" id="ssAdv" min="0" max="100" value="55" style="flex:1" oninput="document.getElementById('ssAdvV').textContent=this.value"><span class="dg-val" id="ssAdvV" style="color:#b39ddb">55</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--sh-c)">Control</div>
+          <div style="display:flex;flex-direction:column;gap:.22rem">
+            <button onclick="ssOverride('pull')" style="border:1px solid rgba(79,195,247,.35);color:var(--sh-c);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer">⬤ Pull</button>
+            <button onclick="ssOverride('resist')" style="border:1px solid rgba(179,157,219,.35);color:#b39ddb;background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer">↗ Resist</button>
+            <button onclick="ssOverride('skip')" style="border:1px solid rgba(160,136,64,.3);color:var(--gold);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer">⟶ Skip</button>
+          </div>
+          <div id="ssLog" style="font-size:.37rem;color:rgba(79,195,247,.7);margin-top:.3rem;line-height:1.8">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+//  SCALES
+// ═══════════════════════════════════════════════════════
+const SCALES = {
+  minor:      [0,2,3,5,7,8,10],
+  dorian:     [0,2,3,5,7,9,10],
+  major:      [0,2,4,5,7,9,11],
+  blues:      [0,3,5,6,7,10],
+  wholetone:  [0,2,4,6,8,10],
+  pentatonic: [0,2,4,7,9],
+  lydian:     [0,2,4,6,7,9,11],
+  phrygian:   [0,1,3,5,7,8,10],
+  liberation: [0,2,3,5,7,8,11], // Haden独自 — minor + raised 7th
+};
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// Silence types
+const SIL_TYPES = ['dead','breath','tension','release','note'];
+const SIL_COLORS = {
+  dead:    'rgba(24,20,32,.4)',
+  breath:  'rgba(64,88,72,.6)',
+  tension: 'rgba(96,64,160,.7)',
+  release: 'rgba(48,72,88,.55)',
+  note:    'rgba(192,168,96,.8)',
+};
+
+// State
+let bassSteps  = []; // {type, midi, vel, dur}
+let harmSteps2 = [];
+let numSteps = 16;
+let bassIdx = 0, harmIdx2 = 0;
+let playing = false, playTimer = null, barCount = 0;
+let drawMode = 'breath';
+let midiOut = null, midiAccess = null;
+
+const SLAVE = {active:false,clockInPort:null,ppqn:24,pulsesPerStep:6,pulseCount:0,bpmSmoothed:60,bpmAlpha:0.15,running:false,lastPulseTime:0};
+
+function getRoot()  { return parseInt(document.getElementById('rootSel').value)||55; }
+function getBpm()   { return parseInt(document.getElementById('bpmIn').value)||60; }
+function getScale() { return SCALES[document.getElementById('scaleSel').value]||SCALES.minor; }
+
+function getScalePool() {
+  const root = getRoot();
+  const scale = getScale();
+  const reg = parseInt(document.getElementById('registerSel').value)||0;
+  const pool = [];
+  for(let o=-1;o<=1;o++) scale.forEach(d=>{ const m=root+d+reg+o*12; if(m>=24&&m<=96) pool.push(m); });
+  return pool.sort((a,b)=>a-b);
+}
+
+// ─────────────────────────────────────────
+//  SILENCE DESIGN — コアの発想
+//  デフォルト全て沈黙、音符が「落ちてくる」
+// ─────────────────────────────────────────
+function generateSilence() {
+  pushUndo();
+  const n = numSteps;
+  const deadR   = parseInt(document.getElementById('deadRatio').value)/100;
+  const breathR = parseInt(document.getElementById('breathRatio').value)/100;
+  const tensR   = parseInt(document.getElementById('tensionRatio').value)/100;
+  const relR    = parseInt(document.getElementById('releaseRatio').value)/100;
+  // note ratio = remainder
+  const noteR = Math.max(0.05, 1 - deadR - breathR - tensR - relR);
+
+  const pool = getScalePool();
+  const root = getRoot();
+  const rootPull = parseInt(document.getElementById('rootPull').value)/100;
+  const motionAmt = parseInt(document.getElementById('motionAmt').value)/100;
+  const leapAmt = parseInt(document.getElementById('leapAmt').value)/100;
+
+  // 沈黙パターンを先に設計
+  const types = [];
+  for(let i=0;i<n;i++) {
+    const r = Math.random();
+    if(r < deadR) types.push('dead');
+    else if(r < deadR+breathR) types.push('breath');
+    else if(r < deadR+breathR+tensR) types.push('tension');
+    else if(r < deadR+breathR+tensR+relR) types.push('release');
+    else types.push('note');
+  }
+
+  // 音符はスケールの引力で選択
+  let lastMidi = root;
+  bassSteps = types.map((type, i) => {
+    let midi = null;
+    if(type === 'note') {
+      // 空間圧力が高いほどルートから離れた音が選ばれる
+      const pressure = SP.pressure;
+      if(Math.random() < rootPull * (1 - pressure * 0.5)) {
+        // ルート付近
+        const rootMidis = pool.filter(m => Math.abs((m%12) - (root%12)) <= 2);
+        midi = rootMidis.length ? rootMidis[Math.floor(Math.random()*rootMidis.length)] : pool[0];
+      } else if(Math.random() < leapAmt) {
+        // 跳躍
+        midi = pool[Math.floor(Math.random()*pool.length)];
+      } else {
+        // 隣接移動
+        const cur = pool.findIndex(m=>m>=lastMidi);
+        const step = Math.random()<motionAmt ? 1 : -1;
+        midi = pool[Math.max(0,Math.min(pool.length-1, cur+step))];
+      }
+      lastMidi = midi;
+    }
+    const decayMode = document.getElementById('decayMode')?.value||'long';
+    const durMult = decayMode==='long'?2.5:decayMode==='medium'?1.5:0.85;
+    return {
+      type,
+      midi,
+      vel: type==='note' ? 0.45 + Math.random()*0.45 : 0,
+      dur: type==='note' ? durMult : 1,
+      // ghost note — 沈黙ステップにも「もし音があったら」を表示
+      ghost: type!=='note' ? pool[Math.floor(Math.random()*pool.length)] : null,
+    };
+  });
+
+  // Harmony: bassの沈黙パターンに「共鳴」する
+  harmSteps2 = generateHarmony(bassSteps, pool);
+
+  buildGrid('bass');
+  buildGrid('harm');
+  buildPressureTrack();
+  updateInfo();
+}
+
+function generateHarmony(bass, pool) {
+  const libDis = parseInt(document.getElementById('libDis')?.value||40)/100;
+  const root = getRoot();
+
+  return bass.map((s, i) => {
+    // bassが沈黙のとき: harmonyはbassの空間に「呼応」することがある
+    const breathHere = s.type === 'breath';
+    const noteHere   = s.type === 'note';
+    const tensionHere= s.type === 'tension';
+
+    if(noteHere) {
+      // bassが鳴るとき: harmonyは3度または6度上
+      const intervals = [3,4,7,9,10]; // consonant intervals for harmony
+      const disIntervals = [1,2,6,11]; // dissonant
+      const useInterval = Math.random() < libDis
+        ? disIntervals[Math.floor(Math.random()*disIntervals.length)]
+        : intervals[Math.floor(Math.random()*intervals.length)];
+      const targetMidi = s.midi + useInterval;
+      const closest = pool.reduce((b,m)=>Math.abs(m-targetMidi)<Math.abs(b-targetMidi)?m:b, pool[0]);
+      return { type:'note', midi:closest, vel:s.vel*0.7, dur:s.dur*0.8, ghost:null };
+    } else if(breathHere && Math.random() < 0.4) {
+      // breathのとき: harmonyが微かに呼応
+      const m = pool[Math.floor(Math.random()*pool.length)];
+      return { type:'breath', midi:m, vel:0.2+Math.random()*0.2, dur:0.6, ghost:null };
+    } else {
+      // それ以外: 沈黙
+      return { type:s.type, midi:null, vel:0, dur:1, ghost:null };
+    }
+  });
+}
+
+// ─────────────────────────────────────────
+//  BUILD GRID
+// ─────────────────────────────────────────
+function buildGrid(voice) {
+  const el = document.getElementById(voice+'Grid'); if(!el) return;
+  const steps = voice==='bass' ? bassSteps : harmSteps2;
+  el.innerHTML = '';
+
+  steps.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = `sil-step ${s.type}`;
+    d.id = `${voice}SilStep${i}`;
+
+    const typeColor = {
+      dead:'var(--dim)', breath:'var(--breath)', tension:'var(--tension)',
+      release:'var(--release)', note:'var(--note)'
+    }[s.type];
+
+    const noteLabel = s.midi ? NOTE_NAMES[s.midi%12] : '—';
+    const ghostLabel = s.ghost ? NOTE_NAMES[s.ghost%12] : '';
+    const velPct = s.vel ? Math.round(s.vel*100) : 0;
+
+    d.innerHTML = `
+      <span class="sil-type-label" style="color:${typeColor};font-size:.3rem">${s.type}</span>
+      <span class="sil-note-display${s.midi?' active':''}" style="color:${s.midi?'var(--ivory)':'var(--s2)'}">${noteLabel}</span>
+      <div class="sil-vel-bar"><div class="sil-vel-fill" style="width:${velPct}%;background:${typeColor}"></div></div>
+      <span class="sil-num">${i+1}</span>
+      ${ghostLabel?`<span class="sil-ghost">${ghostLabel}</span>`:''}
+      ${s.dur&&s.dur>1?`<span class="sil-dur">${s.dur.toFixed(1)}×</span>`:''}
+    `;
+
+    // Left click: cycle note or silence
+    d.addEventListener('click', () => {
+      pushUndo();
+      if(s.type === 'note') {
+        s.type = drawMode==='note' ? 'dead' : drawMode;
+        s.midi = null; s.vel = 0;
+      } else {
+        if(drawMode === 'note') {
+          const pool = getScalePool();
+          s.type = 'note';
+          s.midi = pool[Math.floor(Math.random()*pool.length)];
+          s.vel = 0.55 + Math.random()*0.35;
+        } else {
+          s.type = drawMode;
+          s.midi = null; s.vel = 0;
+        }
+      }
+      buildGrid(voice);
+      buildPressureTrack();
+      if(voice === 'bass') harmSteps2 = generateHarmony(bassSteps, getScalePool());
+      buildGrid('harm');
+    });
+
+    // Right click: cycle silence type
+    d.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      pushUndo();
+      if(s.type === 'note') { s.type='dead'; s.midi=null; s.vel=0; }
+      else {
+        const idx = SIL_TYPES.indexOf(s.type);
+        s.type = SIL_TYPES[(idx+1)%SIL_TYPES.length];
+        if(s.type === 'note') {
+          const pool = getScalePool();
+          s.midi = pool[Math.floor(Math.random()*pool.length)];
+          s.vel = 0.6;
+        } else { s.midi=null; s.vel=0; }
+      }
+      buildGrid(voice);
+      buildPressureTrack();
+    });
+
+    el.appendChild(d);
+  });
+
+  if(voice==='bass') drawBassSpaceCanvas();
+}
+
+function buildPressureTrack() {
+  const el = document.getElementById('bassPressureTrack'); if(!el) return;
+  el.innerHTML = '';
+  // 各ステップ間の「空間圧力」を計算して色で表示
+  let cumPressure = 0;
+  bassSteps.forEach((s, i) => {
+    const seg = document.createElement('div');
+    seg.className = 'pressure-segment';
+    if(s.type === 'note') {
+      cumPressure = Math.max(0, cumPressure - 0.4); // 音符で圧力が抜ける
+    } else {
+      cumPressure = Math.min(1, cumPressure + (s.type==='tension'?0.25:s.type==='dead'?0.15:0.08));
+    }
+    const r = Math.round(cumPressure * 96);
+    const g = Math.round((1-cumPressure) * 64);
+    const b = Math.round(160 * cumPressure + 88 * (1-cumPressure));
+    seg.style.background = `rgba(${r},${g},${b},${0.3+cumPressure*0.5})`;
+    el.appendChild(seg);
+  });
+}
+
+function drawBassSpaceCanvas() {
+  const cv = document.getElementById('bassSpaceCanvas'); if(!cv) return;
+  const W=cv.width, H=cv.height;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  // 音符位置だけ描く
+  const notes = bassSteps.map((s,i)=>s.type==='note'?{i,midi:s.midi,vel:s.vel}:null).filter(Boolean);
+  if(notes.length<2) return;
+  const mids=notes.map(n=>n.midi), mn=Math.min(...mids)-1, mx=Math.max(...mids)+1;
+  ctx.beginPath();
+  notes.forEach((n,j)=>{const x=(n.i/bassSteps.length)*W,y=H-((n.midi-mn)/(mx-mn))*(H-4)-2;j===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(192,168,96,.6)'; ctx.lineWidth=1.5; ctx.stroke();
+  // silence gaps as dark zones
+  bassSteps.forEach((s,i)=>{
+    if(s.type!=='note'){
+      const x=(i/bassSteps.length)*W, w=W/bassSteps.length;
+      ctx.fillStyle=SIL_COLORS[s.type]||'rgba(0,0,0,.3)';
+      ctx.fillRect(x,0,w,H);
+    }
+  });
+}
+
+function updateInfo() {
+  const noteCnt = bassSteps.filter(s=>s.type==='note').length;
+  const silCnt  = bassSteps.length - noteCnt;
+  const el = document.getElementById('bassInfo');
+  if(el) el.textContent = `${bassSteps.length} steps · ${noteCnt} notes · ${silCnt} silence`;
+}
+
+function setDrawMode(mode) {
+  drawMode = mode;
+  document.querySelectorAll('.sil-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('chip-'+mode)?.classList.add('active');
+  document.getElementById('drawModeLabel').textContent = mode;
+  document.getElementById('drawModeLabel').style.color = {
+    dead:'var(--dim)', breath:'var(--breath)', tension:'var(--tension)',
+    release:'var(--release)', note:'var(--note)'
+  }[mode];
+}
+
+function invertSilence() {
+  pushUndo();
+  // 全ての音符を沈黙に、全ての沈黙を音符に
+  const pool = getScalePool();
+  bassSteps.forEach(s => {
+    if(s.type === 'note') {
+      s.type = 'breath'; s.midi=null; s.vel=0;
+    } else {
+      s.type = 'note';
+      s.midi = pool[Math.floor(Math.random()*pool.length)];
+      s.vel = 0.5 + Math.random()*0.4;
+    }
+  });
+  harmSteps2 = generateHarmony(bassSteps, pool);
+  buildGrid('bass'); buildGrid('harm'); buildPressureTrack();
+}
+
+function onRootChange() {
+  const pool = getScalePool();
+  bassSteps.forEach(s => {
+    if(!s.midi) return;
+    const pc = s.midi%12, root = getRoot()%12;
+    const scale = getScale();
+    const scalePCs = scale.map(d=>(root+d)%12);
+    let best=scalePCs[0], bd=12;
+    scalePCs.forEach(sp=>{ const dist=Math.min(Math.abs(sp-pc),12-Math.abs(sp-pc)); if(dist<bd){bd=dist;best=sp;} });
+    let nm=Math.floor(s.midi/12)*12+best;
+    if(Math.abs(nm-s.midi)>6) nm+=s.midi>nm?12:-12;
+    s.midi=Math.max(24,Math.min(108,nm));
+  });
+  harmSteps2 = generateHarmony(bassSteps, pool);
+  buildGrid('bass'); buildGrid('harm');
+}
+
+function onStepsChange() {
+  numSteps = parseInt(document.getElementById('stepsSel').value)||16;
+  generateSilence();
+}
+
+// ─────────────────────────────────────────
+//  SPACE PRESSURE ENGINE
+// ─────────────────────────────────────────
+const SP = {
+  pressure: 0,
+  consecutiveSilence: 0,
+  history: [],
+  state: 'open',
+  tickCount: 0,
+};
+
+function spComputePressure() {
+  const s = bassSteps[bassIdx % bassSteps.length];
+  if(!s) return;
+
+  const sens = parseInt(document.getElementById('spSens')?.value||55)/100;
+  const rel  = parseInt(document.getElementById('spRelease')?.value||40)/100;
+
+  if(s.type === 'note') {
+    // 音符が鳴る: 圧力が解放
+    SP.pressure = Math.max(0, SP.pressure - rel * 0.6);
+    SP.consecutiveSilence = 0;
+    SP.state = 'release';
+  } else {
+    // 沈黙: 圧力が蓄積（タイプによって異なる）
+    const build = s.type==='tension' ? 0.08 : s.type==='dead' ? 0.04 : s.type==='breath' ? 0.02 : 0.01;
+    SP.pressure = Math.min(1, SP.pressure + build * sens);
+    SP.consecutiveSilence++;
+    SP.state = SP.pressure > 0.7 ? 'dense' : SP.pressure > 0.4 ? 'building' : 'open';
+  }
+
+  SP.history.push(SP.pressure);
+  if(SP.history.length > 128) SP.history.shift();
+}
+
+function spActuate() {
+  // 圧力が最大近くで、次のステップが沈黙なら音符に変換
+  const auto = 0.3;
+  if(SP.pressure > 0.85 && Math.random() < auto) {
+    // 沈黙が続きすぎた: 最も近い未来の沈黙ステップを音符に
+    for(let i=0;i<bassSteps.length;i++) {
+      const idx = (bassIdx + i + 1) % bassSteps.length;
+      if(bassSteps[idx].type !== 'note') {
+        const pool = getScalePool();
+        bassSteps[idx].type = 'note';
+        bassSteps[idx].midi = pool[Math.floor(Math.random()*pool.length)];
+        bassSteps[idx].vel = 0.7 + SP.pressure * 0.3;
+        buildGrid('bass'); buildPressureTrack();
+        spLog(`♩ Pressure break at step ${idx+1}`);
+        break;
+      }
+    }
+  }
+}
+
+function spUpdateUI() {
+  const sf=document.getElementById('spF'),cv=document.getElementById('conSilF');
+  const sv=document.getElementById('spV'),csv=document.getElementById('conSilV');
+  const st=document.getElementById('spState');
+  if(sf) sf.style.width=(SP.pressure*100).toFixed(0)+'%';
+  if(cv) cv.style.width=Math.min(100,SP.consecutiveSilence*8)+'%';
+  if(sv) sv.textContent=(SP.pressure*100).toFixed(0);
+  if(csv) csv.textContent=SP.consecutiveSilence;
+  const states={open:'開放',building:'蓄積',dense:'密圧',release:'解放'};
+  if(st) st.textContent=states[SP.state]||SP.state;
+  // Main pressure fill
+  const pf=document.getElementById('pressureFill'),pv=document.getElementById('pressureVal');
+  if(pf) pf.style.width=(SP.pressure*100).toFixed(0)+'%';
+  if(pv) pv.textContent=(SP.pressure*100).toFixed(0)+'%';
+  // Mini
+  const mp=document.getElementById('miniP'); if(mp) mp.style.width=(SP.pressure*100).toFixed(0)+'%';
+  const ms=document.getElementById('miniState'); if(ms) ms.textContent=SP.state==='dense'?'■':SP.state==='release'?'∿':'○';
+  // Type display
+  const s=bassSteps[bassIdx%bassSteps.length];
+  const td=document.getElementById('silTypeDisplay'); if(td&&s) td.textContent=s.type;
+}
+
+function spDrawCanvas() {
+  const cv=document.getElementById('spCanvas'); if(!cv) return;
+  const W=cv.parentElement?.offsetWidth||160; cv.width=W; cv.height=44;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,44);
+  const h=SP.history;
+  if(h.length>2){
+    ctx.beginPath(); h.forEach((v,i)=>{const x=(i/h.length)*W,y=44-v*40-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.strokeStyle='rgba(96,64,160,.8)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.lineTo(W,44);ctx.lineTo(0,44);ctx.closePath();
+    const g=ctx.createLinearGradient(0,0,0,44);g.addColorStop(0,'rgba(96,64,160,.22)');g.addColorStop(1,'rgba(96,64,160,.01)');
+    ctx.fillStyle=g; ctx.fill();
+  }
+}
+
+function spLog(msg){const log=document.getElementById('spLog');if(!log)return;const s=document.createElement('span');s.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;s.style.cssText='color:rgba(96,64,160,.85);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>4)log.removeChild(log.lastChild);}
+
+function forceSilence(){pushUndo();const idx=bassIdx%bassSteps.length;bassSteps[idx].type='tension';bassSteps[idx].midi=null;bassSteps[idx].vel=0;buildGrid('bass');spLog('■ Silence forced');}
+function forceNote(){pushUndo();const pool=getScalePool();const idx=bassIdx%bassSteps.length;bassSteps[idx].type='note';bassSteps[idx].midi=pool[Math.floor(Math.random()*pool.length)];bassSteps[idx].vel=0.8;buildGrid('bass');spLog('♩ Note forced');}
+function expandSilence(){pushUndo();bassSteps.forEach(s=>{if(s.type==='note'&&Math.random()<0.3){s.type='breath';s.midi=null;s.vel=0;}});buildGrid('bass');buildPressureTrack();spLog('⬌ Silence expanded');}
+
+// Liberation presets
+function setLibPreset(name) {
+  const presets = {
+    haden:      {libTension:55, libResolve:85, libDis:30, libCoupling:45},
+    liberation: {libTension:80, libResolve:90, libDis:60, libCoupling:70},
+    monk:       {libTension:70, libResolve:75, libDis:45, libCoupling:55},
+    spiritual:  {libTension:40, libResolve:60, libDis:20, libCoupling:30},
+  };
+  const p=presets[name]; if(!p) return;
+  Object.entries(p).forEach(([id,v])=>{const el=document.getElementById(id);if(el){el.value=v;document.getElementById(id+'V').textContent=v;}});
+  harmSteps2=generateHarmony(bassSteps,getScalePool());
+  buildGrid('harm');
+}
+
+// ─────────────────────────────────────────
+//  SHADOW ARC
+// ─────────────────────────────────────────
+const HARC=[
+  {id:0,name:'Opening', color:'rgba(48,72,88',  silenceTarget:.65, dur:12},
+  {id:1,name:'Build',   color:'rgba(96,64,160', silenceTarget:.50, dur:12},
+  {id:2,name:'Peak',    color:'rgba(160,136,64',silenceTarget:.30, dur:10},
+  {id:3,name:'Return',  color:'rgba(48,72,88',  silenceTarget:.72, dur:12},
+];
+const SS={section:0,stepInSec:0,pull:0,drift:0,override:null,overrideTimer:0,driftHistory:[],loopCount:0};
+
+function ssComputeDrift(){const sec=HARC[SS.section];const silRate=bassSteps.filter(s=>s.type!=='note').length/Math.max(1,bassSteps.length);SS.drift=Math.abs(silRate-sec.silenceTarget);SS.pull=SS.pull*.8+Math.min(1,SS.drift*(parseInt(document.getElementById('ssStr')?.value||45)/100))*.2;}
+function ssApplyGravity(){if(SS.override==='resist')return;if(SS.pull<.15||Math.random()>SS.pull*.5)return;const sec=HARC[SS.section];const pool=getScalePool();const cur=bassSteps.filter(s=>s.type!=='note').length/Math.max(1,bassSteps.length);const idx=Math.floor(Math.random()*bassSteps.length);if(cur<sec.silenceTarget&&bassSteps[idx].type==='note'){bassSteps[idx].type='breath';bassSteps[idx].midi=null;bassSteps[idx].vel=0;}else if(cur>sec.silenceTarget+.1&&bassSteps[idx].type!=='note'){bassSteps[idx].type='note';const m=pool[Math.floor(Math.random()*pool.length)];bassSteps[idx].midi=m;bassSteps[idx].vel=0.5+Math.random()*.4;}buildGrid('bass');buildPressureTrack();ssLog(`⬤(${sec.name})`);}
+function ssAdvanceSection(){const auto=parseInt(document.getElementById('ssAdv')?.value||55)/100;if(Math.random()>auto)return;SS.stepInSec++;if(SS.stepInSec>=HARC[SS.section].dur){SS.section=(SS.section+1)%HARC.length;if(SS.section===0)SS.loopCount++;SS.stepInSec=0;ssUpdateUI();ssLog(`→${HARC[SS.section].name}`);}}
+function ssJump(i){SS.section=i;SS.stepInSec=0;ssUpdateUI();ssLog(`👤→${HARC[i].name}`);}
+function ssOverride(t){SS.override=t;SS.overrideTimer=t==='skip'?1:10;if(t==='skip'){ssJump((SS.section+1)%HARC.length);SS.override=null;}}
+function ssUpdateUI(){HARC.forEach((s,i)=>{const el=document.getElementById('ss'+i);if(el)el.style.outline=i===SS.section?'2px solid rgba(79,195,247,.7)':'';});const l=document.getElementById('ssLabel');if(l)l.textContent=HARC[SS.section].name;const pf=document.getElementById('ssPF'),df=document.getElementById('ssDF');if(pf)pf.style.width=(SS.pull*100).toFixed(0)+'%';if(df)df.style.width=(SS.drift*100).toFixed(0)+'%';const pv=document.getElementById('ssPV'),dv=document.getElementById('ssDV');if(pv)pv.textContent=(SS.pull*100).toFixed(0);if(dv)dv.textContent=(SS.drift*100).toFixed(0);const ms=document.getElementById('miniS');if(ms)ms.style.width=(SS.pull*100).toFixed(0)+'%';}
+function ssDrawCanvas(){const cv=document.getElementById('ssCanvas');if(!cv)return;const W=cv.parentElement?.offsetWidth||180;cv.width=W;cv.height=44;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,44);const sec=HARC[SS.section];const g=ctx.createLinearGradient(0,0,W,0);g.addColorStop(0,`${sec.color},.08)`);g.addColorStop(1,`${sec.color},.02)`);ctx.fillStyle=g;ctx.fillRect(0,0,W,44);SS.driftHistory.push(SS.drift);if(SS.driftHistory.length>W)SS.driftHistory.shift();if(SS.driftHistory.length>2){ctx.beginPath();SS.driftHistory.forEach((v,i)=>{const x=(i/SS.driftHistory.length)*W,y=44-v*40-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.strokeStyle=`${sec.color},.6)`;ctx.lineWidth=1.5;ctx.stroke();}const prog=SS.stepInSec/HARC[SS.section].dur;ctx.fillStyle=`${sec.color},.18)`;ctx.fillRect(0,39,W*prog,5);}
+function ssLog(msg){const log=document.getElementById('ssLog');if(log)log.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;}
+let _ssTick=0;
+function ssTick(){if(!playing)return;_ssTick++;ssComputeDrift();if(_ssTick%12===0){ssApplyGravity();if(bassIdx===0)ssAdvanceSection();}if(_ssTick%14===0){ssUpdateUI();ssDrawCanvas();if(SS.override&&SS.overrideTimer-->0){}else SS.override=null;}}
+
+// ─────────────────────────────────────────
+//  PLAYBACK
+// ─────────────────────────────────────────
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+let _keepNode=null;
+function startKeepAlive(){const ctx=getAudioCtx();if(_keepNode)return;_keepNode=ctx.createOscillator();const g=ctx.createGain();g.gain.value=0;_keepNode.connect(g);g.connect(ctx.destination);_keepNode.start();}
+
+const _wCode=`const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type==='set'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wCode],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){_tw=null;}return _tw;}
+function accurateTimeout(fn,ms){const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();const w=getTW();if(w){const id=_tn++;const dl=ctx.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-ctx.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancelled:false,cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}const dl=ctx.currentTime+ms/1000;const tid={cancelled:false};let t=null;function check(){if(tid.cancelled)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(check,rem<25?1:Math.max(1,rem-20));}}t=setTimeout(check,Math.max(1,ms-20));tid.cancel=()=>{tid.cancelled=true;if(t)clearTimeout(t);};return tid;}
+
+document.addEventListener('visibilitychange',()=>{const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();if(!document.hidden&&midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();startKeepAlive();playing=true;bassIdx=0;harmIdx2=0;barCount=0;document.getElementById('btnPlay').textContent='■ Stop';tick(); // always start; MIDI clock overrides BPM
+}
+function stopAll(){playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}document.getElementById('btnPlay').textContent='▶ Play';document.getElementById('stepDisplay').textContent='—';bassIdx=0;harmIdx2=0;if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);document.querySelectorAll('.sil-step.playing').forEach(e=>e.classList.remove('playing'));}
+
+function tick(){
+  if(!playing)return;
+  const bpm=SLAVE.active?SLAVE.bpmSmoothed:getBpm();
+  const stepMs=Math.max(30,60000/bpm/4);
+  // Haden: rubatoが強い — 各ステップの長さが音符の性質で変わる
+  const s=bassSteps[bassIdx%bassSteps.length];
+  const durMult=s?s.dur||1:1;
+  const actualMs=stepMs*durMult*(0.92+Math.random()*0.16);
+
+  // Highlights
+  document.querySelectorAll('#bassGrid .sil-step').forEach((e,i)=>e.classList.toggle('playing',i===bassIdx));
+  document.querySelectorAll('#harmGrid .sil-step').forEach((e,i)=>e.classList.toggle('playing',i===harmIdx2));
+
+  // Send MIDI
+  sendStep(bassSteps, bassIdx, 'bassCh', 0, stepMs*durMult);
+  sendStep(harmSteps2, harmIdx2, 'harmCh', 0, stepMs*0.8);
+
+  document.getElementById('stepDisplay').textContent=`${barCount+1} · ${bassIdx+1}/${bassSteps.length}`;
+
+  // Space pressure
+  spComputePressure();
+  if(SP.tickCount++%6===0) spActuate();
+  if(SP.tickCount%8===0){spUpdateUI();spDrawCanvas();}
+  ssTick();
+
+  bassIdx++; if(bassIdx>=numSteps){bassIdx=0;barCount++;}
+  harmIdx2++; if(harmIdx2>=harmSteps2.length) harmIdx2=0;
+
+  playTimer=accurateTimeout(tick, actualMs);
+}
+
+function sendStep(steps, idx, chId, octOff, durMs){
+  if(!steps.length||!midiOut)return;
+  const s=steps[idx%steps.length]; if(!s||!s.midi)return;
+  const ch=(parseInt(document.getElementById(chId)?.value||1)-1);
+  const m=Math.max(0,Math.min(127,s.midi+octOff));
+  const v=Math.round(s.vel*100+27);
+  const dec=document.getElementById('decayMode')?.value||'long';
+  const noteDur=dec==='long'?durMs*2.2:dec==='medium'?durMs*1.4:durMs*0.8;
+  midiOut.send([0x90|ch,m,v]);
+  // Haden的なdecay: CC11(expression)で自然減衰
+  const steps2=6;
+  for(let k=1;k<=steps2;k++){
+    const expr=Math.round(127*(1-k/steps2)*0.7+30);
+    setTimeout(()=>{if(midiOut)midiOut.send([0xB0|ch,11,expr]);},noteDur*k/steps2);
+  }
+  setTimeout(()=>{if(midiOut){midiOut.send([0x80|ch,m,0]);midiOut.send([0xB0|ch,11,127]);}},noteDur);
+  // Breath: 微かなvelocity送信のみ
+  if(s.type==='breath'&&s.midi){midiOut.send([0x90|ch,m,Math.min(30,v)]);setTimeout(()=>{if(midiOut)midiOut.send([0x80|ch,m,0]);},noteDur*0.3);}
+}
+
+// MIDI
+function initMIDI(){if(!navigator.requestMIDIAccess){setMidiStatus(false,'Not supported');return;}navigator.requestMIDIAccess().then(ma=>{midiAccess=ma;ma.onstatechange=()=>{populatePorts();populateInPorts();};populatePorts();populateInPorts();}).catch(()=>setMidiStatus(false,'Permission denied'));}
+function populatePorts(){const sel=document.getElementById('midiDevSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">— select —</option>';midiAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectMidiOut(sel.value);}});}
+function populateInPorts(){const sel=document.getElementById('midiClockSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">— Clock In —</option>';midiAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectClockIn(sel.value);}});}
+function selectMidiOut(id){if(!id){midiOut=null;setMidiStatus(false,'—');return;}midiOut=midiAccess?.outputs.get(id);if(midiOut)setMidiStatus(true,midiOut.name);}
+function setMidiStatus(ok,name){const dot=document.getElementById('midiDot'),stat=document.getElementById('midiStatus');if(dot)dot.classList.toggle('connected',ok);if(stat){stat.textContent=ok?`✓ ${name}`:name;stat.style.color=ok?'var(--breath)':'var(--dim)';}}
+function selectClockIn(id){if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.clockInPort=midiAccess.inputs.get(id);if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=onClockMsg;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const btn=document.getElementById('btnSlave');if(btn){btn.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';btn.style.color=SLAVE.active?'var(--breath)':'';}// Slave ON: keep internal timer running as fallback; MIDI clock sync overrides BPMelse if(!SLAVE.active&&playing)tick();
+}
+function onClockMsg(e){const d=e.data[0];if(d===0xFA){SLAVE.running=true;SLAVE.pulseCount=0;if(!playing){startPlay();}else{/* sync: reset positions on Ableton Start */}return;}if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;document.getElementById('btnPlay').textContent='■ Stop';}return;}if(d===0xFC){SLAVE.running=false;if(playing&&SLAVE.active)stopAll();return;}if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;const now=e.timeStamp||performance.now();if(SLAVE.lastPulseTime>0){const iv=now-SLAVE.lastPulseTime;const ibpm=60000/(iv*SLAVE.ppqn);if(ibpm>20&&ibpm<300)SLAVE.bpmSmoothed=SLAVE.bpmSmoothed*(1-SLAVE.bpmAlpha)+ibpm*SLAVE.bpmAlpha;}SLAVE.lastPulseTime=now;SLAVE.pulseCount++;if(SLAVE.pulseCount>=SLAVE.pulsesPerStep){SLAVE.pulseCount=0;if(playing)slaveTick();}if(SLAVE.pulseCount===0){document.getElementById('bpmIn').value=Math.round(SLAVE.bpmSmoothed);}}
+function slaveTick(){if(!playing||!bassSteps.length)return;const stepMs=60000/SLAVE.bpmSmoothed/4;const s=bassSteps[bassIdx%bassSteps.length];const durMs=stepMs*(s?.dur||1);document.querySelectorAll('#bassGrid .sil-step').forEach((e,i)=>e.classList.toggle('playing',i===bassIdx));sendStep(bassSteps,bassIdx,'bassCh',0,durMs);sendStep(harmSteps2,harmIdx2,'harmCh',0,durMs*0.8);spComputePressure();if(SP.tickCount++%6===0)spActuate();if(SP.tickCount%8===0){spUpdateUI();spDrawCanvas();}ssTick();bassIdx++;if(bassIdx>=numSteps){bassIdx=0;barCount++;}harmIdx2++;if(harmIdx2>=harmSteps2.length)harmIdx2=0;}
+
+// Export MIDI
+
+// ── SCL Export — Haden scales ──
+function scaleToScl(scaleKey) {
+  const s = SCALES[scaleKey]; if(!s) return null;
+  const degs = s.filter(d => d > 0);
+  const lines = [`! haden_${scaleKey}.scl`,'!',`Charlie Haden — ${scaleKey} scale`,String(degs.length+1),'!'];
+  degs.forEach(d => lines.push((d*100).toFixed(3)));
+  lines.push('1200.000');
+  return lines.join('\n');
+}
+function exportCurrentScaleScl() {
+  const key = document.getElementById('scaleSel')?.value || 'liberation';
+  const scl = scaleToScl(key); if(!scl) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([scl],{type:'text/plain'}));
+  a.download=`haden_${key}.scl`; a.click();
+}
+function exportAllScalesScl() {
+  const lines=['! haden_all_scales.scl.txt','! Haden Silence Sequencer — All Scales','! '+new Date().toISOString(),'!'];
+  Object.keys(SCALES).forEach(k => { const scl=scaleToScl(k); if(scl){lines.push('');lines.push('! ─────────');lines.push(scl);} });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
+  a.download='haden_all_scales.scl.txt'; a.click();
+}
+
+function exportMIDI(){const bpm=getBpm();const tpb=480;const stk=tpb/4;const µs=Math.round(60000000/bpm);function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}function i16(v){return[(v>>8)&0xFF,v&0xFF];}const ch=(parseInt(document.getElementById('bassCh')?.value||1)-1);const events=[];bassSteps.forEach((s,i)=>{if(!s.midi)return;const t=i*stk*(s.dur||1);events.push([t,[0x90|ch,s.midi,Math.round(s.vel*100+27)]]);events.push([t+Math.round(stk*(s.dur||1)*.85),[0x80|ch,s.midi,0]]);});events.sort((a,b)=>a[0]-b[0]);let lt=0;const td=[];td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);events.forEach(([t,msg])=>{td.push(...wv(t-lt),...msg);lt=t;});td.push(0,0xFF,0x2F,0);const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,...i16(tpb)];const bytes=new Uint8Array([...hdr,0x4D,0x54,0x72,0x6B,...i32(td.length),...td]);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'audio/midi'}));a.download='haden_silence.mid';a.click();}
+
+// Undo, Redo, Save, Load
+const UMAX=30;let _us=[],_rs=[];
+function captureState(){return{bassSteps:JSON.parse(JSON.stringify(bassSteps)),harmSteps2:JSON.parse(JSON.stringify(harmSteps2)),numSteps,rootSel:document.getElementById('rootSel').value,scaleSel:document.getElementById('scaleSel').value};}
+function pushUndo(){_us.push(captureState());if(_us.length>UMAX)_us.shift();_rs=[];updateUndoBtns();}
+function applyState(s){bassSteps=JSON.parse(JSON.stringify(s.bassSteps));harmSteps2=JSON.parse(JSON.stringify(s.harmSteps2));numSteps=s.numSteps||16;const rs=document.getElementById('rootSel'),ss=document.getElementById('scaleSel');if(rs)rs.value=s.rootSel;if(ss)ss.value=s.scaleSel;buildGrid('bass');buildGrid('harm');buildPressureTrack();updateInfo();updateUndoBtns();}
+function undo(){if(!_us.length)return;_rs.push(captureState());applyState(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(captureState());applyState(_rs.pop());}
+function updateUndoBtns(){const u=document.getElementById('btnUndo'),r=document.getElementById('btnRedo');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function saveStateJSON(){const s=captureState();s._tool='CharliHadenSilenceSequencer';s._at=new Date().toISOString();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download=`haden_silence_${new Date().toISOString().slice(0,16).replace('T','_')}.json`;a.click();}
+function loadStateJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const s=JSON.parse(ev.target.result);if(!s.bassSteps){alert('このJSONはHadenシーケンサーのデータではありません');return;}pushUndo();applyState(s);}catch(err){alert('JSON読み込み失敗: '+err.message);}};r.readAsText(f);e.target.value='';}
+
+// Tap tempo
+let _taps=[];
+function tapTempo(){const now=Date.now();_taps.push(now);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gaps=_taps.slice(1).map((t,i)=>t-_taps[i]);const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;const bpm=Math.round(60000/avg);if(bpm>20&&bpm<200)document.getElementById('bpmIn').value=bpm;}}
+
+// Dock tabs
+(function(){document.querySelectorAll('.dock-tab[data-panel]').forEach(tab=>{tab.addEventListener('click',()=>{const p=tab.dataset.panel;if(tab.classList.contains('active')){toggleDock();return;}document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.querySelectorAll('.dock-panel').forEach(p2=>p2.classList.remove('active'));const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');const panels=document.getElementById('dockPanels');if(panels){panels.classList.remove('collapsed');document.getElementById('dockColBtn').textContent='▲';}});});})();
+let _dockOpen=true;
+function toggleDock(){_dockOpen=!_dockOpen;const p=document.getElementById('dockPanels'),b=document.getElementById('dockColBtn');if(p)p.classList.toggle('collapsed',!_dockOpen);if(b)b.textContent=_dockOpen?'▲':'▼';}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();if(e.shiftKey)redo();else undo();}
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyY'){e.preventDefault();redo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();generateSilence();}
+  if(e.code==='KeyI'&&e.target.tagName!=='INPUT'){e.preventDefault();invertSilence();}
+});
+
+// Init
+function init(){
+  generateSilence();
+  initMIDI();
+  ssUpdateUI();
+}
+init();
+</script>
+</body>
+</html>

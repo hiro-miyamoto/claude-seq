@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ahmad Jamal — The Awakening</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:   #07080c;
+  --s0:   #0b0c12;
+  --s1:   #10111a;
+  --bd:   #181920;
+  --bd2:  #22242e;
+  --text: #c8cad8;
+  --dim:  #505260;
+  --fog:  #202230;
+
+  /* 冷たい美 */
+  --rh:   #9ab0cc;   /* 右手: 冷たいsilver-blue */
+  --rh2:  #6880a0;
+  --cold: #4a6888;
+
+  /* ボート */
+  --lhb:  #c0a870;   /* warm wood */
+  --lhb2: #886040;
+
+  /* Strike */
+  --lhc:  #b87858;   /* ember */
+
+  /* 空間 */
+  --space: #0e1018;
+  --bone:  #d4d0c8;
+  --paper: #060710;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;overflow-x:hidden;}
+
+header{
+  padding:1rem 1.8rem .7rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:flex-end;gap:1.6rem;
+  background:var(--paper);position:relative;z-index:10;
+}
+.hdr-name{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;font-style:italic;color:var(--bone);line-height:1;}
+.hdr-sub{font-size:.38rem;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-top:.2rem;}
+.hdr-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;}
+.seed-display{font-family:'Cormorant Garamond',serif;font-size:.85rem;font-style:italic;color:var(--rh);letter-spacing:.05em;}
+.phrase-display{font-size:.36rem;color:var(--dim);}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 120px);}
+.left{border-right:1px solid var(--bd);padding:.6rem;display:flex;flex-direction:column;gap:.4rem;overflow-y:auto;background:var(--paper);}
+.main{display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── PANELS ── */
+.panel{background:var(--s0);border:1px solid var(--bd);padding:.5rem .58rem;}
+.pt{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.88rem;color:var(--dim);margin-bottom:.32rem;display:flex;align-items:center;gap:.25rem;}
+.pt::before{content:'';width:7px;height:1px;background:currentColor;opacity:.4;}
+.pr{display:flex;align-items:center;gap:.28rem;margin-bottom:.14rem;}
+.pr label{font-size:.37rem;color:var(--dim);width:62px;flex-shrink:0;}
+.prv{font-size:.37rem;width:22px;text-align:right;flex-shrink:0;}
+input[type=range]{height:2px;cursor:pointer;flex:1;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.43rem;padding:.07rem .14rem;}
+.btn{padding:.13rem .42rem;border:1px solid var(--bd);background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.43rem;cursor:pointer;transition:all .1s;}
+.btn:hover{border-color:var(--rh);color:var(--rh);}
+.btn.hi{border-color:rgba(154,176,204,.4);color:var(--rh);background:rgba(154,176,204,.06);}
+.midi-dot{width:6px;height:6px;border-radius:50%;background:var(--fog);flex-shrink:0;}
+.midi-dot.on{background:var(--lhb);box-shadow:0 0 4px var(--lhb);}
+
+/* ── TRANSPORT ── */
+.transport{padding:.38rem .9rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.44rem;background:var(--paper);flex-wrap:wrap;}
+
+/* ── SEED CHORD DISPLAY ── */
+.seed-panel{padding:.5rem .9rem;border-bottom:1px solid var(--bd);background:var(--space);display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;}
+.seed-label{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.72rem;color:var(--dim);}
+.seed-notes{display:flex;gap:.5rem;align-items:flex-end;}
+.seed-note{display:flex;flex-direction:column;align-items:center;gap:.18rem;}
+.seed-note-name{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;}
+.seed-note-role{font-size:.28rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;}
+.seed-note.root .seed-note-name{color:var(--lhb);}
+.seed-note.fifth .seed-note-name{color:var(--rh);}
+.seed-note.seventh .seed-note-name{color:var(--rh2);}
+.seed-tension{font-size:.36rem;color:var(--dim);padding:.15rem .35rem;border:1px solid var(--bd);margin-left:.5rem;}
+/* Arc progress */
+.arc-info{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.22rem;}
+.arc-phase{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.75rem;}
+.arc-bar{width:80px;height:2px;background:var(--s1);overflow:hidden;}
+.arc-fill{height:100%;background:var(--rh);transition:width .4s;}
+
+/* ── VOICE GRIDS ── */
+.voices{flex:1;padding:.6rem .9rem;overflow-y:auto;}
+.voice{margin-bottom:.9rem;}
+.vhead{display:flex;align-items:center;gap:.4rem;margin-bottom:.22rem;}
+.vname{font-family:'Cormorant Garamond',serif;font-size:.88rem;font-style:italic;}
+.vch{font-size:.34rem;color:var(--dim);padding:.04rem .16rem;border:1px solid var(--bd);}
+.vinfo{font-size:.33rem;color:var(--fog);margin-left:auto;}
+
+/* Step grid — spacious, Jamal */
+.sgrid{display:flex;gap:3px;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+
+.step{
+  flex-shrink:0;width:38px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;padding:.07rem .04rem;
+  border:1px solid transparent;transition:border-color .06s;
+  position:relative;
+}
+.step:hover{border-color:var(--bd2);}
+
+/* Silence: wide empty space */
+.step.sil{width:52px;background:rgba(14,16,24,.6);border-color:rgba(14,16,24,.9)!important;}
+.step.sil.playing{border-color:var(--cold)!important;}
+.sil-mark{font-size:.28rem;color:var(--cold);opacity:.4;}
+
+/* Active step */
+.step.playing{border-color:var(--rh)!important;}
+.step.playing .sbar{box-shadow:0 0 5px currentColor;}
+
+/* Seed tone highlight */
+.step.seed-tone{background:rgba(154,176,204,.04);}
+.step.seed-tone.playing{border-color:var(--rh)!important;background:rgba(154,176,204,.1);}
+
+.sname{font-family:'Cormorant Garamond',serif;font-size:.7rem;font-style:italic;color:var(--dim);line-height:1;}
+.sname.on{color:var(--bone);}
+.sbar{border-radius:0;min-height:1px;transition:height .08s;}
+.snum{font-size:.22rem;color:var(--fog);}
+/* Phrase start */
+.sphr{position:absolute;top:0;left:0;right:0;height:2px;opacity:.6;}
+/* Leap */
+.sleap{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);font-size:.2rem;color:var(--lhb);opacity:.6;}
+
+/* Brush HH: inverted logic */
+.step-brush{flex-shrink:0;width:28px;height:28px;border:1px solid var(--bd);cursor:pointer;position:relative;transition:border-color .06s;display:flex;align-items:center;justify-content:center;background:rgba(80,104,104,.15);border-color:rgba(80,104,104,.3);}
+.step-brush.gap{background:var(--space);border-color:rgba(14,16,24,.9)!important;}
+.step-brush.playing{border-color:#507070!important;box-shadow:0 0 4px rgba(80,104,104,.4);}
+.step-brush.gap.playing{border-color:rgba(80,104,104,.15)!important;box-shadow:none;}
+.brush-dot{width:4px;height:4px;border-radius:50%;background:#507070;opacity:.65;}
+.step-brush.gap .brush-dot{opacity:.1;background:var(--fog);}
+.step-brush.beat1{border-top:2px solid rgba(80,104,104,.45)!important;}
+
+/* Open HH */
+.step-open{flex-shrink:0;width:28px;height:28px;border:1px solid var(--bd);cursor:pointer;background:transparent;transition:border-color .06s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.step-open.active{background:rgba(144,184,192,.08);border-color:rgba(144,184,192,.3);}
+.step-open.playing{border-color:#90b8c0!important;}
+.open-bar{width:16px;border-radius:0;}
+.open-num{font-size:.22rem;color:var(--fog);}
+
+/* ── DOCK ── */
+.dock{border-top:1px solid var(--bd);background:var(--paper);position:sticky;bottom:0;z-index:20;}
+.dock-tabs{display:flex;border-bottom:1px solid var(--bd);}
+.dtab{padding:.2rem .44rem;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.37rem;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.16rem;transition:all .1s;white-space:nowrap;}
+.dtab:hover{color:var(--text);}
+.dtab.active{color:var(--text);border-bottom-color:var(--rh);}
+.ddot{width:4px;height:4px;border-radius:50%;opacity:.35;}
+.dtab.active .ddot{opacity:1;}
+.dock-right{margin-left:auto;display:flex;align-items:center;gap:.35rem;padding:0 .5rem;flex-shrink:0;}
+.dmini{display:flex;align-items:center;gap:.25rem;}
+.dml{font-size:.3rem;color:var(--dim);}
+.dmbar{width:22px;height:2px;background:var(--s1);overflow:hidden;}
+.dmfill{height:100%;transition:width .3s;}
+.dock-body{max-height:180px;overflow:hidden;transition:max-height .2s;}
+.dock-body.closed{max-height:0!important;}
+.dpanel{display:none;padding:.38rem .72rem .48rem;}
+.dpanel.active{display:block;}
+.dgrid{display:grid;gap:.38rem;}
+.dg3{grid-template-columns:1fr 1fr 1fr;}
+.dg4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dsub{background:var(--s0);border:1px solid var(--bd);padding:.32rem .4rem;}
+.dst{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.75rem;color:var(--dim);margin-bottom:.18rem;padding-left:.18rem;border-left:1px solid var(--rh);opacity:.6;}
+.drow{display:flex;align-items:center;gap:.2rem;margin-bottom:.1rem;}
+.dl{font-size:.33rem;color:var(--dim);width:52px;flex-shrink:0;}
+.dtrack{flex:1;height:3px;background:var(--s1);overflow:hidden;}
+.dfill{height:100%;transition:width .25s;}
+.dval{font-size:.33rem;width:20px;text-align:right;flex-shrink:0;}
+.dlog{font-size:.34rem;color:var(--dim);line-height:1.9;max-height:60px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-name">Ahmad Jamal</div>
+    <div class="hdr-sub">The Awakening · Dolphin Dance · I Love Music · Wave</div>
+  </div>
+  <div class="hdr-right">
+    <div class="seed-display" id="seedDisplay">D · A · C</div>
+    <div class="phrase-display" id="phraseDisplay">phrase 1</div>
+  </div>
+</header>
+
+<div class="layout">
+<div class="left">
+
+  <!-- Seed chord -->
+  <div class="panel" style="border-color:rgba(154,176,204,.2)">
+    <div class="pt" style="color:var(--rh)">種 — Seed Chord</div>
+    <div style="font-size:.35rem;color:var(--dim);line-height:1.8;margin-bottom:.22rem">
+      最初の和音から全てが生まれる。<br>冷たく、開いたvoicing。
+    </div>
+    <div class="pr"><label>Root</label>
+      <select id="rootSel" onchange="onSeedChange()" style="flex:1;font-size:.42rem">
+        <option value="60">C4</option>
+        <option value="61">C#4</option>
+        <option value="62" selected>D4</option>
+        <option value="63">Eb4</option>
+        <option value="64">E4</option>
+        <option value="65">F4</option>
+        <option value="66">F#4</option>
+        <option value="67">G4</option>
+        <option value="68">Ab4</option>
+        <option value="69">A4</option>
+        <option value="70">Bb4</option>
+        <option value="71">B4</option>
+      </select></div>
+    <div class="pr"><label>Color</label>
+      <select id="colorSel" onchange="onSeedChange()" style="flex:1;font-size:.42rem">
+        <optgroup label="── minor ──">
+        <option value="min7" selected>min7 — 冷たい浮遊</option>
+        <option value="min9">min9 — より開いた</option>
+        <option value="min11">min11 — 広大</option>
+        <option value="min6">min6 — ほろ苦い</option>
+        <option value="minmaj7">min(maj7) — 不穏な美</option>
+        </optgroup>
+        <optgroup label="── dominant ──">
+        <option value="dom7">dom7 — テンション</option>
+        <option value="dom9">dom9 — 豊かな緊張</option>
+        <option value="dom7b9">dom7b9 — スペイン的暗さ</option>
+        <option value="dom7s9">dom7#9 — Hendrix緊張</option>
+        <option value="dom7alt">dom7alt — 最大緊張</option>
+        <option value="dom13">dom13 — 開いた支配</option>
+        </optgroup>
+        <optgroup label="── major ──">
+        <option value="maj7">maj7 — 解決感</option>
+        <option value="maj9">maj9 — Lydian浮遊</option>
+        <option value="maj7s11">maj7#11 — 宙に浮く</option>
+        <option value="maj6">maj6 — 古い暖かさ</option>
+        <option value="sixnine">6/9 — 開いた明るさ</option>
+        <option value="add9">add9 — 澄んだ</option>
+        </optgroup>
+        <optgroup label="── suspended / quartal ──">
+        <option value="sus4">sus4 — 解決しない</option>
+        <option value="sus2">sus2 — 開いた問い</option>
+        <option value="quartal">quartal — McCoy的</option>
+        </optgroup>
+        <optgroup label="── dark ──">
+        <option value="min7b5">min7b5 — 最も暗い</option>
+        <option value="dim7">dim7 — 宙吊りの闇</option>
+        <option value="aug">aug — 重力喪失</option>
+        <option value="dom7b13">dom7b13 — 翳り</option>
+        </optgroup>
+      </select></div>
+    <div class="pr"><label>Voicing</label>
+      <select id="voicingSel" onchange="onSeedChange()" style="flex:1;font-size:.42rem">
+        <option value="thirds" selected>3度堆積 (Tertian)</option>
+        <option value="quartal">4度堆積 (Quartal) — McCoy/開いた</option>
+        <option value="fifths">5度/空虚 (Quintal) — 冷たい</option>
+        <option value="open">開離 (Open/Spread) — 広い</option>
+        <option value="cluster">2度クラスター — 緊張</option>
+        <option value="stacked2">2nd積み (Secundal)</option>
+        <option value="shell">シェル (3rd+7th)</option>
+      </select></div>
+    <div class="pr"><label>Scale</label>
+      <select id="scaleSel" onchange="onSeedChange()" style="flex:1;font-size:.42rem">
+        <option value="auto" selected>Auto (コード連動)</option>
+        <optgroup label="── Western modes ──">
+        <option value="dorian">Dorian</option><option value="ionian">Ionian (Major)</option>
+        <option value="mixolydian">Mixolydian</option><option value="aeolian">Aeolian (minor)</option>
+        <option value="phrygian">Phrygian</option><option value="lydian">Lydian</option>
+        <option value="locrian">Locrian</option>
+        </optgroup>
+        <optgroup label="── minor systems ──">
+        <option value="mel_minor">Melodic Minor</option><option value="har_minor">Harmonic Minor</option>
+        <option value="har_major">Harmonic Major</option><option value="lydian_dom">Lydian Dominant</option>
+        <option value="altered">Altered</option><option value="lydian_aug">Lydian Augmented</option>
+        <option value="dorian_b2">Dorian b2</option><option value="mixo_b6">Mixolydian b6</option>
+        </optgroup>
+        <optgroup label="── symmetric ──">
+        <option value="wholetone">Whole Tone</option><option value="dim_wh">Diminished W-H</option>
+        <option value="dim_hw">Diminished H-W</option><option value="augmented">Augmented</option>
+        </optgroup>
+        <optgroup label="── pentatonic / 日本 ──">
+        <option value="maj_pent">Major Pentatonic</option><option value="min_pent">Minor Pentatonic</option>
+        <option value="blues">Blues</option><option value="in_sen">In Sen (日本)</option>
+        <option value="hirajoshi">Hirajoshi (日本)</option><option value="iwato">Iwato (日本)</option>
+        <option value="kumoi">Kumoi (日本)</option>
+        </optgroup>
+        <optgroup label="── Spanish / 中東 ──">
+        <option value="spanish">Spanish Phrygian</option><option value="double_har">Double Harmonic</option>
+        <option value="hungarian">Hungarian Minor</option><option value="byzantine">Byzantine</option>
+        </optgroup>
+        <optgroup label="── राग Indian raags ──">
+        <option value="bhairav">Bhairav</option><option value="yaman">Yaman</option>
+        <option value="kafi">Kafi</option><option value="bhairavi">Bhairavi</option>
+        <option value="todi">Todi</option><option value="marwa">Marwa</option>
+        <option value="purvi">Purvi</option><option value="des">Des</option>
+        <option value="malkauns">Malkauns</option><option value="bhoopali">Bhoopali</option>
+        <option value="darbari">Darbari</option><option value="charukeshi">Charukeshi</option>
+        </optgroup>
+      <optgroup label="── melodic/harmonic modes ──">
+        <option value="locrian_n2">Locrian ♮2</option><option value="locrian_n6">Locrian ♮6</option>
+        <option value="ionian_s5">Ionian #5</option><option value="dorian_s4">Dorian #4</option>
+        <option value="phrygian_dom">Phrygian Dominant</option><option value="lydian_s2">Lydian #2</option>
+        <option value="ultralocrian">Ultralocrian</option><option value="dorian_b5">Dorian b5</option>
+        <option value="phrygian_b4">Phrygian b4</option><option value="lydian_b3">Lydian b3</option>
+        <option value="mixo_b2">Mixolydian b2</option><option value="lydian_aug_s2">Lydian Aug #2</option>
+        </optgroup>
+        <optgroup label="── gypsy / oriental ──">
+        <option value="hungarian_min">Hungarian Minor</option><option value="hungarian_maj">Hungarian Major</option>
+        <option value="oriental">Oriental</option><option value="gypsy">Gypsy</option>
+        <option value="tritone">Tritone</option>
+        </optgroup>
+        <optgroup label="── pentatonic / 日本 (more) ──">
+        <option value="egyptian">Egyptian</option><option value="man_gong">Man Gong</option>
+        <option value="ritusen">Ritusen</option><option value="yo">Yo 陽</option>
+        <option value="akebono">Akebono 曙</option>
+        </optgroup>
+        <optgroup label="── राग (more) ──">
+        <option value="kirwani">Kirwani</option><option value="ahirbhairav">Ahir Bhairav</option>
+        <option value="madhuvanti">Madhuvanti</option><option value="hamsadhwani">Hamsadhwani</option>
+        <option value="shree">Shree</option><option value="pilu">Pilu</option>
+        </optgroup>
+        <optgroup label="── Arabic maqamat ──">
+        <option value="hijaz">Hijaz</option><option value="nahawand">Nahawand</option>
+        <option value="kurd">Kurd</option><option value="ajam">Ajam</option>
+        <option value="saba">Saba</option><option value="bayati">Bayati</option>
+        <option value="hijazkar">Hijazkar</option>
+        </optgroup>
+        <optgroup label="── synthetic / bebop ──">
+        <option value="enigmatic">Enigmatic</option><option value="neapolitan_min">Neapolitan Minor</option>
+        <option value="neapolitan_maj">Neapolitan Major</option><option value="prometheus">Prometheus</option>
+        <option value="scriabin">Scriabin</option><option value="blues_maj">Major Blues</option>
+        <option value="bebop_dom">Bebop Dominant</option><option value="bebop_maj">Bebop Major</option>
+        <option value="bebop_dorian">Bebop Dorian</option><option value="six_tone_sym">Six-Tone Sym</option>
+        <option value="leading_whole">Leading Whole-Tone</option><option value="chromatic">Chromatic</option>
+        </optgroup>
+      </select></div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="105" min="60" max="200"
+        style="width:44px;font-size:.5rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.06rem .12rem">
+      <button class="btn" onclick="tapTempo()" style="font-size:.35rem;padding:.05rem .2rem">TAP</button></div>
+    <div class="pr"><label>Feel</label>
+      <select id="feelSel" style="flex:1;font-size:.42rem">
+        <option value="straight">Straight — ジャスト</option>
+        <option value="dolphin" selected>Dolphin — 静かな深み</option>
+        <option value="ilovem">I Love Music — 前のめり</option>
+        <option value="wave">Wave — 後ろに沈む</option>
+        <option value="shuffle">Shuffle — 跳ねる</option>
+        <option value="laidback">Laid Back — 深く後ろ</option>
+      </select></div>
+    <div class="pr"><label>Swing</label>
+      <input type="range" id="swingSlider" min="0" max="66" value="0" oninput="onSwing()" style="flex:1">
+      <span class="prv" id="swingV">presetへ</span></div>
+    <div class="pr" style="margin-top:.3rem"><label style="font-size:.56rem;color:var(--dim)">声部別ずらし</label>
+      <span style="font-size:.46rem;color:var(--dim)">← 食う / ためる →</span></div>
+    <div class="pr"><label>↳ RH</label>
+      <input type="range" id="sw_rh" min="-50" max="50" value="0" oninput="onVoiceSwing('rh')" style="flex:1;accent-color:var(--rh)">
+      <span class="prv" id="sw_rhV">0</span></div>
+    <div class="pr"><label>↳ Bass</label>
+      <input type="range" id="sw_bass" min="-50" max="50" value="0" oninput="onVoiceSwing('bass')" style="flex:1;accent-color:#c8a060">
+      <span class="prv" id="sw_bassV">0</span></div>
+    <div class="pr"><label>↳ Strike</label>
+      <input type="range" id="sw_strike" min="-50" max="50" value="0" oninput="onVoiceSwing('strike')" style="flex:1;accent-color:#b07890">
+      <span class="prv" id="sw_strikeV">0</span></div>
+    <div class="pr" style="margin-top:.3rem"><label style="font-size:.56rem;color:var(--dim)">レガート</label>
+      <span style="font-size:.46rem;color:var(--dim)">短 ← つながり → 長</span></div>
+    <div class="pr"><label>↳ RH</label>
+      <input type="range" id="lg_rh" min="0" max="100" value="0" oninput="onLegato('rh')" style="flex:1;accent-color:var(--rh)">
+      <span class="prv" id="lg_rhV">0</span></div>
+    <div class="pr"><label>↳ Bass</label>
+      <input type="range" id="lg_bass" min="0" max="100" value="0" oninput="onLegato('bass')" style="flex:1;accent-color:#c8a060">
+      <span class="prv" id="lg_bassV">0</span></div>
+    <div class="pr"><label>↳ Strike</label>
+      <input type="range" id="lg_strike" min="0" max="100" value="0" oninput="onLegato('strike')" style="flex:1;accent-color:#b07890">
+      <span class="prv" id="lg_strikeV">0</span></div>
+  </div>
+
+  <!-- Space design -->
+  <div class="panel">
+    <div class="pt">Space — 空間</div>
+    <div style="font-size:.35rem;color:var(--dim);line-height:1.8;margin-bottom:.2rem">
+      音符より空白が先にある。
+    </div>
+    <div class="pr"><label>Density</label>
+      <input type="range" id="density" min="10" max="70" value="35"
+        style="accent-color:var(--rh)">
+      <span class="prv" id="densityV" style="color:var(--rh)">35</span></div>
+    <div class="pr"><label>Silence wt.</label>
+      <input type="range" id="silWeight" min="20" max="80" value="45">
+      <span class="prv" id="silWeightV">45</span></div>
+    <div class="pr"><label>Steps</label>
+      <select id="stepsSel" style="flex:1">
+        <option value="8">8</option>
+        <option value="12" selected>12</option>
+        <option value="16">16</option>
+        <option value="24">24</option>
+        <option value="32">32</option>
+      </select></div>
+    <div class="pr" style="margin-top:.3rem"><label style="color:var(--rh)">Polyrhythm</label>
+      <button class="btn" onclick="togglePoly()" id="polyBtn" style="font-size:.38rem">OFF</button></div>
+    <div id="polyRows" style="display:none">
+      <div class="pr"><label>↳ RH 周期</label>
+        <input type="number" id="polyRH" value="16" min="2" max="32" oninput="applyPoly()" style="width:38px;font-size:.42rem;background:var(--s1);border:1px solid var(--bd);color:var(--text)"></div>
+      <div class="pr"><label>↳ Bass 周期</label>
+        <input type="number" id="polyBass" value="12" min="2" max="32" oninput="applyPoly()" style="width:38px;font-size:.42rem;background:var(--s1);border:1px solid var(--bd);color:var(--text)"></div>
+      <div class="pr"><label>↳ Strike 周期</label>
+        <input type="number" id="polyStrike" value="7" min="2" max="32" oninput="applyPoly()" style="width:38px;font-size:.42rem;background:var(--s1);border:1px solid var(--bd);color:var(--text)"></div>
+      <div class="note" style="font-size:.34rem;color:var(--dim);margin-top:.2rem">各声部が違う周期で回る。16:12:7 のように素数を混ぜると、長い周期で交差する真のポリリズムになる。</div>
+    </div>
+  </div>
+
+  <!-- Arc -->
+  <div class="panel" style="border-color:rgba(154,176,204,.12)">
+    <div class="pt" style="color:var(--rh)">Arc — 展開</div>
+    <div class="pr"><label>Type</label>
+      <select id="arcSel" onchange="setArc(this.value)" style="flex:1;font-size:.42rem">
+        <option value="short" selected>Short — 7</option>
+        <option value="mid">Mid — 13</option>
+        <option value="long">Long — 20</option>
+      </select></div>
+    <div style="height:2px;background:var(--s1);margin:.2rem 0;overflow:hidden">
+      <div id="arcBar" style="height:100%;background:var(--rh);width:0%;transition:width .3s"></div>
+    </div>
+    <div class="pr"><label>Phase</label>
+      <span id="arcPhase" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.72rem;color:var(--dim)">—</span></div>
+    <!-- Auto Next -->
+    <div style="height:1px;background:var(--bd);margin:.22rem 0"></div>
+    <div class="pr"><label>Auto Next</label>
+      <button id="btnAuto" onclick="toggleAuto()"
+        style="flex:1;padding:.12rem;border:1px solid var(--bd);background:transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.42rem;cursor:pointer">
+        OFF
+      </button></div>
+    <div class="pr"><label>Interval</label>
+      <input type="range" id="autoInt" min="4" max="120" value="20"
+        style="flex:1;height:2px;accent-color:var(--rh)">
+      <span class="prv" id="autoIntV" style="color:var(--rh)">20</span>s</div>
+    <div style="height:2px;background:var(--s1);margin-top:.15rem;overflow:hidden">
+      <div id="autoBar" style="height:100%;background:var(--rh);width:0%;transition:none;opacity:.4"></div>
+    </div>
+    <button class="btn" onclick="resetArc()" style="width:100%;margin-top:.2rem;font-size:.38rem;color:var(--dim)">↺ Reset</button>
+  </div>
+
+  <!-- Channels -->
+  <div class="panel">
+    <div class="pt">Channels</div>
+    <div class="pr"><label>右手</label>
+      <select id="rhCh" onchange="saveCh()" style="flex:1;font-size:.42rem">
+        <option value="4" selected>Ch 4</option><option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option>
+      </select></div>
+    <div class="pr"><label>Bass</label>
+      <select id="lhbCh" onchange="saveCh()" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5" selected>Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option>
+      </select></div>
+    <div class="pr"><label>Strike</label>
+      <select id="lhcCh" onchange="saveCh()" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5">Ch 5</option><option value="6" selected>Ch 6</option><option value="7">Ch 7</option>
+      </select></div>
+  </div>
+
+  <!-- Hi-Hat -->
+  <div class="panel" style="border-color:rgba(80,104,104,.3)">
+    <div class="pt" style="color:#507070">HH — ハイハット</div>
+    <div style="font-size:.35rem;color:var(--dim);line-height:1.8;margin-bottom:.18rem">
+      ブラシ: 流れがデフォルト。クリックで抜く。<br>
+      やや鳴る: クリックで置く。
+    </div>
+    <div class="pr"><label>Brush vel.</label>
+      <input type="range" id="brushVel" min="1" max="35" value="15"
+        style="flex:1;height:2px;accent-color:#507070">
+      <span class="prv" id="brushVelV" style="color:#507070">15</span></div>
+    <div class="pr"><label>Open vel.</label>
+      <input type="range" id="openVel" min="20" max="75" value="45"
+        style="flex:1;height:2px;accent-color:#90b8c0">
+      <span class="prv" id="openVelV" style="color:#90b8c0">45</span></div>
+    <div class="pr"><label>Auto-gap</label>
+      <input type="range" id="autoGap" min="0" max="70" value="30"
+        style="flex:1;height:2px">
+      <span class="prv" id="autoGapV">30</span></div>
+    <div class="pr"><label>Brush Ch</label>
+      <select id="brushCh" onchange="saveCh()" style="flex:1;font-size:.42rem">
+        <option value="8" selected>Ch 8</option><option value="9">Ch 9</option><option value="10">Ch 10</option>
+      </select></div>
+    <div class="pr"><label>Open Ch</label>
+      <select id="openCh" onchange="saveCh()" style="flex:1;font-size:.42rem">
+        <option value="8">Ch 8</option><option value="9" selected>Ch 9</option><option value="10">Ch 10</option>
+      </select></div>
+    <div class="pr"><label>Brush note</label>
+      <input type="number" id="brushNote" value="42" min="0" max="127"
+        style="width:36px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.05rem .1rem">
+      <span style="font-size:.34rem;color:var(--dim)"> / Open</span>
+      <input type="number" id="openNote" value="46" min="0" max="127"
+        style="width:36px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.05rem .1rem;margin-left:4px"></div>
+    <button class="btn" onclick="genHH()" style="width:100%;margin-top:.18rem;font-size:.38rem;color:#507070">↻ Generate HH</button>
+    <button class="btn" onclick="clearBrushGaps()" style="width:100%;margin-top:.1rem;font-size:.38rem;color:var(--dim)">Clear Gaps</button>
+  </div>
+
+  <!-- MIDI -->
+  <div class="panel">
+    <div class="pt">MIDI</div>
+    <div class="pr"><div class="midi-dot" id="midiDot"></div>
+      <span id="midiStat" style="font-size:.39rem;color:var(--dim)">—</span></div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.15rem;font-size:.38rem">↻ Refresh</button>
+    <div class="pr"><label>Out</label>
+      <select id="midiOut" onchange="selectOut(this.value)" style="flex:1;font-size:.37rem"></select></div>
+    <div class="pr"><label>Clock In</label>
+      <select id="clockIn" onchange="selectClock(this.value)" style="flex:1;font-size:.37rem"><option value="">—</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin:.14rem 0;font-size:.38rem">Slave: OFF</button>
+    <button class="btn hi" onclick="exportMIDI()" style="width:100%;font-size:.38rem">↓ MIDI</button>
+  </div>
+
+</div>
+
+<div class="main">
+  <div class="transport">
+    <button class="btn hi" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn hi" onclick="nextPhrase()" style="font-family:'Cormorant Garamond',serif;font-style:italic">↻ Next</button>
+    <button class="btn" onclick="resetArc();nextPhrase()" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--dim)">↺ New</button>
+    <button class="btn" onclick="genRH()" style="color:var(--rh);font-size:.4rem">↻ 右手</button>
+    <button class="btn" onclick="genBass()" style="color:var(--lhb);font-size:.4rem">↻ Bass</button>
+    <button class="btn" onclick="genStrike()" style="color:var(--lhc);font-size:.4rem">↻ Strike</button>
+    <button class="btn" onclick="strikeNow()" style="color:var(--lhc);font-size:.4rem">Strike!</button>
+    <button class="btn" id="btnU" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnR" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="save()" style="color:var(--lhb)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--dim)">↑ Load<input type="file" accept=".json" onchange="load(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem">
+      <span style="font-size:.36rem;color:var(--dim)" id="stepDisp">—</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:.55rem;font-style:italic;color:var(--rh)" id="feelDisp">Dolphin</span>
+    </div>
+  </div>
+
+  <!-- Seed chord visual -->
+  <div class="seed-panel">
+    <span class="seed-label">種</span>
+    <div class="seed-notes" id="seedNotes">
+      <div class="seed-note root"><div class="seed-note-name" id="snRoot">D</div><div class="seed-note-role">root</div></div>
+      <div class="seed-note fifth"><div class="seed-note-name" id="snFifth">A</div><div class="seed-note-role">5th</div></div>
+      <div class="seed-note seventh"><div class="seed-note-name" id="snSeventh">C</div><div class="seed-note-role">7th</div></div>
+    </div>
+    <span class="seed-tension" id="seedTension">min7</span>
+    <div class="arc-info">
+      <span class="arc-phase" id="arcPhaseDisp" style="color:var(--dim)">—</span>
+      <div class="arc-bar"><div class="arc-fill" id="arcFill"></div></div>
+    </div>
+  </div>
+
+  <div class="voices">
+    <div class="voice">
+      <div class="vhead">
+        <span class="vname" style="color:var(--rh)">右手 — Cold Beauty</span>
+        <span class="vch">Ch <span id="rhChD">4</span></span>
+        <canvas id="rhCurve" width="110" height="14" style="background:var(--s0);margin-left:.3rem"></canvas>
+        <span class="vinfo" id="rhInfo">—</span>
+      </div>
+      <div class="sgrid" id="rhGrid"></div>
+    </div>
+    <div class="voice">
+      <div class="vhead">
+        <span class="vname" style="color:var(--lhb)">左手ベース — Boat</span>
+        <span class="vch">Ch <span id="lhbChD">5</span></span>
+        <span style="font-size:.34rem;color:var(--dim);margin-left:.3rem" id="bassInfo2">—</span>
+        <span class="vinfo" id="lhbInfo">—</span>
+      </div>
+      <div class="sgrid" id="lhbGrid"></div>
+    </div>
+    <div class="voice">
+      <div class="vhead">
+        <span class="vname" style="color:var(--lhc)">左手 Strike</span>
+        <span class="vch">Ch <span id="lhcChD">6</span></span>
+        <span style="font-size:.34rem;color:var(--dim);margin-left:.3rem" id="strikeInfo2">—</span>
+        <span class="vinfo" id="lhcInfo">—</span>
+      </div>
+      <div class="sgrid" id="lhcGrid"></div>
+    </div>
+    <!-- Brush HH -->
+    <div class="voice">
+      <div class="vhead">
+        <span class="vname" style="color:#507070">HH ブラシ</span>
+        <span class="vch">Ch <span id="brushChD">8</span></span>
+        <span style="font-size:.34rem;color:var(--dim);margin-left:.3rem">流れる — クリックで抜く</span>
+        <span class="vinfo" id="brushInfo">—</span>
+      </div>
+      <div class="sgrid" id="brushGrid"></div>
+    </div>
+
+    <!-- Open HH -->
+    <div class="voice">
+      <div class="vhead">
+        <span class="vname" style="color:#90b8c0">HH やや鳴る</span>
+        <span class="vch">Ch <span id="openChD">9</span></span>
+        <span style="font-size:.34rem;color:var(--dim);margin-left:.3rem">選んだ場所に置く</span>
+        <span class="vinfo" id="openInfo">—</span>
+      </div>
+      <div class="sgrid" id="openGrid"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Dock -->
+<div class="dock">
+  <div class="dock-tabs">
+    <button class="dtab active" data-p="seed"><span class="ddot" style="background:var(--rh)"></span>Seed</button>
+    <button class="dtab" data-p="space"><span class="ddot" style="background:var(--cold)"></span>Space</button>
+    <button class="dtab" data-p="log"><span class="ddot" style="background:var(--fog)"></span>Log</button>
+    <div class="dock-right">
+      <div class="dmini"><span class="dml">RH</span><div class="dmbar"><div class="dmfill" id="dRH" style="background:var(--rh)"></div></div></div>
+      <div class="dmini"><span class="dml">Bass</span><div class="dmbar"><div class="dmfill" id="dBass" style="background:var(--lhb)"></div></div></div>
+      <div class="dmini"><span class="dml">空間</span><div class="dmbar"><div class="dmfill" id="dSpace" style="background:var(--cold)"></div></div></div>
+      <button onclick="toggleDock()" id="dockBtn" style="background:transparent;border:none;color:var(--dim);font-size:.4rem;cursor:pointer;margin-left:.25rem">▲</button>
+    </div>
+  </div>
+  <div class="dock-body" id="dockBody">
+    <div class="dpanel active" id="dp-seed">
+      <div class="dgrid dg4">
+        <div class="dsub">
+          <div class="dst">種の和音</div>
+          <div class="drow"><span class="dl">Root</span><span id="dRoot" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.85rem;color:var(--lhb)">D</span></div>
+          <div class="drow"><span class="dl">Color</span><span id="dColor" style="font-size:.38rem;color:var(--rh)">min7</span></div>
+          <div class="drow"><span class="dl">Phrase</span><span id="dPhrase" style="font-size:.38rem;color:var(--dim)">1</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dst">Melody curve</div>
+          <canvas id="docCurve" height="48" style="width:100%;display:block;background:var(--bg)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dst" style="border-left-color:var(--cold)">Space ratio</div>
+          <div class="drow"><span class="dl">Silence</span><div class="dtrack"><div class="dfill" id="dSilF" style="background:var(--cold)"></div></div><span class="dval" id="dSilV">0</span></div>
+          <div class="drow"><span class="dl">Active</span><div class="dtrack"><div class="dfill" id="dActF" style="background:var(--rh)"></div></div><span class="dval" id="dActV">0</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dst">哲学</div>
+          <div style="font-size:.34rem;color:var(--dim);line-height:1.9">
+            最初の和音から全てが生まれる<br>
+            <span style="color:var(--rh)">空間が音符より先にある</span><br>
+            Miles Davis: space · touch · understatement
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dpanel" id="dp-space">
+      <div class="dgrid dg3">
+        <div class="dsub">
+          <div class="dst">Bass walk</div>
+          <canvas id="bassDoc" height="48" style="width:100%;display:block;background:var(--bg)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dst" style="border-left-color:var(--lhb)">Voice spacing</div>
+          <div class="drow"><span class="dl">RH range</span><span id="dRHRange" style="font-size:.38rem;color:var(--rh)">—</span></div>
+          <div class="drow"><span class="dl">Bass range</span><span id="dBassRange" style="font-size:.38rem;color:var(--lhb)">—</span></div>
+          <div class="drow"><span class="dl">Gap</span><span id="dGap" style="font-size:.38rem;color:var(--cold)">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dst">ログ</div>
+          <div id="spaceLog" class="dlog"></div>
+        </div>
+      </div>
+    </div>
+    <div class="dpanel" id="dp-log">
+      <div class="dsub">
+        <div class="dst">Event log</div>
+        <div id="mainLog" class="dlog" style="max-height:120px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  SCALES & COLORS
+// ══════════════════════════════════════════════════════
+const NOTE = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+
+// Scale definitions (semitone intervals from root)
+const SCALES_DEF = {
+  // ── extended library (added) ──
+  locrian_n2: {name:'Locrian ♮2', degs:[0,2,3,5,6,8,10]},
+  locrian_n6: {name:'Locrian ♮6', degs:[0,1,3,5,6,9,10]},
+  ionian_s5: {name:'Ionian #5', degs:[0,2,4,5,8,9,11]},
+  dorian_s4: {name:'Dorian #4', degs:[0,2,3,6,7,9,10]},
+  phrygian_dom: {name:'Phrygian Dominant', degs:[0,1,4,5,7,8,10]},
+  lydian_s2: {name:'Lydian #2', degs:[0,3,4,6,7,9,11]},
+  ultralocrian: {name:'Ultralocrian', degs:[0,1,3,4,6,8,9]},
+  dorian_b5: {name:'Dorian b5', degs:[0,2,3,5,6,9,10]},
+  phrygian_b4: {name:'Phrygian b4', degs:[0,1,4,5,7,8,10]},
+  lydian_b3: {name:'Lydian b3', degs:[0,2,3,6,7,9,11]},
+  mixo_b2: {name:'Mixolydian b2', degs:[0,1,4,5,7,9,10]},
+  lydian_aug_s2: {name:'Lydian Aug #2', degs:[0,3,4,6,8,9,11]},
+  hungarian_min: {name:'Hungarian Minor', degs:[0,2,3,6,7,8,11]},
+  hungarian_maj: {name:'Hungarian Major', degs:[0,3,4,6,7,9,10]},
+  oriental: {name:'Oriental', degs:[0,1,4,5,6,9,10]},
+  gypsy: {name:'Gypsy', degs:[0,2,3,6,7,8,11]},
+  tritone: {name:'Tritone', degs:[0,1,4,6,7,10]},
+  egyptian: {name:'Egyptian', degs:[0,2,5,7,10]},
+  man_gong: {name:'Man Gong', degs:[0,3,5,8,10]},
+  ritusen: {name:'Ritusen', degs:[0,2,5,7,9]},
+  yo: {name:'Yo 陽', degs:[0,2,5,7,9]},
+  akebono: {name:'Akebono 曙', degs:[0,2,3,7,9]},
+  kirwani: {name:'Kirwani राग', degs:[0,2,3,5,7,8,11]},
+  ahirbhairav: {name:'Ahir Bhairav राग', degs:[0,1,4,5,7,9,10]},
+  madhuvanti: {name:'Madhuvanti राग', degs:[0,3,4,6,7,9,11]},
+  hamsadhwani: {name:'Hamsadhwani राग', degs:[0,2,4,7,11]},
+  shree: {name:'Shree राग', degs:[0,1,4,6,7,8,11]},
+  pilu: {name:'Pilu राग', degs:[0,2,3,4,5,7,9,10,11]},
+  hijaz: {name:'Hijaz', degs:[0,1,4,5,7,8,10]},
+  nahawand: {name:'Nahawand', degs:[0,2,3,5,7,8,10]},
+  kurd: {name:'Kurd', degs:[0,1,3,5,7,8,10]},
+  ajam: {name:'Ajam', degs:[0,2,4,5,7,9,11]},
+  saba: {name:'Saba', degs:[0,2,3,4,7,8,10]},
+  bayati: {name:'Bayati', degs:[0,2,3,5,7,8,10]},
+  hijazkar: {name:'Hijazkar', degs:[0,1,4,5,7,8,11]},
+  enigmatic: {name:'Enigmatic', degs:[0,1,4,6,8,10,11]},
+  neapolitan_min: {name:'Neapolitan Minor', degs:[0,1,3,5,7,8,11]},
+  neapolitan_maj: {name:'Neapolitan Major', degs:[0,1,3,5,7,9,11]},
+  prometheus: {name:'Prometheus', degs:[0,2,4,6,9,10]},
+  scriabin: {name:'Scriabin', degs:[0,1,4,7,9]},
+  blues_maj: {name:'Major Blues', degs:[0,2,3,4,7,9]},
+  bebop_dom: {name:'Bebop Dominant', degs:[0,2,4,5,7,9,10,11]},
+  bebop_maj: {name:'Bebop Major', degs:[0,2,4,5,7,8,9,11]},
+  bebop_dorian: {name:'Bebop Dorian', degs:[0,2,3,4,5,7,9,10]},
+  six_tone_sym: {name:'Six-Tone Symmetric', degs:[0,1,4,5,8,9]},
+  leading_whole: {name:'Leading Whole-Tone', degs:[0,2,4,6,8,10,11]},
+  chromatic: {name:'Chromatic', degs:[0,1,2,3,4,5,6,7,8,9,10,11]},
+
+  // ── Western modes ──
+  dorian:    {name:'Dorian',          degs:[0,2,3,5,7,9,10]},
+  ionian:    {name:'Ionian (Major)',  degs:[0,2,4,5,7,9,11]},
+  mixolydian:{name:'Mixolydian',      degs:[0,2,4,5,7,9,10]},
+  aeolian:   {name:'Aeolian (minor)', degs:[0,2,3,5,7,8,10]},
+  phrygian:  {name:'Phrygian',        degs:[0,1,3,5,7,8,10]},
+  lydian:    {name:'Lydian',          degs:[0,2,4,6,7,9,11]},
+  locrian:   {name:'Locrian',         degs:[0,1,3,5,6,8,10]},
+  // ── minor systems ──
+  mel_minor: {name:'Melodic Minor',   degs:[0,2,3,5,7,9,11]},
+  har_minor: {name:'Harmonic Minor',  degs:[0,2,3,5,7,8,11]},
+  har_major: {name:'Harmonic Major',  degs:[0,2,4,5,7,8,11]},
+  dorian_b2: {name:'Dorian b2',       degs:[0,1,3,5,7,9,10]},
+  lydian_aug:{name:'Lydian Augmented',degs:[0,2,4,6,8,9,11]},
+  lydian_dom:{name:'Lydian Dominant', degs:[0,2,4,6,7,9,10]},
+  mixo_b6:   {name:'Mixolydian b6',   degs:[0,2,4,5,7,8,10]},
+  altered:   {name:'Altered (Super Locrian)', degs:[0,1,3,4,6,8,10]},
+  // ── symmetric ──
+  wholetone: {name:'Whole Tone',      degs:[0,2,4,6,8,10]},
+  dim_wh:    {name:'Diminished W-H',  degs:[0,2,3,5,6,8,9,11]},
+  dim_hw:    {name:'Diminished H-W',  degs:[0,1,3,4,6,7,9,10]},
+  augmented: {name:'Augmented',       degs:[0,3,4,7,8,11]},
+  // ── pentatonic & blues ──
+  maj_pent:  {name:'Major Pentatonic',degs:[0,2,4,7,9]},
+  min_pent:  {name:'Minor Pentatonic',degs:[0,3,5,7,10]},
+  blues:     {name:'Blues',           degs:[0,3,5,6,7,10]},
+  in_sen:    {name:'In Sen (日本)',    degs:[0,1,5,7,8]},
+  hirajoshi: {name:'Hirajoshi (日本)', degs:[0,2,3,7,8]},
+  iwato:     {name:'Iwato (日本)',     degs:[0,1,5,6,10]},
+  kumoi:     {name:'Kumoi (日本)',     degs:[0,2,3,7,9]},
+  // ── Spanish / Middle-Eastern ──
+  spanish:   {name:'Spanish Phrygian',degs:[0,1,4,5,7,8,10]},
+  double_har:{name:'Double Harmonic', degs:[0,1,4,5,7,8,11]},
+  hungarian: {name:'Hungarian Minor', degs:[0,2,3,6,7,8,11]},
+  byzantine: {name:'Byzantine',       degs:[0,1,4,5,7,8,11]},
+  // ── Indian raags (आरोह, ascending forms) ──
+  bhairav:   {name:'Bhairav (राग)',     degs:[0,1,4,5,7,8,11]},
+  yaman:     {name:'Yaman (राग)',       degs:[0,2,4,6,7,9,11]},
+  kafi:      {name:'Kafi (राग)',        degs:[0,2,3,5,7,9,10]},
+  bhairavi:  {name:'Bhairavi (राग)',    degs:[0,1,3,5,7,8,10]},
+  todi:      {name:'Todi (राग)',        degs:[0,1,3,6,7,8,11]},
+  marwa:     {name:'Marwa (राग)',       degs:[0,1,4,6,7,9,11]},
+  purvi:     {name:'Purvi (राग)',       degs:[0,1,4,6,7,8,11]},
+  des:       {name:'Des (राग)',         degs:[0,2,4,5,7,9,10]},
+  malkauns:  {name:'Malkauns (राग)',    degs:[0,3,5,8,10]},
+  bhoopali:  {name:'Bhoopali (राग)',    degs:[0,2,4,7,9]},
+  darbari:   {name:'Darbari (राग)',     degs:[0,2,3,5,7,8,10]},
+  charukeshi:{name:'Charukeshi (राग)',  degs:[0,2,4,5,7,8,10]},
+};
+
+// Color → Scale mapping + chord tones
+const COLORS = {
+  // ── minor family ──
+  min7:    {scale:'dorian',     tones:[0,3,7,10],     name:'min7 — 冷たい浮遊'},
+  min9:    {scale:'dorian',     tones:[0,3,7,10,14],  name:'min9 — より開いた'},
+  min11:   {scale:'dorian',     tones:[0,3,7,10,14,17],name:'min11 — 広大'},
+  min6:    {scale:'dorian',     tones:[0,3,7,9],      name:'min6 — ほろ苦い'},
+  minmaj7: {scale:'mel_minor',  tones:[0,3,7,11],     name:'min(maj7) — 不穏な美'},
+  // ── dominant family ──
+  dom7:    {scale:'mixolydian', tones:[0,4,7,10],     name:'dom7 — テンション'},
+  dom9:    {scale:'mixolydian', tones:[0,4,7,10,14],  name:'dom9 — 豊かな緊張'},
+  dom7b9:  {scale:'phrygian',   tones:[0,4,7,10,13],  name:'dom7b9 — スペイン的暗さ'},
+  dom7s9:  {scale:'altered',    tones:[0,4,7,10,15],  name:'dom7#9 — Hendrix緊張'},
+  dom7alt: {scale:'altered',    tones:[0,4,8,10,13],  name:'dom7alt — 最大緊張'},
+  dom13:   {scale:'lydian_dom', tones:[0,4,7,10,14,21],name:'dom13 — 開いた支配'},
+  // ── major family ──
+  maj7:    {scale:'ionian',     tones:[0,4,7,11],     name:'maj7 — 解決感'},
+  maj9:    {scale:'lydian',     tones:[0,4,7,11,14],  name:'maj9 — Lydian浮遊'},
+  maj7s11: {scale:'lydian',     tones:[0,4,7,11,18],  name:'maj7#11 — 宙に浮く'},
+  maj6:    {scale:'ionian',     tones:[0,4,7,9],      name:'maj6 — 古い暖かさ'},
+  sixnine: {scale:'ionian',     tones:[0,4,7,9,14],   name:'6/9 — 開いた明るさ'},
+  add9:    {scale:'ionian',     tones:[0,4,7,14],     name:'add9 — 澄んだ'},
+  // ── suspended / quartal ──
+  sus4:    {scale:'mixolydian', tones:[0,5,7,10],     name:'sus4 — 解決しない'},
+  sus2:    {scale:'mixolydian', tones:[0,2,7,10],     name:'sus2 — 開いた問い'},
+  quartal: {scale:'dorian',     tones:[0,5,10,15],    name:'quartal — McCoy的'},
+  // ── dark / altered ──
+  min7b5:  {scale:'locrian',    tones:[0,3,6,10],     name:'min7b5 — 最も暗い'},
+  dim7:    {scale:'dim_wh',     tones:[0,3,6,9],      name:'dim7 — 宙吊りの闇'},
+  aug:     {scale:'wholetone',  tones:[0,4,8],        name:'aug — 重力喪失'},
+  dom7b13: {scale:'mixo_b6',    tones:[0,4,7,10,20],  name:'dom7b13 — 翳り'},
+};
+
+// ── VOICINGS: how the chord tones are stacked into actual pitches ──
+// Each takes the color's base chord tones and re-spaces them.
+const VOICINGS = {
+  thirds:  {name:'3度堆積 (Tertian)',  fn:function(t){ return t.slice(); }},
+  quartal: {name:'4度堆積 (Quartal)',  fn:function(t,root,scale){ return quartalFrom(root,scale,t.length); }},
+  cluster: {name:'2度クラスター',       fn:function(t,root,scale){ return clusterFrom(root,scale,t.length); }},
+  open:    {name:'開離 (Open/Spread)',  fn:function(t){ return spread(t); }},
+  fifths:  {name:'5度/空虚 (Quintal)',  fn:function(t){ return [0,7,12,19].slice(0,Math.max(2,t.length)); }},
+  shell:   {name:'シェル (3rd+7th)',    fn:function(t){ return t.length>=4?[t[0],t[1],t[3]]:t.slice(); }},
+  stacked2:{name:'2nd積み (Secundal)',  fn:function(t,root,scale){ return secundalFrom(root,scale,t.length); }},
+};
+function getVoicing(){ const e=document.getElementById('voicingSel'); return (e&&e.value)||'thirds'; }
+// build a quartal stack within the current scale
+function quartalFrom(root,scaleDegs,n){
+  const out=[0]; let idx=scaleDegs.indexOf(0); if(idx<0) idx=0;
+  for(let k=1;k<Math.max(3,n);k++){ idx=(idx+3)%scaleDegs.length; const oct=Math.floor((idx)/scaleDegs.length); out.push(scaleDegs[idx]+12*(k>=scaleDegs.length-idx?1:0)+ (out[k-1]>=scaleDegs[idx]?12:0)); }
+  // simpler: stack ~5 semitone (4th) steps snapped to scale
+  const res=[0]; let cur=0;
+  for(let k=1;k<Math.max(3,n);k++){ cur=snapUp(cur+5,scaleDegs); res.push(cur); }
+  return res;
+}
+function clusterFrom(root,scaleDegs,n){
+  const res=[0]; let cur=0;
+  for(let k=1;k<Math.max(3,n);k++){ cur=snapUp(cur+1,scaleDegs); res.push(cur); }
+  return res;
+}
+function secundalFrom(root,scaleDegs,n){
+  const res=[0]; let cur=0;
+  for(let k=1;k<Math.max(3,n);k++){ cur=snapUp(cur+2,scaleDegs); res.push(cur); }
+  return res;
+}
+function spread(t){ // push alternate tones up an octave for an open voicing
+  return t.map(function(x,i){ return i%2===1 ? x+12 : x; });
+}
+function snapUp(semi,scaleDegs){
+  // nearest scale degree >= semi (mod-12 aware, keep ascending)
+  for(let s=semi;s<semi+12;s++){ if(scaleDegs.indexOf(((s%12)+12)%12)>=0) return s; }
+  return semi;
+}
+
+// Get current scale degrees — scale can be overridden independently of the chord color.
+function getScaleKey(){
+  const e=document.getElementById('scaleSel');
+  const v=e&&e.value;
+  if(v && v!=='auto' && SCALES_DEF[v]) return v;
+  return (COLORS[getColor()]||COLORS.min7).scale;   // 'auto' → follow the chord color
+}
+function getCurrentScale(){
+  return (SCALES_DEF[getScaleKey()] || SCALES_DEF.dorian).degs;
+}
+
+// Legacy compatibility
+const DORIAN = [0,2,3,5,7,9,10];
+
+// Hi-Hat state
+const HH = {
+  brushSteps: [],  // isGap=true means SILENCE (inverted logic)
+  openSteps:  [],  // active=true means PLAY
+};
+
+// Feel presets
+// FEEL = a GROOVE character (ノリ), not a parameter preset.
+// It shapes swing, push/pull lean, and accent — NOT your BPM/density/steps.
+// swing: 0=just .. 0.66=hard shuffle (triplet). lean: <0 ahead(食う) >0 behind(ためる).
+const FEELS = {
+  straight:{swing:0.00, lean: 0.00, accent:0.10, label:'Straight — ジャスト'},
+  dolphin: {swing:0.14, lean:-0.04, accent:0.18, label:'Dolphin — 静かな深み'},
+  ilovem:  {swing:0.22, lean:-0.08, accent:0.30, label:'I Love Music — 前のめりの確信'},
+  wave:    {swing:0.30, lean: 0.10, accent:0.16, label:'Wave — 後ろに沈むどす黒さ'},
+  shuffle: {swing:0.55, lean: 0.02, accent:0.24, label:'Shuffle — 跳ねる'},
+  laidback:{swing:0.18, lean: 0.16, accent:0.12, label:'Laid Back — 深く後ろ'},
+};
+// live groove params, blended from FEEL preset + manual Swing slider
+const FEEL_LIVE = { swing:0.14, lean:-0.04, accent:0.18 };
+// Per-voice manual push/pull (食う/ためる), in fraction of a 16th. <0 ahead(前/食う), >0 behind(後/ためる).
+const VOICE_SWING = { rh:0.0, bass:0.0, strike:0.0 };
+function getVoiceSwing(v){ const e=document.getElementById('sw_'+v); return e?(parseInt(e.value)||0)/100:0; }
+// Per-voice legato (つながり): 0 = as-written(短い), 1 = fully connected to next note.
+const VOICE_LEGATO = { rh:0.0, bass:0.0, strike:0.0 };
+function getVoiceLegato(v){ const e=document.getElementById('lg_'+v); return e?(parseInt(e.value)||0)/100:0; }
+function getSwingManual(){ const e=document.getElementById('swingSlider'); return e?(parseInt(e.value)||0)/100:0; }
+function applyFeel(){
+  const f=FEELS[document.getElementById('feelSel').value]||FEELS.dolphin;
+  // manual swing slider OVERRIDES preset swing when moved off the preset default
+  const man=getSwingManual();
+  FEEL_LIVE.swing = man>0 ? man : f.swing;
+  FEEL_LIVE.lean  = f.lean;
+  FEEL_LIVE.accent= f.accent;
+  const fd=document.getElementById('feelDisp'); if(fd) fd.textContent=f.label.split(' ')[0];
+}
+
+// Arc
+const ARCS = {
+  short: {
+    total: 7,
+    phases:[
+      {n:2, phase:'explore',  energy:0.28, dir:0,  openness:0.9},
+      {n:2, phase:'develop',  energy:0.52, dir:1,  openness:0.7},
+      {n:2, phase:'tension',  energy:0.82, dir:1,  openness:0.5},
+      {n:1, phase:'resolve',  energy:0.42, dir:-1, openness:0.85},
+    ],
+  },
+  mid: {
+    total:13,
+    phases:[
+      {n:4, phase:'explore',  energy:0.22, dir:0,  openness:0.95},
+      {n:4, phase:'develop',  energy:0.50, dir:1,  openness:0.70},
+      {n:3, phase:'tension',  energy:0.88, dir:1,  openness:0.45},
+      {n:2, phase:'resolve',  energy:0.38, dir:-1, openness:0.90},
+    ],
+  },
+  long: {
+    total:20,
+    phases:[
+      {n:6, phase:'explore',  energy:0.18, dir:0,  openness:0.95},
+      {n:6, phase:'develop',  energy:0.48, dir:1,  openness:0.70},
+      {n:5, phase:'tension',  energy:0.90, dir:1,  openness:0.42},
+      {n:3, phase:'resolve',  energy:0.35, dir:-1, openness:0.92},
+    ],
+  },
+};
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let midiOutPort=null, midiAccess=null;
+let playing=false, audioCtx=null, keepNode=null;
+let rhSteps=[], lhbSteps=[], lhcSteps=[];
+let rhIdx=0, lhbIdx=0, lhcIdx=0;
+const _hung={};   // ch -> [midi,...] currently sounding (slave), to force-off before re-trigger
+let playTimer=null, barCount=0;
+
+const SLAVE={active:false,running:false,port:null,ppqn:24,pps:6,count:0,bpm:105,alpha:0.15,last:0,stepPulses:null};
+const AUTO={active:false,timer:null,raf:null,start:0};
+
+const ARC={type:'short', phraseNum:0};
+// Continuation state
+const CONT={
+  rh:{pos:6, lastMidi:64},
+  bass:{pos:5, lastMidi:52},
+  strike:{pos:4, lastMidi:50},
+};
+
+// ══════════════════════════════════════════════════════
+//  GROOVE ENGINE — ファンクネス / アンティシペーション
+// ══════════════════════════════════════════════════════
+//
+// Jamalのグルーヴの解剖：
+//   1. アンティシペーション: 特定の音が1/16拍前に来る
+//   2. ポケット: バスが少し後ろに座る瞬間がある
+//   3. 微分的な前のめり: テンポが少しずつ前に傾く
+//   4. ベロシティの二極化: pp か mf か、中間を避ける
+//
+const GROOVE = {
+  // Tempo drift: organic forward lean
+  mult:      1.0,
+  vel:       0.0,
+  inertia:   0.90,
+  maxDrift:  0.055,
+  // Forward lean bias — Jamal tends to push forward
+  leanBias:  0.0008,
+
+  // Anticipation state
+  antiCount: 0,      // countdown to next anticipation
+  antiRate:  4,      // every ~4 steps, one anticipation
+
+  // Pocket: bass sits back
+  pocketActive: false,
+  pocketCount:  0,
+
+  // Velocity shape
+  rhVelWarm:   0.0,  // warm/cold drift
+  bassVelWarm: 0.0,
+};
+
+// One tick of the groove engine
+function grooveTick(stepIdx){
+  // Organic tempo: random walk with forward lean
+  GROOVE.vel = GROOVE.vel * GROOVE.inertia
+    + (Math.random()-0.5) * 0.006  // random component
+    + GROOVE.leanBias;              // persistent forward lean
+  GROOVE.mult = Math.max(1-GROOVE.maxDrift,
+                Math.min(1+GROOVE.maxDrift,
+                GROOVE.mult + GROOVE.vel));
+
+  // Occasional "surge" — like a player leaning in
+  if(Math.random() < 0.03){
+    GROOVE.vel += 0.012; // sudden forward push
+  }
+  // Occasional "breathe" — slight pull back
+  if(Math.random() < 0.025){
+    GROOVE.vel -= 0.010;
+  }
+
+  // Anticipation counter
+  GROOVE.antiCount--;
+  if(GROOVE.antiCount <= 0){
+    GROOVE.antiCount = GROOVE.antiRate + Math.floor(Math.random()*4);
+  }
+
+  // Pocket: bass sits back for 1-2 steps every ~8 steps
+  if(Math.random() < 0.12){
+    GROOVE.pocketActive = true;
+    GROOVE.pocketCount = 1 + Math.floor(Math.random()*2);
+  }
+  if(GROOVE.pocketCount > 0){
+    GROOVE.pocketCount--;
+    if(GROOVE.pocketCount <= 0) GROOVE.pocketActive = false;
+  }
+
+  // Velocity shape drift
+  GROOVE.rhVelWarm   = GROOVE.rhVelWarm  *0.85 + (Math.random()-0.5)*0.06;
+  GROOVE.bassVelWarm = GROOVE.bassVelWarm*0.88 + (Math.random()-0.5)*0.04;
+}
+
+// Get timing offset for a note (ms)
+// negative = early (anticipation/forward lean)
+// positive = late (pocket/behind beat)
+function grooveOffset(voice, isAccent, isSeed, stepIdx, baseMs){
+  const sixteenth = baseMs * 0.5; // half a step = ~1/16th note feel
+
+  // ── FEEL-driven groove: swing + global lean (食う/ためる) ──
+  // swing delays the OFF-beats (odd 8ths); lean shifts everything ahead/behind.
+  let feelMs = FEEL_LIVE.lean * sixteenth;            // global push/pull
+  if(stepIdx!=null && (stepIdx % 2 === 1)){           // off-beat → swing it late
+    feelMs += FEEL_LIVE.swing * sixteenth;
+  }
+  // per-voice manual push/pull: negative = ahead(食う), positive = behind(ためる)
+  feelMs += (VOICE_SWING[voice]||0) * sixteenth;
+
+  if(voice === 'rh'){
+    if(GROOVE.antiCount === 0 && isAccent){
+      return feelMs - (sixteenth * (0.30 + Math.random()*0.20));
+    }
+    if(isSeed && Math.random()<0.4){
+      return feelMs - (3 + Math.random()*8);
+    }
+    return feelMs + (Math.random()-0.5) * 12;
+  }
+
+  if(voice === 'bass'){
+    if(GROOVE.pocketActive){
+      return feelMs + (sixteenth * (0.15 + Math.random()*0.15));
+    }
+    return feelMs + 8 + Math.random()*18;
+  }
+
+  if(voice === 'strike'){
+    return feelMs - (4 + Math.random()*10);
+  }
+
+  return feelMs;
+}
+
+// Velocity humanization with groove
+function grooveVel(vel, voice, isAccent, isSeed){
+  const info = getArcInfo();
+
+  // Jamal's two-level velocity: either pp or mf
+  // Very little middle ground
+  let base = vel;
+
+  if(voice === 'rh'){
+    // Polarize: push toward either soft or present
+    const warm = GROOVE.rhVelWarm;
+    if(isAccent || isSeed){
+      // Present: mf range
+      base = 0.45 + info.energy*0.30 + warm*0.08 + Math.random()*0.08;
+    } else {
+      // Soft: pp range
+      base = 0.12 + info.energy*0.15 + warm*0.05 + Math.random()*0.08;
+    }
+    // Occasional sudden accent (Jamal's surprise)
+    if(Math.random() < 0.06) base += 0.20;
+  }
+
+  if(voice === 'bass'){
+    const warm = GROOVE.bassVelWarm;
+    if(isSeed){
+      base = 0.42 + info.energy*0.20 + warm*0.06 + Math.random()*0.08;
+    } else {
+      base = 0.22 + info.energy*0.15 + warm*0.04 + Math.random()*0.07;
+    }
+  }
+
+  if(voice === 'strike'){
+    // Strike: always decisive
+    base = 0.55 + info.energy*0.28 + Math.random()*0.08;
+  }
+
+  return Math.max(0.06, Math.min(0.94, base));
+}
+
+// Note duration with groove
+function grooveDur(dur, baseMs, voice){
+  let base;
+  if(voice === 'rh'){
+    if(dur <= 1) base = baseMs * (0.55 + Math.random()*0.15);      // crisp
+    else if(dur >= 4) base = baseMs * (0.82 + Math.random()*0.10); // breathe
+    else base = baseMs * (0.70 + Math.random()*0.12);
+  } else if(voice === 'bass'){
+    base = baseMs * (0.55 + Math.random()*0.15);   // pizzicato
+  } else if(voice === 'strike'){
+    base = baseMs * (0.45 + Math.random()*0.12);   // percussive
+  } else {
+    base = baseMs * 0.75;
+  }
+  // LEGATO: blend the short length toward one full step (and a touch beyond),
+  // so at max the note reaches the next onset = connected / なめらか.
+  const lg = getVoiceLegato(voice);
+  if(lg > 0){
+    const connected = baseMs * 1.06;   // slightly past the step → overlaps next note
+    base = base*(1-lg) + connected*lg;
+  }
+  return base;
+}
+
+// ── Seed chord ──
+function getRoot(){ return parseInt(document.getElementById('rootSel').value)||64; }
+function getColor(){ return document.getElementById('colorSel').value||'min7'; }
+function getSteps(){ return parseInt(document.getElementById('stepsSel').value)||12; }
+function getBpm(){ return SLAVE.active&&SLAVE.bpm>0?SLAVE.bpm:parseInt(document.getElementById('bpmIn').value)||105; }
+
+function getSeedTones(){
+  const root=getRoot();
+  const color=COLORS[getColor()]||COLORS.min7;
+  const scaleDegs=getCurrentScale();
+  const voi=VOICINGS[getVoicing()]||VOICINGS.thirds;
+  let offs;
+  try{ offs=voi.fn(color.tones.slice(), root, scaleDegs); }catch(e){ offs=color.tones.slice(); }
+  if(!offs||!offs.length) offs=color.tones.slice();
+  return offs.map(function(i){return root+i;});
+}
+
+// Is midi a seed chord tone (any octave)?
+function isSeedTone(midi){
+  const seed=getSeedTones();
+  return seed.some(function(s){return midi%12===s%12;});
+}
+
+// Get current color's chord tones
+function getColorTones(){
+  return (COLORS[getColor()]||COLORS.min7).tones;
+}
+
+// ── Scale pool ──
+function pool(loOff, hiOff){
+  const root=getRoot();
+  const lo=root+loOff, hi=root+hiOff;
+  const degs=getCurrentScale();
+  const p=[];
+  for(let o=-3;o<=3;o++) degs.forEach(function(d){
+    const m=root+d+o*12;
+    if(m>=lo&&m<=hi) p.push(m);
+  });
+  return [...new Set(p)].sort(function(a,b){return a-b;});
+}
+
+// Snap midi to seed chord tone (within ±5 semitones)
+function snapToSeed(midi, strength){
+  if(Math.random()>strength) return midi;
+  const seed=getSeedTones();
+  let best=midi, bd=999;
+  seed.forEach(function(s){
+    for(let o=-2;o<=2;o++){
+      const c=s+o*12;
+      const d=Math.abs(c-midi);
+      if(d<bd&&d<=5){bd=d;best=c;}
+    }
+  });
+  return Math.max(24,Math.min(108,best));
+}
+
+function getArcInfo(){
+  const arc=ARCS[ARC.type]||ARCS.short;
+  let sofar=0;
+  for(let i=0;i<arc.phases.length;i++){
+    sofar+=arc.phases[i].n;
+    if(ARC.phraseNum<sofar) return arc.phases[i];
+  }
+  return arc.phases[arc.phases.length-1];
+}
+
+function getArcTotal(){ return (ARCS[ARC.type]||ARCS.short).total; }
+
+// ══════════════════════════════════════════════════════
+//  GENERATE RIGHT HAND
+//  核心: 少ない音符 / 空間 / 種の和音への引力
+// ══════════════════════════════════════════════════════
+function genRH(){
+  pushUndo();
+  const info    = getArcInfo();
+  const steps   = getSteps();
+  const density = parseInt(document.getElementById('density').value)/100;
+  const silW    = parseInt(document.getElementById('silWeight').value)/100;
+  const feel    = document.getElementById('feelSel').value;
+  const p       = pool(2, 22);
+  if(!p.length) return;
+
+  // energy modulates how many notes vs silence
+  const energy  = info.energy;
+  // openness: how far from seed tones we allow
+  const openness= info.openness;
+  // direction bias from arc
+  const arcDir  = info.dir;
+
+  rhSteps=[];
+  let pos = Math.max(0,Math.min(p.length-1,CONT.rh.pos));
+  let stepsFilled=0, silCount=0, noteCount=0;
+
+  // First note of new phrase: start on seed chord tone
+  // This ensures "最初の音から正しい"
+  if(ARC.phraseNum===0||CONT.rh.lastMidi===getRoot()){
+    // Find nearest seed tone in pool
+    const seedInPool=p.filter(function(m){return isSeedTone(m);});
+    if(seedInPool.length){
+      const startMidi=seedInPool[Math.floor(seedInPool.length*0.55)]; // upper-mid seed tone
+      const startIdx=p.indexOf(startMidi);
+      if(startIdx>=0) pos=startIdx;
+    }
+  }
+
+  while(stepsFilled<steps){
+    // Silence probability: inverse of energy × silWeight
+    const silProb = silW * (1.2 - energy*0.8);
+    // Note probability: density × energy
+    const noteProb = density * (0.5 + energy*0.5);
+
+    if(Math.random()<silProb){
+      // Silence: duration varies
+      const dur = Math.random()<0.6?2:Math.random()<0.5?4:6;
+      rhSteps.push({isSil:true, dur:dur, vel:0, midi:null});
+      silCount++;
+      stepsFilled++;
+      continue;
+    }
+
+    // Move: Jamal-style melodic contour
+    // Mix of stepwise (1-2) and occasional leaps (3-5)
+    // Explore: shorter moves; tension: wider leaps
+    let dir = arcDir!==0&&Math.random()<0.45 ? arcDir : (Math.random()<0.5?1:-1);
+    const leapProb = 0.18 + energy*0.18;
+    const big = Math.random()<leapProb;
+    const move = big
+      ? 3 + Math.floor(Math.random()*4)  // leap: 3-6 steps in pool
+      : (Math.random()<0.35 ? 2 : 1);    // step: 1-2
+    pos = Math.max(0,Math.min(p.length-1, pos+dir*move));
+    let midi = p[pos];
+
+    // No snap — melody walks freely through Dorian
+    // Seed tones emerge naturally from the scale walk
+
+    // Duration: Jamal uses varied note lengths
+    // Long notes in explore, shorter in tension
+    const longProb = 0.35*(1.5-energy);
+    const dur = Math.random()<0.15?1 : Math.random()<longProb?6 : Math.random()<0.4?4 : 2;
+
+    // Velocity: controlled range, not uniform
+    // Two levels: soft or present (Jamal's binary control)
+    const isAccent = isSeedTone(midi) && Math.random()<0.5;
+    const baseVel = 0.15 + energy*0.35;
+    const vel = isAccent
+      ? baseVel + 0.25 + Math.random()*0.15
+      : baseVel + Math.random()*0.18;
+
+    const isPhraseStart = rhSteps.length===0 || rhSteps[rhSteps.length-1].isSil;
+    const active = Math.random()<noteProb;
+
+    rhSteps.push({
+      isSil:false, midi:midi, active:active,
+      vel:Math.max(0.08,Math.min(0.88,vel)),
+      dur:dur, isSeed:isSeedTone(midi),
+      isPhraseStart:isPhraseStart, isLeap:big,
+    });
+    noteCount++;
+    stepsFilled++;
+  }
+  rhSteps=rhSteps.slice(0,steps);
+
+  // Save continuation
+  const lastNote=rhSteps.filter(function(s){return !s.isSil&&s.active;}).slice(-1)[0];
+  if(lastNote){ CONT.rh.lastMidi=lastNote.midi; CONT.rh.pos=pos; }
+
+  buildGrid('rh'); drawRHCurve(); updateSpaceDisplay();
+  log('['+info.phase+'] RH: '+noteCount+'n '+silCount+'s');
+}
+
+// ══════════════════════════════════════════════════════
+//  GENERATE BASS — walking boat, seed-aware
+// ══════════════════════════════════════════════════════
+function genBass(){
+  pushUndo();
+  const info  = getArcInfo();
+  const steps = getSteps();
+  const feel  = document.getElementById('feelSel').value;
+  const p     = pool(-28, -6);
+  if(!p.length) return;
+
+  const energy = info.energy;
+  const arcDir = info.dir;
+
+  lhbSteps=[];
+  let pos = Math.max(0,Math.min(p.length-1,CONT.bass.pos));
+  let phraseLen = 3+Math.floor(Math.random()*5);
+  let phrasePos = 0;
+
+  for(let i=0;i<steps;i++){
+    phrasePos++;
+    const atBound = phrasePos>=phraseLen;
+    if(atBound){ phraseLen=3+Math.floor(Math.random()*5); phrasePos=0; }
+
+    // Movement: free walking, seed tone pull at phrase boundaries
+    let dir, move;
+    if(atBound && Math.random()<0.35){
+      // Occasional phrase anchor — walk 1-2 steps toward root area
+      const mid=Math.floor(p.length*0.4);
+      dir=pos>mid?-1:1;
+      move=1;
+    } else {
+      // Free walk with arc direction bias
+      dir = arcDir!==0&&Math.random()<0.35 ? arcDir : (Math.random()<0.5?1:-1);
+      move = Math.random()<0.25*(1+energy*0.3)?2:1;
+    }
+
+    pos=Math.max(0,Math.min(p.length-1,pos+dir*move));
+    let midi=p[pos];
+
+    // Bass velocity: two levels — anchor or passing
+    const isAnchor = isSeedTone(midi);
+    const baseVel = 0.32+energy*0.18;
+    const vel = isAnchor
+      ? baseVel+0.15+Math.random()*0.1
+      : baseVel+Math.random()*0.12;
+
+    // Duration: pizzicato feel — mostly short
+    const dur = feel==='dolphin'
+      ? (Math.random()<0.55?2:Math.random()<0.5?3:4)
+      : Math.random()<0.5?1:Math.random()<0.5?2:3;
+
+    // Bass is mostly active but with some rests
+    const active = Math.random()<0.82;
+
+    // Offset timing: bass arrives slightly AFTER right hand
+    // This is the "conversation" — encoded as a timing flag
+    const behindBeat = Math.random()<0.35;
+
+    lhbSteps.push({
+      isSil:false, midi:Math.max(24,Math.min(84,midi)),
+      active:active, vel:Math.max(0.18,Math.min(0.72,vel)),
+      dur:dur, isSeed:isAnchor, behindBeat:behindBeat,
+    });
+  }
+
+  const lastNote=lhbSteps.filter(function(s){return s.active;}).slice(-1)[0];
+  if(lastNote){ CONT.bass.lastMidi=lastNote.midi; CONT.bass.pos=pos; }
+
+  buildGrid('lhb'); drawBassDoc();
+  const u=[...new Set(lhbSteps.filter(function(s){return s.active;}).map(function(s){return s.midi%12;}))];
+  const bi=document.getElementById('bassInfo2');
+  if(bi) bi.textContent=u.length+' notes';
+  log('['+info.phase+'] Bass: '+u.length+' unique');
+}
+
+// ══════════════════════════════════════════════════════
+//  GENERATE STRIKE — sparse, seed-anchored, decisive
+// ══════════════════════════════════════════════════════
+function genStrike(){
+  pushUndo();
+  const info    = getArcInfo();
+  const steps   = getSteps();
+  const p       = pool(-18, -4);
+  if(!p.length) return;
+
+  const energy  = info.energy;
+  // Strike density: very sparse in explore, more in tension
+  const strikeProb = 0.10 + energy*0.22;
+
+  lhcSteps=[];
+  let pos=Math.max(0,Math.min(p.length-1,CONT.strike.pos));
+
+  for(let i=0;i<steps;i++){
+    if(Math.random()>strikeProb){
+      // Silence (most of the time)
+      lhcSteps.push({isSil:true,active:false,vel:0,dur:2,midi:p[pos]});
+      continue;
+    }
+
+    // Strike walks pool with moderate seed tone pull
+    // 50% toward seed, 50% free walk
+    const seedInPool2=p.filter(function(m){return isSeedTone(m);});
+    if(seedInPool2.length&&Math.random()<0.50){
+      // Walk toward nearest seed tone
+      const nearest=seedInPool2.reduce(function(a,b){
+        return Math.abs(b-p[pos])<Math.abs(a-p[pos])?b:a;
+      });
+      const ti=p.indexOf(nearest);
+      if(ti>=0){
+        const step=ti>pos?1:-1;
+        pos=Math.max(0,Math.min(p.length-1,pos+step*(1+Math.floor(Math.random()*2))));
+      }
+    } else {
+      // Free walk — Strike can land anywhere on scale
+      const dir=Math.random()<0.5?1:-1;
+      const mv=Math.random()<0.3?2:1;
+      pos=Math.max(0,Math.min(p.length-1,pos+dir*mv));
+    }
+
+    const midi=p[pos];
+    // Strike velocity: always decisive, never timid
+    const vel=0.55+energy*0.25+Math.random()*0.1;
+    const dur=Math.random()<0.7?1:2;
+
+    lhcSteps.push({
+      isSil:false, midi:Math.max(24,Math.min(84,midi)),
+      active:true, vel:Math.min(0.92,vel), dur:dur, isSeed:true,
+    });
+  }
+
+  CONT.strike.pos=pos;
+
+  buildGrid('lhc');
+  const cnt=lhcSteps.filter(function(s){return !s.isSil&&s.active;}).length;
+  const si=document.getElementById('strikeInfo2');
+  if(si) si.textContent=cnt+' strikes';
+  log('['+info.phase+'] Strike: '+cnt+'/'+steps);
+}
+
+// ══════════════════════════════════════════════════════
+//  HI-HAT ENGINE
+// ══════════════════════════════════════════════════════
+function genHH(){
+  const steps = getSteps() || 12;
+  const autoGap = parseInt(document.getElementById('autoGap').value)/100;
+  const brushVelBase = parseInt(document.getElementById('brushVel').value)/127;
+  const openVelBase  = parseInt(document.getElementById('openVel').value)/127;
+
+  // Brush: flowing 8th notes, gaps punched in
+  HH.brushSteps = [];
+  let gapMode=false, gapLen=0;
+  for(let i=0;i<steps;i++){
+    if(gapMode){
+      HH.brushSteps.push({isGap:true, vel:0});
+      gapLen--;
+      if(gapLen<=0) gapMode=false;
+    } else {
+      const beatPos=i%4;
+      const gapChance=autoGap*(beatPos===1||beatPos===3?0.55:0.25);
+      if(Math.random()<gapChance){
+        gapMode=true;
+        gapLen=Math.random()<0.65?1:2;
+        HH.brushSteps.push({isGap:true, vel:0});
+        gapLen--;
+        if(gapLen<=0) gapMode=false;
+      } else {
+        const v=brushVelBase*(0.65+Math.random()*0.45);
+        HH.brushSteps.push({isGap:false, vel:Math.max(0.05,Math.min(0.28,v))});
+      }
+    }
+  }
+
+  // Open HH: sparse, upbeat placement
+  HH.openSteps = [];
+  for(let i=0;i<steps;i++){
+    const isUpbeat=i%2===1;
+    const prob=0.15*(isUpbeat?1.6:0.3);
+    const active=Math.random()<prob;
+    const v=openVelBase*(0.75+Math.random()*0.35);
+    HH.openSteps.push({active:active, vel:Math.max(0.18,Math.min(0.62,v))});
+  }
+
+  buildBrushGrid();
+  buildOpenGrid();
+  updateHHInfo();
+}
+
+function buildBrushGrid(){
+  const el=document.getElementById('brushGrid'); if(!el) return;
+  el.innerHTML='';
+  HH.brushSteps.forEach(function(s,i){
+    const d=document.createElement('div');
+    d.className='step-brush'+(s.isGap?' gap':'')+(i%4===0?' beat1':'');
+    d.innerHTML='<div class="brush-dot"></div>';
+    d.addEventListener('click',function(){s.isGap=!s.isGap;buildBrushGrid();updateHHInfo();});
+    el.appendChild(d);
+  });
+  const cd=document.getElementById('brushChD');
+  if(cd){const ce=document.getElementById('brushCh');if(ce)cd.textContent=ce.value;}
+}
+
+function buildOpenGrid(){
+  const el=document.getElementById('openGrid'); if(!el) return;
+  el.innerHTML='';
+  HH.openSteps.forEach(function(s,i){
+    const d=document.createElement('div');
+    d.className='step-open'+(s.active?' active':'');
+    const h=s.active?Math.round(s.vel*20)+2:1;
+    d.innerHTML='<div class="open-bar" style="height:'+h+'px;background:'+(s.active?'#90b8c0':'rgba(255,255,255,.03)')+';opacity:'+(0.4+s.vel*0.6)+'"></div>'
+      +'<span class="open-num">'+(i+1)+'</span>';
+    d.addEventListener('click',function(){s.active=!s.active;buildOpenGrid();updateHHInfo();});
+    d.addEventListener('contextmenu',function(ev){ev.preventDefault();s.vel=s.vel>0.4?0.22:0.52;buildOpenGrid();});
+    el.appendChild(d);
+  });
+  const cd=document.getElementById('openChD');
+  if(cd){const ce=document.getElementById('openCh');if(ce)cd.textContent=ce.value;}
+}
+
+function clearBrushGaps(){
+  HH.brushSteps.forEach(function(s){s.isGap=false;});
+  buildBrushGrid(); updateHHInfo();
+}
+
+function updateHHInfo(){
+  const gaps=HH.brushSteps.filter(function(s){return s.isGap;}).length;
+  const total=HH.brushSteps.length;
+  const bi=document.getElementById('brushInfo');
+  if(bi) bi.textContent=gaps+' gaps / '+total;
+  const opens=HH.openSteps.filter(function(s){return s.active;}).length;
+  const oi=document.getElementById('openInfo');
+  if(oi) oi.textContent=opens+' placed';
+}
+
+// Send HH step with groove timing
+function sendHH(hhIdx, baseMs){
+  if(!HH.brushSteps.length) return;
+  // Brush
+  if(HH.brushSteps.length){
+    const bs=HH.brushSteps[hhIdx%HH.brushSteps.length];
+    if(!bs.isGap){
+      const chEl=document.getElementById('brushCh');
+      const ch=(parseInt(chEl?chEl.value:8)||8)-1;
+      const noteEl=document.getElementById('brushNote');
+      const note=parseInt(noteEl?noteEl.value:42)||42;
+      // Brush groove: small random offset, part of the flow
+      const offset=Math.max(0,(Math.random()-0.5)*8);
+      const v=Math.max(1,Math.min(60,Math.round(bs.vel*110+5)));
+      setTimeout(function(){
+        try{midiOutPort.send([0x90|ch,note,v]);setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,note,0]);}catch(e){}},30);}catch(e){}
+      },offset);
+    }
+  }
+  // Open HH
+  if(HH.openSteps.length){
+    const os=HH.openSteps[hhIdx%HH.openSteps.length];
+    if(os.active){
+      const chEl=document.getElementById('openCh');
+      const ch=(parseInt(chEl?chEl.value:9)||9)-1;
+      const noteEl=document.getElementById('openNote');
+      const note=parseInt(noteEl?noteEl.value:46)||46;
+      // Open HH: slight upbeat feel
+      const offset=Math.max(0,4+Math.random()*8);
+      const v=Math.max(1,Math.min(90,Math.round(os.vel*105+8)));
+      setTimeout(function(){
+        try{midiOutPort.send([0x90|ch,note,v]);setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,note,0]);}catch(e){}},45);}catch(e){}
+      },offset);
+    }
+  }
+}
+
+let POLY_ON=false;
+function togglePoly(){
+  POLY_ON=!POLY_ON;
+  const b=document.getElementById('polyBtn'); if(b){ b.textContent=POLY_ON?'ON':'OFF'; b.classList.toggle('hi',POLY_ON); }
+  document.getElementById('polyRows').style.display=POLY_ON?'block':'none';
+  if(POLY_ON) applyPoly(); else { buildGrid('rh');buildGrid('lhb');buildGrid('lhc'); }
+}
+// Resize a voice's step array to a target length by looping/trimming its content.
+function resizeVoice(steps, target){
+  if(!steps.length||target<1) return steps;
+  const out=[];
+  for(let i=0;i<target;i++){ out.push(JSON.parse(JSON.stringify(steps[i%steps.length]))); }
+  return out;
+}
+function applyPoly(){
+  if(!POLY_ON) return;
+  const rh=parseInt(document.getElementById('polyRH').value)||16;
+  const ba=parseInt(document.getElementById('polyBass').value)||12;
+  const st=parseInt(document.getElementById('polyStrike').value)||7;
+  rhSteps  = resizeVoice(rhSteps, rh);
+  lhbSteps = resizeVoice(lhbSteps, ba);
+  lhcSteps = resizeVoice(lhcSteps, st);
+  rhIdx=0; lhbIdx=0; lhcIdx=0;
+  buildGrid('rh'); buildGrid('lhb'); buildGrid('lhc');
+  log('Polyrhythm: '+rh+' : '+ba+' : '+st+' （'+lcm3(rh,ba,st)+'ステップで一巡）');
+}
+function lcm2(a,b){ function g(x,y){return y?g(y,x%y):x;} return a*b/g(a,b); }
+function lcm3(a,b,c){ return lcm2(lcm2(a,b),c); }
+
+function nextPhrase(){
+  genRH(); genBass(); genStrike(); genHH();
+  ARC.phraseNum++;
+  if(ARC.phraseNum>=getArcTotal()) ARC.phraseNum=0;
+  updateArcUI();
+  updateSeedDisplay();
+  if(POLY_ON) applyPoly();   // keep independent voice periods after regeneration
+}
+
+function resetArc(){
+  ARC.phraseNum=0;
+  CONT.rh={pos:6,lastMidi:getRoot()};
+  CONT.bass={pos:5,lastMidi:getRoot()-12};
+  CONT.strike={pos:4,lastMidi:getRoot()-7};
+  updateArcUI();
+  log('Arc reset');
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD GRID
+// ══════════════════════════════════════════════════════
+function buildGrid(voice){
+  const el=document.getElementById(voice+'Grid'); if(!el) return;
+  const steps=voice==='rh'?rhSteps:voice==='lhb'?lhbSteps:lhcSteps;
+  const col=voice==='rh'?'var(--rh)':voice==='lhb'?'var(--lhb)':'var(--lhc)';
+  el.innerHTML='';
+  steps.forEach(function(s,i){
+    const d=document.createElement('div');
+    if(s.isSil){
+      d.className='step sil';
+      d.innerHTML='<span class="sil-mark">∅</span>'
+        +'<div class="sbar" style="height:1px;background:var(--cold);width:30px;opacity:.2"></div>'
+        +'<span class="snum">'+(i+1)+'</span>';
+    } else {
+      d.className='step'+(s.isSeed?' seed-tone':'');
+      const h=s.active?3+Math.round(s.vel*32):1;
+      const bg=s.active?(s.isSeed?'var(--rh2)':col):'rgba(255,255,255,.025)';
+      const note=s.midi?NOTE[s.midi%12]:'\u2014';
+      const phr=s.isPhraseStart?('<div class="sphr" style="background:'+col+'"></div>'):'';
+      const lp=s.isLeap?'<span class="sleap">&#8593;</span>':'';
+      d.innerHTML='<span class="sname'+(s.active?' on':'')+'">'+note+'</span>'
+        +'<div class="sbar" style="height:'+h+'px;background:'+bg+';opacity:'+(0.4+s.vel*0.6)+';width:'+(s.isSeed?'20':'26')+'px"></div>'
+        +phr+lp
+        +'<span class="snum">'+(i+1)+'</span>';
+    }
+    d.addEventListener('click',function(){pushUndo();s.active=!s.active;buildGrid(voice);});
+    d.addEventListener('contextmenu',function(ev){
+      ev.preventDefault();
+      // Two-level velocity
+      s.vel=s.vel>0.45?0.18:0.65;
+      buildGrid(voice);
+    });
+    el.appendChild(d);
+  });
+  // Update info
+  const inf=document.getElementById(voice+'Info');
+  if(inf){
+    const act=steps.filter(function(s){return !s.isSil&&s.active;}).length;
+    const sil=steps.filter(function(s){return s.isSil;}).length;
+    inf.textContent=steps.length+'st · '+act+'n · '+sil+'s';
+  }
+  const chd=document.getElementById(voice+'ChD');
+  if(chd){const ce=document.getElementById(voice==='rh'?'rhCh':voice==='lhb'?'lhbCh':'lhcCh');if(ce)chd.textContent=ce.value;}
+}
+
+// ══════════════════════════════════════════════════════
+//  CANVAS
+// ══════════════════════════════════════════════════════
+function drawRHCurve(){
+  const cv=document.getElementById('rhCurve'); if(!cv||!cv.getContext) return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const act=rhSteps.filter(function(s){return !s.isSil&&s.active;});
+  if(act.length<2) return;
+  const ms=act.map(function(s){return s.midi;});
+  const mn=Math.min.apply(null,ms)-1,mx=Math.max.apply(null,ms)+1;
+  ctx.beginPath();
+  act.forEach(function(s,i){
+    const x=(i/(act.length-1))*W,y=H-((s.midi-mn)/(mx-mn))*(H-3)-1;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(154,176,204,.55)';ctx.lineWidth=1.2;ctx.stroke();
+
+  // Doc curve
+  const dc=document.getElementById('docCurve'); if(!dc||!dc.getContext) return;
+  const W2=dc.parentElement?dc.parentElement.offsetWidth-8:160;
+  dc.width=W2;dc.height=48;
+  const ctx2=dc.getContext('2d');ctx2.clearRect(0,0,W2,48);
+  if(act.length<2) return;
+  ctx2.beginPath();
+  act.forEach(function(s,i){
+    const x=(i/(act.length-1))*W2,y=48-((s.midi-mn)/(mx-mn))*44-2;
+    i===0?ctx2.moveTo(x,y):ctx2.lineTo(x,y);
+  });
+  ctx2.strokeStyle='rgba(154,176,204,.5)';ctx2.lineWidth=1.3;ctx2.stroke();
+  // Seed tone dots
+  act.forEach(function(s,i){
+    if(!s.isSeed) return;
+    const x=(i/(act.length-1))*W2,y=48-((s.midi-mn)/(mx-mn))*44-2;
+    ctx2.beginPath();ctx2.arc(x,y,2.5,0,Math.PI*2);
+    ctx2.fillStyle='var(--rh)';ctx2.globalAlpha=.7;ctx2.fill();ctx2.globalAlpha=1;
+  });
+}
+
+function drawBassDoc(){
+  const cv=document.getElementById('bassDoc'); if(!cv||!cv.getContext) return;
+  const W=cv.parentElement?cv.parentElement.offsetWidth-8:160;cv.width=W;cv.height=48;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,48);
+  const act=lhbSteps.filter(function(s){return s.active&&!s.isSil;});
+  if(act.length<2) return;
+  const ms=act.map(function(s){return s.midi;});
+  const mn=Math.min.apply(null,ms)-1,mx=Math.max.apply(null,ms)+1;
+  ctx.beginPath();
+  act.forEach(function(s,i){
+    const x=(i/act.length)*W,y=48-((s.midi-mn)/(mx-mn))*44-2;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(192,168,112,.55)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+function updateSpaceDisplay(){
+  const total=rhSteps.length;
+  const sil=rhSteps.filter(function(s){return s.isSil;}).length;
+  const act=rhSteps.filter(function(s){return !s.isSil&&s.active;}).length;
+  const sp=document.getElementById('dSilF');if(sp)sp.style.width=(sil/total*100).toFixed(0)+'%';
+  const sv=document.getElementById('dSilV');if(sv)sv.textContent=sil;
+  const af=document.getElementById('dActF');if(af)af.style.width=(act/total*100).toFixed(0)+'%';
+  const av=document.getElementById('dActV');if(av)av.textContent=act;
+  const dsp=document.getElementById('dSpace');if(dsp)dsp.style.width=(sil/total*100).toFixed(0)+'%';
+  const drh=document.getElementById('dRH');
+  if(drh)drh.style.width=(act/total*100).toFixed(0)+'%';
+  // ranges
+  const rhMs=rhSteps.filter(function(s){return !s.isSil&&s.active;}).map(function(s){return s.midi;});
+  const bMs=lhbSteps.filter(function(s){return s.active&&!s.isSil;}).map(function(s){return s.midi;});
+  if(rhMs.length){const r=document.getElementById('dRHRange');if(r)r.textContent=NOTE[Math.min.apply(null,rhMs)%12]+'-'+NOTE[Math.max.apply(null,rhMs)%12];}
+  if(bMs.length){const r=document.getElementById('dBassRange');if(r)r.textContent=NOTE[Math.min.apply(null,bMs)%12]+'-'+NOTE[Math.max.apply(null,bMs)%12];}
+  if(rhMs.length&&bMs.length){
+    const gap=Math.min.apply(null,rhMs)-Math.max.apply(null,bMs);
+    const dg=document.getElementById('dGap');if(dg)dg.textContent=gap+'ST';
+  }
+  const db=document.getElementById('dBass');
+  if(db&&bMs.length){const u=[...new Set(bMs.map(function(m){return m%12;}))];db.style.width=(u.length/7*100).toFixed(0)+'%';}
+}
+
+// ══════════════════════════════════════════════════════
+//  UI UPDATES
+// ══════════════════════════════════════════════════════
+function updateSeedDisplay(){
+  const root=getRoot();
+  const color=getColor();
+  const colorObj=COLORS[color]||COLORS.min7;
+  const intervals=colorObj.tones||[0,3,7,10];
+  const tones=intervals.slice(0,3);
+  const names=tones.map(function(i){return NOTE[(root+i)%12];});
+  const sd=document.getElementById('seedDisplay');
+  if(sd) sd.textContent=names.join(' · ');
+  const sr=document.getElementById('snRoot');if(sr)sr.textContent=NOTE[root%12];
+  const sf=document.getElementById('snFifth');if(sf)sf.textContent=NOTE[(root+7)%12];
+  const ss=document.getElementById('snSeventh');if(ss)ss.textContent=NOTE[(root+(intervals[3]||10))%12];
+  const colorDef=COLORS[color]||COLORS.min7;
+  const scaleDef=SCALES_DEF[colorDef.scale]||SCALES_DEF.dorian;
+  const st=document.getElementById('seedTension');
+  if(st)st.textContent=color+' · '+scaleDef.name;
+  const dr=document.getElementById('dRoot');if(dr)dr.textContent=NOTE[root%12];
+  const dc=document.getElementById('dColor');if(dc)dc.textContent=color;
+}
+
+function updateArcUI(){
+  const info=getArcInfo();
+  const total=getArcTotal();
+  const pct=ARC.phraseNum/total*100;
+  const af=document.getElementById('arcBar');if(af)af.style.width=pct.toFixed(0)+'%';
+  const afill=document.getElementById('arcFill');if(afill)afill.style.width=pct.toFixed(0)+'%';
+  const ap=document.getElementById('arcPhase');
+  if(ap){ap.textContent=info.phase;ap.style.color=
+    info.phase==='explore'?'var(--dim)':
+    info.phase==='develop'?'var(--rh)':
+    info.phase==='tension'?'var(--lhc)':'var(--lhb)';}
+  const apd=document.getElementById('arcPhaseDisp');
+  if(apd){apd.textContent='p'+(ARC.phraseNum+1)+' '+info.phase;apd.style.color=
+    info.phase==='explore'?'var(--dim)':
+    info.phase==='develop'?'var(--rh)':
+    info.phase==='tension'?'var(--lhc)':'var(--lhb)';}
+  const pd=document.getElementById('phraseDisplay');
+  if(pd) pd.textContent='phrase '+(ARC.phraseNum+1)+' / '+total;
+  const dp=document.getElementById('dPhrase');if(dp)dp.textContent=ARC.phraseNum+1;
+}
+
+function setArc(type){
+  ARC.type=type; ARC.phraseNum=0; updateArcUI();
+}
+
+function onSeedChange(){
+  updateSeedDisplay();
+  // Remap existing steps to new seed/scale
+  rhSteps.forEach(function(s){if(!s.isSil&&s.midi) s.isSeed=isSeedTone(s.midi);});
+  lhbSteps.forEach(function(s){if(!s.isSil&&s.midi) s.isSeed=isSeedTone(s.midi);});
+  buildGrid('rh'); buildGrid('lhb'); buildGrid('lhc');
+  // Show scale + voicing
+  const color=COLORS[getColor()]||COLORS.min7;
+  const scale=SCALES_DEF[getScaleKey()]||SCALES_DEF.dorian;
+  const voi=VOICINGS[getVoicing()]||VOICINGS.thirds;
+  log('Scale: '+NOTE[getRoot()%12]+' '+scale.name+' / '+color.name+' / '+voi.name);
+}
+
+function setFeel(){ applyFeel(); }   // FEEL now only shapes groove (ノリ), not your params
+
+document.getElementById('feelSel').addEventListener('change', applyFeel);
+function onLegato(v){
+  const val=getVoiceLegato(v);
+  VOICE_LEGATO[v]=val;
+  const lbl=document.getElementById('lg_'+v+'V');
+  if(lbl) lbl.textContent = Math.round(val*100);
+}
+function onVoiceSwing(v){
+  const val=getVoiceSwing(v);
+  VOICE_SWING[v]=val;
+  const lbl=document.getElementById('sw_'+v+'V');
+  if(lbl){ const pct=Math.round(val*100); lbl.textContent = pct>0?('+'+pct+' 後'):(pct<0?(pct+' 前'):'0'); }
+}
+function onSwing(){
+  const v=getSwingManual();
+  const sv=document.getElementById('swingV');
+  if(sv) sv.textContent = v>0 ? Math.round(v*100)+'%' : 'presetへ';
+  applyFeel();
+}
+
+// ══════════════════════════════════════════════════════
+//  PLAYBACK
+// ══════════════════════════════════════════════════════
+function getACtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function keepAlive(){const ctx=getACtx();if(keepNode)return;keepNode=ctx.createOscillator();const g=ctx.createGain();g.gain.value=0;keepNode.connect(g);g.connect(ctx.destination);keepNode.start();}
+
+const _wC='const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type===\'set\'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type===\'clear\'){clearTimeout(T[id]);delete T[id]}};';
+let _tw=null;const _tc={};let _tn=1;
+let _twTried=false;
+function getTW(){
+  if(_tw)return _tw;
+  if(_twTried)return _tw;
+  _twTried=true;
+  try{
+    const b=new Blob([_wC],{type:'application/javascript'});
+    _tw=new Worker(URL.createObjectURL(b));
+    _tw.onmessage=function(e){const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};
+    if(typeof log==='function') log('⏱ background timer: Web Worker OK（バックグラウンドでも維持）');
+  }catch(e){ _tw=null; if(typeof log==='function') log('⚠ Web Worker 不可 ('+String(e).slice(0,40)+') → fallback使用。タブを離れると遅くなる可能性'); }
+  return _tw;
+}
+function bgTO(fn,ms){
+  const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();
+  const w=getTW();
+  if(w){
+    const id=_tn++;
+    const reqT=performance.now(), reqMs=Math.max(0,ms);
+    _tc[id]=function(){
+      const actual=performance.now()-reqT;
+      // if the timer came back much later than asked, the worker IS being throttled
+      if(actual > reqMs+60 && typeof log==='function'){ log('⏱ drift: 要求'+Math.round(reqMs)+'ms → 実際'+Math.round(actual)+'ms'); }
+      fn();
+    };
+    w.postMessage({type:'set',id:id,delay:reqMs});
+    return {c:false, cancel:function(){ w.postMessage({type:'clear',id:id}); delete _tc[id]; }};
+  }
+  // Fallback (no worker): plain self-correcting setTimeout chain.
+  const dl=ctx.currentTime+ms/1000;const tid={c:false};let t=null;
+  function chk(){if(tid.c)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(chk,rem<25?1:Math.max(1,rem-20));}}
+  t=setTimeout(chk,Math.max(1,ms-20));tid.cancel=function(){tid.c=true;if(t)clearTimeout(t);};return tid;
+}
+
+document.addEventListener('visibilitychange',function(){
+  const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();
+  if(!document.hidden&&midiOutPort)for(let c=0;c<16;c++)midiOutPort.send([0xB0|c,123,0]);
+});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){
+  const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();
+  keepAlive();playing=true;rhIdx=0;lhbIdx=0;lhcIdx=0;barCount=0;
+  document.getElementById('btnPlay').textContent='\u25a0 Stop';
+  document.body.classList.add('playing');
+  tick();
+}
+function stopAll(){
+  playing=false;if(playTimer){playTimer.c=true;playTimer=null;}
+  document.getElementById('btnPlay').textContent='\u25b6 Play';
+  document.body.classList.remove('playing');
+  rhIdx=0;lhbIdx=0;lhcIdx=0;
+  if(midiOutPort){for(let c=0;c<16;c++){midiOutPort.send([0xB0|c,123,0]);_hung[c]=[];}}
+  document.querySelectorAll('.step.playing').forEach(function(e){e.classList.remove('playing');});
+}
+
+let _tc4=0;
+function tick(){
+  if(!playing)return;
+  if(SLAVE.active&&SLAVE.running){playing=true;return;}
+
+  // Groove engine tick
+  grooveTick(_tc4);
+  const bpm = getBpm();
+  const cur = rhSteps[rhIdx%Math.max(1,rhSteps.length)];
+  const ratio = cur?cur.dur:2;
+  const baseMs = Math.max(25, 60000/bpm*(ratio/4));
+  const ms = baseMs * GROOVE.mult;
+
+  // Highlight
+  const ri=rhIdx%Math.max(1,rhSteps.length);
+  const bi=lhbIdx%Math.max(1,lhbSteps.length);
+  const ci=lhcIdx%Math.max(1,lhcSteps.length);
+  document.querySelectorAll('#rhGrid .step').forEach(function(e,i){e.classList.toggle('playing',i===ri);});
+  document.querySelectorAll('#lhbGrid .step').forEach(function(e,i){e.classList.toggle('playing',i===bi);});
+  document.querySelectorAll('#lhcGrid .step').forEach(function(e,i){e.classList.toggle('playing',i===ci);});
+
+  const rhStep  = rhSteps[ri];
+  const basStep = lhbSteps[bi];
+  const strStep = lhcSteps[ci];
+
+  // ── RIGHT HAND ──
+  // Anticipation/lean timing
+  const rhOff = grooveOffset('rh',
+    rhStep&&(rhStep.isAccent||rhStep.isSeed),
+    rhStep&&rhStep.isSeed, _tc4, baseMs);
+  // Negative offset = early: clamp to avoid negative setTimeout
+  const rhDelay = Math.max(0, rhOff);
+  const rhEarly = Math.min(0, rhOff); // will be applied to note-off instead
+  // Use Web MIDI TIMESTAMPS (send(data, when)) instead of setTimeout, so notes
+  // are scheduled by the browser's MIDI subsystem and are NOT throttled in the
+  // background. `now0` is this tick's wall-clock anchor.
+  const now0 = performance.now();
+  if(rhStep && !rhStep.isSil && rhStep.active && midiOutPort){
+    const chEl=document.getElementById('rhCh');
+    const ch=(parseInt(chEl?chEl.value:4)||4)-1;
+    const v=Math.max(1,Math.min(112,Math.round(grooveVel(rhStep.vel,'rh',rhStep.isAccent||rhStep.isSeed,rhStep.isSeed)*105+8)));
+    const dur=grooveDur(rhStep.dur,ms,'rh');
+    const onAt=now0+Math.max(0,rhDelay);
+    try{ midiOutPort.send([0x90|ch,rhStep.midi,v], onAt); midiOutPort.send([0x80|ch,rhStep.midi,0], onAt+Math.max(20,dur)); }catch(e){}
+  }
+
+  // ── BASS ──
+  const bassOff = grooveOffset('bass',false,basStep&&basStep.isSeed,_tc4,baseMs);
+  if(basStep && !basStep.isSil && basStep.active && midiOutPort){
+    const chEl=document.getElementById('lhbCh');
+    const ch=(parseInt(chEl?chEl.value:5)||5)-1;
+    const v=Math.max(1,Math.min(108,Math.round(grooveVel(basStep.vel,'bass',false,basStep.isSeed)*98+8)));
+    const dur=grooveDur(basStep.dur,ms,'bass');
+    const onAt=now0+Math.max(0,bassOff);
+    try{ midiOutPort.send([0x90|ch,basStep.midi,v], onAt); midiOutPort.send([0x80|ch,basStep.midi,0], onAt+Math.max(20,dur)); }catch(e){}
+  }
+
+  // ── STRIKE ──
+  const strOff = grooveOffset('strike',true,strStep&&strStep.isSeed,_tc4,baseMs);
+  if(strStep && !strStep.isSil && strStep.active && midiOutPort){
+    const chEl=document.getElementById('lhcCh');
+    const ch=(parseInt(chEl?chEl.value:6)||6)-1;
+    const v=Math.max(1,Math.min(112,Math.round(grooveVel(strStep.vel,'strike',true,true)*105+8)));
+    const dur=grooveDur(strStep.dur,ms,'strike');
+    const onAt=now0+Math.max(0,strOff);
+    try{ midiOutPort.send([0x90|ch,strStep.midi,v], onAt); midiOutPort.send([0x80|ch,strStep.midi,0], onAt+Math.max(20,dur)); }catch(e){}
+  }
+
+  // HH — same step index as RH (8th note grid)
+  const hi=rhIdx%Math.max(1,HH.brushSteps.length);
+  document.querySelectorAll('#brushGrid .step-brush').forEach(function(e,i){e.classList.toggle('playing',i===hi);});
+  document.querySelectorAll('#openGrid .step-open').forEach(function(e,i){e.classList.toggle('playing',i===hi);});
+  sendHH(rhIdx, ms);
+
+  const sd=document.getElementById('stepDisp');
+  if(sd)sd.textContent=(barCount+1)+':'+(rhIdx%4+1);
+
+  rhIdx++;if(rhIdx>=rhSteps.length){rhIdx=0;barCount++;}
+  lhbIdx++;if(lhbIdx>=Math.max(1,lhbSteps.length))lhbIdx=0;
+  lhcIdx++;if(lhcIdx>=Math.max(1,lhcSteps.length))lhcIdx=0;
+  _tc4++;
+
+  playTimer=bgTO(tick,ms);
+}
+
+// Humanized send functions
+function sendStepH(steps,idx,chId,durMs,velBias){
+  if(!steps.length||!midiOutPort)return;
+  const s=steps[idx%steps.length];
+  if(!s||s.isSil||!s.active)return;
+  const chEl=document.getElementById(chId);
+  const ch=(parseInt(chEl?chEl.value:4)||4)-1;
+  const m=Math.max(0,Math.min(127,s.midi));
+  // Humanized velocity
+  const hv=humVel(s.vel, velBias, s.isSeed||s.isAccent);
+  const v=Math.max(1,Math.min(112,Math.round(hv*105+8)));
+  // Humanized duration
+  const dur=humDur(s.dur, durMs);
+  try{
+    const _t0=performance.now();midiOutPort.send([0x90|ch,m,v],_t0);midiOutPort.send([0x80|ch,m,0],_t0+Math.max(20,dur));
+  }catch(e){}
+}
+
+function sendBassStepH(steps,idx,chId,durMs,velBias){
+  if(!steps.length||!midiOutPort)return;
+  const s=steps[idx%steps.length];
+  if(!s||s.isSil||!s.active)return;
+  const chEl=document.getElementById(chId);
+  const ch=(parseInt(chEl?chEl.value:5)||5)-1;
+  const m=Math.max(0,Math.min(127,s.midi));
+  const hv=humVel(s.vel, velBias, s.isSeed);
+  const v=Math.max(1,Math.min(105,Math.round(hv*98+8)));
+  const dur=humDur(s.dur, durMs);
+  try{
+    const _t0=performance.now();midiOutPort.send([0x90|ch,m,v],_t0);midiOutPort.send([0x80|ch,m,0],_t0+Math.max(20,dur));
+  }catch(e){}
+}
+
+function sendStep(steps,idx,chId,oct,durMs){
+  if(!steps.length||!midiOutPort)return;
+  const s=steps[idx%steps.length];
+  if(!s||s.isSil||!s.active)return;
+  const chEl=document.getElementById(chId);
+  const ch=(parseInt(chEl?chEl.value:4)||4)-1;
+  const m=Math.max(0,Math.min(127,s.midi+(oct||0)));
+  const v=Math.max(1,Math.min(112,Math.round(s.vel*105+8)));
+  const dur=Math.max(20,durMs*(s.dur/4)*0.85);
+  try{const _t0=performance.now();midiOutPort.send([0x90|ch,m,v],_t0);midiOutPort.send([0x80|ch,m,0],_t0+(dur));}catch(e){}
+}
+function sendBassStep(steps,idx,chId,durMs){
+  if(!steps.length||!midiOutPort)return;
+  const s=steps[idx%steps.length];
+  if(!s||s.isSil||!s.active)return;
+  const chEl=document.getElementById(chId);
+  const ch=(parseInt(chEl?chEl.value:5)||5)-1;
+  const m=Math.max(0,Math.min(127,s.midi));
+  const v=Math.max(1,Math.min(105,Math.round(s.vel*98+8)));
+  const dur=Math.max(20,durMs*(s.dur/4)*0.88);
+  try{const _t0=performance.now();midiOutPort.send([0x90|ch,m,v],_t0);midiOutPort.send([0x80|ch,m,0],_t0+(dur));}catch(e){}
+}
+
+function strikeNow(){
+  if(!midiOutPort)return;
+  const p=pool(-18,-4);
+  const seedP=p.filter(function(m){return isSeedTone(m);});
+  if(!seedP.length)return;
+  const midi=seedP[Math.floor(Math.random()*seedP.length)];
+  const chEl=document.getElementById('lhcCh');
+  const ch=(parseInt(chEl?chEl.value:6)||6)-1;
+  const info=getArcInfo();
+  const vel=Math.round((0.65+info.energy*0.25)*110+5);
+  try{midiOutPort.send([0x90|ch,midi,vel]);setTimeout(function(){try{if(midiOutPort)midiOutPort.send([0x80|ch,midi,0]);}catch(e){}},150);}catch(e){}
+  log('Strike: '+NOTE[midi%12]);
+}
+
+// ══════════════════════════════════════════════════════
+//  SLAVE
+// ══════════════════════════════════════════════════════
+function initMIDI(){
+  if(!navigator.requestMIDIAccess){setMStat(false,'N/A');return;}
+  navigator.requestMIDIAccess().then(function(ma){
+    midiAccess=ma;ma.onstatechange=function(){popPorts();popIn();};popPorts();popIn();
+  }).catch(function(){setMStat(false,'denied');});
+}
+function popPorts(){
+  const sel=document.getElementById('midiOut');if(!sel||!midiAccess)return;
+  const prev=sel.value;sel.innerHTML='<option value="">—</option>';
+  midiAccess.outputs.forEach(function(p,id){const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});
+  if(prev)sel.value=prev;
+  [...sel.options].forEach(function(o){if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectOut(sel.value);}});
+}
+function popIn(){
+  const sel=document.getElementById('clockIn');if(!sel||!midiAccess)return;
+  const prev=sel.value;sel.innerHTML='<option value="">—</option>';
+  midiAccess.inputs.forEach(function(p,id){const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});
+  if(prev)sel.value=prev;
+}
+function selectOut(id){if(!id){midiOutPort=null;setMStat(false,'\u2014');return;}midiOutPort=midiAccess?midiAccess.outputs.get(id):null;if(midiOutPort)setMStat(true,midiOutPort.name);}
+function setMStat(ok,n){const d=document.getElementById('midiDot'),s=document.getElementById('midiStat');if(d)d.classList.toggle('on',ok);if(s){s.textContent=ok?'\u2713 '+n:n;s.style.color=ok?'var(--lhb)':'var(--dim)';}}
+function selectClock(id){if(SLAVE.port)SLAVE.port.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.port=midiAccess.inputs.get(id);if(SLAVE.port)SLAVE.port.onmidimessage=onClock;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const b=document.getElementById('btnSlave');if(b){b.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';b.style.color=SLAVE.active?'var(--lhb)':'';}if(!SLAVE.active&&playing)tick();}
+function onClock(e){
+  const d=e.data[0];
+  if(d===0xFA){SLAVE.running=true;SLAVE.count=0;SLAVE.stepPulses=null;if(playTimer){playTimer.c=true;playTimer=null;}playing=true;rhIdx=0;lhbIdx=0;lhcIdx=0;keepAlive();const ctx=getACtx();if(ctx.state==='suspended')ctx.resume();document.getElementById('btnPlay').textContent='\u25a0 Stop';document.body.classList.add('playing');return;}
+  if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;keepAlive();document.getElementById('btnPlay').textContent='\u25a0 Stop';document.body.classList.add('playing');}return;}
+  if(d===0xFC){SLAVE.running=false;playing=false;if(playTimer){playTimer.c=true;playTimer=null;}document.getElementById('btnPlay').textContent='\u25b6 Play';document.body.classList.remove('playing');if(midiOutPort)for(let c=0;c<16;c++)midiOutPort.send([0xB0|c,123,0]);return;}
+  if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;
+  const now=e.timeStamp||performance.now();
+  if(SLAVE.last>0){const iv=now-SLAVE.last;const b=60000/(iv*SLAVE.ppqn);if(b>40&&b<240)SLAVE.bpm=SLAVE.bpm*(1-SLAVE.alpha)+b*SLAVE.alpha;}
+  SLAVE.last=now;SLAVE.count++;
+  // DURATION-AWARE: advance to the next step only after this step's own dur
+  // has elapsed in clock pulses. 24 PPQN; a step of dur D lasts D*6 pulses
+  // (matching the internal engine where step length = 60000/bpm*(dur/4)).
+  if(SLAVE.stepPulses==null){ SLAVE.stepPulses = curStepPulses(); }
+  if(SLAVE.count>=SLAVE.stepPulses){
+    SLAVE.count=0;
+    slaveStep();
+    SLAVE.stepPulses = curStepPulses();   // next step may have a different dur
+    const bi=document.getElementById('bpmIn');if(bi)bi.value=Math.round(SLAVE.bpm);
+  }
+}
+// pulses the CURRENT rh step should last, from its dur (24 PPQN, dur/4 quarter)
+function _forceOff(ch){
+  const arr=_hung[ch]; if(!arr||!arr.length||!midiOutPort) return;
+  arr.forEach(function(m){ try{midiOutPort.send([0x80|ch,m,0]);}catch(e){} });
+  _hung[ch]=[];
+}
+function _noteOn(ch,midi,vel){
+  if(!midiOutPort) return;
+  _forceOff(ch);                       // kill anything still sounding on this ch
+  try{ midiOutPort.send([0x90|ch,midi,vel]); }catch(e){}
+  (_hung[ch]=_hung[ch]||[]).push(midi);
+}
+function _noteOffSoon(ch,midi,ms){
+  setTimeout(function(){
+    if(!midiOutPort) return;
+    try{ midiOutPort.send([0x80|ch,midi,0]); }catch(e){}
+    const arr=_hung[ch]; if(arr){ const k=arr.indexOf(midi); if(k>=0)arr.splice(k,1); }
+  }, Math.max(20,ms));
+}
+function curStepPulses(){
+  const cur = rhSteps[rhIdx%Math.max(1,rhSteps.length)];
+  const durVal = cur && cur.dur ? cur.dur : 2;
+  return Math.max(3, Math.round(durVal*6));   // dur 2 → 12 pulses (8th note)
+}
+function slaveStep(){
+  if(!playing)return;
+  const sixteenthMs=60000/SLAVE.bpm/4;   // one 16th note in ms (for groove offsets)
+
+  grooveTick(_tc4); _tc4++;
+
+  const ri=rhIdx%Math.max(1,rhSteps.length);
+  const bi=lhbIdx%Math.max(1,lhbSteps.length);
+  const ci=lhcIdx%Math.max(1,lhcSteps.length);
+  const rhS=rhSteps[ri], bS=lhbSteps[bi], sS=lhcSteps[ci];
+  // LENGTH base: each voice's note length must reflect ITS OWN step dur,
+  // matching the internal engine (baseMs = 60000/bpm*(dur/4)).
+  const qNote=60000/SLAVE.bpm;
+  const rhLenBase = qNote*((rhS&&rhS.dur?rhS.dur:2)/4);
+  const baLenBase = qNote*((bS&&bS.dur?bS.dur:2)/4);
+  const stLenBase = qNote*((sS&&sS.dur?sS.dur:2)/4);
+  const ms=sixteenthMs;
+
+  const rhOff  =grooveOffset('rh',   rhS&&(rhS.isAccent||rhS.isSeed), rhS&&rhS.isSeed, _tc4, ms);
+  const bassOff=grooveOffset('bass', false, bS&&bS.isSeed, _tc4, ms);
+  const strOff =grooveOffset('strike',true, sS&&sS.isSeed, _tc4, ms);
+
+  setTimeout(function(){
+    if(!rhS||rhS.isSil||!rhS.active||!midiOutPort)return;
+    const ch=(parseInt((document.getElementById('rhCh')||{}).value||4)||4)-1;
+    const v=Math.max(1,Math.min(112,Math.round(grooveVel(rhS.vel,'rh',rhS.isAccent||rhS.isSeed,rhS.isSeed)*105+8)));
+    const dur=grooveDur(rhS.dur,rhLenBase,'rh');
+    _noteOn(ch,rhS.midi,v); _noteOffSoon(ch,rhS.midi,dur);
+  },Math.max(0,rhOff));
+
+  setTimeout(function(){
+    if(!bS||bS.isSil||!bS.active||!midiOutPort)return;
+    const ch=(parseInt((document.getElementById('lhbCh')||{}).value||5)||5)-1;
+    const v=Math.max(1,Math.min(108,Math.round(grooveVel(bS.vel,'bass',false,bS.isSeed)*98+8)));
+    const dur=grooveDur(bS.dur,baLenBase,'bass');
+    _noteOn(ch,bS.midi,v); _noteOffSoon(ch,bS.midi,dur);
+  },Math.max(0,bassOff));
+
+  setTimeout(function(){
+    if(!sS||sS.isSil||!sS.active||!midiOutPort)return;
+    const ch=(parseInt((document.getElementById('lhcCh')||{}).value||6)||6)-1;
+    const v=Math.max(1,Math.min(112,Math.round(grooveVel(sS.vel,'strike',true,true)*105+8)));
+    const dur=grooveDur(sS.dur,stLenBase,'strike');
+    _noteOn(ch,sS.midi,v); _noteOffSoon(ch,sS.midi,dur);
+  },Math.max(0,strOff));
+
+  // HH in slave mode
+  const hhi=rhIdx%Math.max(1,HH.brushSteps.length);
+  document.querySelectorAll('#brushGrid .step-brush').forEach(function(e,i){e.classList.toggle('playing',i===hhi);});
+  document.querySelectorAll('#openGrid .step-open').forEach(function(e,i){e.classList.toggle('playing',i===hhi);});
+  sendHH(rhIdx, ms);
+
+  rhIdx++;if(rhIdx>=rhSteps.length){rhIdx=0;barCount++;}
+  lhbIdx++;if(lhbIdx>=Math.max(1,lhbSteps.length))lhbIdx=0;
+  lhcIdx++;if(lhcIdx>=Math.max(1,lhcSteps.length))lhcIdx=0;
+  const ri2=rhIdx%Math.max(1,rhSteps.length);
+  document.querySelectorAll('#rhGrid .step').forEach(function(e,i){e.classList.toggle('playing',i===ri2);});
+}
+
+// ══════════════════════════════════════════════════════
+//  AUTO NEXT
+// ══════════════════════════════════════════════════════
+function toggleAuto(){
+  AUTO.active=!AUTO.active;
+  const b=document.getElementById('btnAuto');
+  if(b){b.textContent=AUTO.active?'ON':'OFF';b.style.color=AUTO.active?'var(--rh)':'var(--dim)';b.style.borderColor=AUTO.active?'rgba(154,176,204,.5)':'var(--bd)';}
+  AUTO.active?startAuto():stopAuto();
+}
+function startAuto(){
+  stopAuto();AUTO.start=performance.now();schedAuto();rafAuto();}
+function stopAuto(){
+  if(AUTO.timer){clearTimeout(AUTO.timer);AUTO.timer=null;}
+  if(AUTO.raf){cancelAnimationFrame(AUTO.raf);AUTO.raf=null;}
+  const b=document.getElementById('autoBar');if(b)b.style.width='0%';
+}
+function schedAuto(){
+  if(!AUTO.active)return;
+  const sec=parseInt(document.getElementById('autoInt').value)||20;
+  AUTO.timer=setTimeout(function(){if(!AUTO.active)return;nextPhrase();AUTO.start=performance.now();schedAuto();},sec*1000);
+}
+function rafAuto(){
+  if(!AUTO.active)return;
+  const sec=parseInt(document.getElementById('autoInt').value)||20;
+  const b=document.getElementById('autoBar');
+  function fr(){if(!AUTO.active){if(b)b.style.width='0%';return;}const pct=Math.min(100,(performance.now()-AUTO.start)/1000/sec*100);if(b)b.style.width=pct.toFixed(1)+'%';AUTO.raf=requestAnimationFrame(fr);}
+  AUTO.raf=requestAnimationFrame(fr);
+}
+document.getElementById('autoInt').addEventListener('input',function(){
+  document.getElementById('autoIntV').textContent=this.value;
+  if(AUTO.active){stopAuto();startAuto();}
+});
+
+// ══════════════════════════════════════════════════════
+//  EXPORT MIDI
+// ══════════════════════════════════════════════════════
+function exportMIDI(){
+  const bpm=getBpm(),tpb=480,usb=Math.round(60000000/bpm);
+  function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}
+  function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}
+  function i16(v){return[(v>>8)&0xFF,v&0xFF];}
+  const tracks=[[rhSteps,'rhCh'],[lhbSteps,'lhbCh'],[lhcSteps,'lhcCh']];
+  const td=tracks.map(function(pr){
+    const ss=pr[0],ci=pr[1];
+    const chEl=document.getElementById(ci);
+    const ch=(parseInt(chEl?chEl.value:4)||4)-1;
+    const ev=[];let t=0;
+    ss.forEach(function(s){const stk=Math.round(tpb*(s.dur/4));if(!s.isSil&&s.active&&s.midi){ev.push([t,[0x90|ch,s.midi,Math.round(s.vel*100+8)]]);ev.push([t+Math.round(stk*.85),[0x80|ch,s.midi,0]]);}t+=stk;});
+    ev.sort(function(a,b){return a[0]-b[0];});let lt=0;const d=[];
+    d.push.apply(d,[0,0xFF,0x51,0x03].concat(i32(usb).slice(1)));
+    ev.forEach(function(it){d.push.apply(d,wv(it[0]-lt).concat(it[1]));lt=it[0];});
+    d.push(0,0xFF,0x2F,0);return d;
+  });
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1].concat(i16(td.length)).concat(i16(tpb));
+  const all=hdr.slice();td.forEach(function(d){all.push.apply(all,[0x4D,0x54,0x72,0x6B].concat(i32(d.length)).concat(d));});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([new Uint8Array(all)],{type:'audio/midi'}));
+  a.download='jamal_'+document.getElementById('feelSel').value+'_p'+ARC.phraseNum+'.mid';a.click();
+}
+
+// ══════════════════════════════════════════════════════
+//  UNDO / REDO / SAVE / LOAD
+// ══════════════════════════════════════════════════════
+const UMAX=30;let _us=[],_rs=[];
+function cap(){return{rh:JSON.parse(JSON.stringify(rhSteps)),lhb:JSON.parse(JSON.stringify(lhbSteps)),lhc:JSON.parse(JSON.stringify(lhcSteps)),root:document.getElementById('rootSel').value,color:document.getElementById('colorSel').value,bpm:getBpm(),arc:JSON.parse(JSON.stringify(ARC)),cont:JSON.parse(JSON.stringify(CONT))};}
+function pushUndo(){_us.push(cap());if(_us.length>UMAX)_us.shift();_rs=[];updUB();}
+function applyS(s){rhSteps=JSON.parse(JSON.stringify(s.rh));lhbSteps=JSON.parse(JSON.stringify(s.lhb));lhcSteps=JSON.parse(JSON.stringify(s.lhc));document.getElementById('rootSel').value=s.root;document.getElementById('colorSel').value=s.color;document.getElementById('bpmIn').value=s.bpm;if(s.arc){ARC.type=s.arc.type;ARC.phraseNum=s.arc.phraseNum;}if(s.cont){CONT.rh=s.cont.rh;CONT.bass=s.cont.bass;CONT.strike=s.cont.strike;}buildGrid('rh');buildGrid('lhb');buildGrid('lhc');drawRHCurve();drawBassDoc();updateSeedDisplay();updateArcUI();updUB();}
+function undo(){if(!_us.length)return;_rs.push(cap());applyS(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(cap());applyS(_rs.pop());}
+function updUB(){const u=document.getElementById('btnU'),r=document.getElementById('btnR');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function save(){const s=cap();s._tool='JamalV2';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download='jamal_v2_p'+ARC.phraseNum+'.json';a.click();}
+function load(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(ev){try{const s=JSON.parse(ev.target.result);pushUndo();applyS(s);}catch(err){alert(err.message);}};r.readAsText(f);e.target.value='';}
+
+// ── Channel save ──
+function saveCh(){
+  ['rhCh','lhbCh','lhcCh','brushCh','openCh'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(el)try{localStorage.setItem('jamalv2_'+id,el.value);}catch(e){}
+  });
+}
+function loadCh(){
+  ['rhCh','lhbCh','lhcCh','brushCh','openCh'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(!el)return;
+    try{const v=localStorage.getItem('jamalv2_'+id);if(v)el.value=v;}catch(e){}
+  });
+}
+
+let _taps=[];
+function tapTempo(){const n=Date.now();_taps.push(n);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const g=_taps.slice(1).map(function(t,i){return t-_taps[i];});const a=g.reduce(function(x,y){return x+y;},0)/g.length;const b=Math.round(60000/a);if(b>50&&b<220)document.getElementById('bpmIn').value=b;}}
+
+function log(msg){const l=document.getElementById('mainLog');if(!l)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(154,176,204,.65);display:block';l.insertBefore(s,l.firstChild);while(l.children.length>8)l.removeChild(l.lastChild);}
+function slog(msg){const l=document.getElementById('spaceLog');if(!l)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(72,104,120,.7);display:block';l.insertBefore(s,l.firstChild);while(l.children.length>4)l.removeChild(l.lastChild);}
+
+// Slider labels
+document.querySelectorAll('input[type=range]').forEach(function(el){
+  const v=el.id+'V';el.addEventListener('input',function(){const vv=document.getElementById(v);if(vv)vv.textContent=el.value;});
+});
+
+// Dock
+(function(){
+  document.querySelectorAll('.dtab[data-p]').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      const p=tab.dataset.p;
+      if(tab.classList.contains('active')){toggleDock();return;}
+      document.querySelectorAll('.dtab').forEach(function(t){t.classList.remove('active');});
+      tab.classList.add('active');
+      document.querySelectorAll('.dpanel').forEach(function(pp){pp.classList.remove('active');});
+      const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');
+      const db=document.getElementById('dockBody');if(db){db.classList.remove('closed');document.getElementById('dockBtn').textContent='\u25b2';}
+    });
+  });
+})();
+let dockOpen=true;
+function toggleDock(){dockOpen=!dockOpen;const b=document.getElementById('dockBody'),btn=document.getElementById('dockBtn');if(b)b.classList.toggle('closed',!dockOpen);if(btn)btn.textContent=dockOpen?'\u25b2':'\u25bc';}
+
+// Keys
+document.addEventListener('keydown',function(e){
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();e.shiftKey?redo():undo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();nextPhrase();}
+  if(e.code==='KeyN'&&e.target.tagName!=='INPUT'){e.preventDefault();resetArc();nextPhrase();}
+  if(e.code==='KeyS'&&e.target.tagName!=='INPUT'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();strikeNow();}
+});
+
+function init(){
+  loadCh();
+  updateSeedDisplay();
+  setFeel();
+  updateArcUI();
+  nextPhrase();
+  initMIDI();
+}
+init();
+</script>
+</body>
+</html>

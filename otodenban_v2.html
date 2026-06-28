@@ -1,0 +1,3323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>音伝盤 v2 — OtoDenban</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --root:    #c8a040;
+  --fifth:   #4a90d0;
+  --third:   #70b878;
+  --maj3:    #90d090;
+  --seventh: #9060c0;
+  --tension: #c04030;
+  --passing: #5a7080;
+  --text:    #c0c0cc;
+  --dim:     #404058;
+  --bg:      #04040a;
+  --stave-bg:#0a0a14;
+  --new-bg:  #050510;
+  --line:    rgba(255,255,255,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);}
+body{color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;flex-direction:column;}
+
+header{
+  padding:.45rem 1rem .35rem;border-bottom:1px solid #181820;
+  display:flex;align-items:center;gap:.7rem;background:#030308;flex-shrink:0;
+}
+.logo{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;font-style:italic;color:var(--root);line-height:1;}
+.logo-sub{font-size:.28rem;color:var(--dim);letter-spacing:.25em;text-transform:uppercase;}
+.ctrl{display:flex;align-items:center;gap:.4rem;margin-left:auto;flex-wrap:wrap;}
+.btn{padding:.1rem .3rem;border:1px solid #181820;background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.38rem;cursor:pointer;transition:all .1s;}
+.btn:hover{border-color:var(--root);color:var(--root);}
+.btn.on{border-color:var(--root);color:var(--root);background:rgba(200,160,64,.06);}
+select,input[type=number]{background:#0a0a12;border:1px solid #181820;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.38rem;padding:.05rem .1rem;}
+.sep{width:1px;height:14px;background:#181820;flex-shrink:0;}
+.mdot{width:6px;height:6px;border-radius:50%;background:#181820;flex-shrink:0;}
+.mdot.on{background:var(--root);box-shadow:0 0 4px var(--root);}
+
+.world-label{
+  padding:.14rem .8rem;background:#030308;
+  border-top:1px solid #101018;border-bottom:1px solid #101018;
+  display:flex;align-items:center;gap:.5rem;flex-shrink:0;
+}
+.wl-name{font-size:.28rem;color:var(--dim);letter-spacing:.22em;text-transform:uppercase;}
+.wl-sep{flex:1;height:1px;background:linear-gradient(90deg,transparent,#2020308,transparent);}
+.wl-desc{font-size:.26rem;color:var(--dim);opacity:.6;}
+
+.split{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+.stave-world{flex:0 0 27%;background:var(--stave-bg);position:relative;overflow:hidden;border-bottom:2px solid #202030;min-height:0;}
+.new-world{flex:1;background:var(--new-bg);position:relative;overflow:hidden;min-height:0;}
+canvas{display:block;width:100%;height:100%;}
+
+/* Scale panel */
+.scale-panel{
+  position:absolute;top:8px;left:8px;
+  background:rgba(4,4,12,.94);border:1px solid #2a2a36;border-radius:6px;
+  padding:8px 10px;pointer-events:auto;
+}
+.sp-root{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:var(--root);}
+.sp-name{font-size:13px;color:#c8c2b8;margin-bottom:.12rem;}
+.sp-degs{display:flex;gap:3px;flex-wrap:wrap;}
+.sp-deg{
+  width:24px;height:24px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:600;
+}
+
+/* Now playing */
+.now-panel{
+  position:absolute;top:.35rem;right:.5rem;
+  background:rgba(4,4,12,.92);border:1px solid #181820;
+  padding:.22rem .4rem;pointer-events:none;
+  display:none;min-width:80px;
+}
+.now-note{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-style:italic;line-height:1;}
+.now-info{font-size:.3rem;color:var(--dim);}
+.now-dyn{font-size:.38rem;font-style:italic;font-family:'Cormorant Garamond',serif;}
+
+/* Legend */
+.legend{
+  position:absolute;bottom:8px;left:8px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:60%;
+  background:rgba(4,4,12,.92);padding:6px 10px;border-radius:6px;
+  border:1px solid #2a2a36;pointer-events:none;
+}
+.leg{display:flex;align-items:center;gap:4px;}
+.ldot{width:13px;height:13px;border-radius:3px;}
+.llab{font-size:11px;color:#c8c2b8;}
+</style>
+</head>
+<body>
+<!-- READING — floating, draggable, resizable narration panel -->
+<div id="narrPanel" style="position:fixed;left:24px;bottom:24px;z-index:99998;
+     width:380px;height:240px;min-width:220px;min-height:120px;resize:both;overflow:hidden;
+     display:flex;flex-direction:column;
+     background:rgba(8,8,16,.96);border:1px solid #3a3a48;border-radius:10px;
+     box-shadow:0 6px 28px rgba(0,0,0,.7);font-family:'JetBrains Mono',monospace">
+  <div id="narrHead" style="display:flex;align-items:center;gap:8px;cursor:move;
+       padding:8px 10px;border-bottom:1px solid #2a2a36;flex-shrink:0;user-select:none">
+    <span style="font-size:12px;color:#c8a040;letter-spacing:.1em">解説 · READING</span>
+    <span id="rdStatus" style="font-size:11px;color:#888"></span>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button id="narrFont-" title="文字を小さく" style="font-size:13px;width:24px;height:22px;cursor:pointer;background:#2a2a36;color:#f0ece4;border:1px solid #3a3a48;border-radius:4px">A−</button>
+      <button id="narrFont+" title="文字を大きく" style="font-size:13px;width:24px;height:22px;cursor:pointer;background:#2a2a36;color:#f0ece4;border:1px solid #3a3a48;border-radius:4px">A+</button>
+      <button id="narrHide" title="隠す" style="font-size:13px;width:24px;height:22px;cursor:pointer;background:transparent;color:#888;border:1px solid #2a2a36;border-radius:4px">×</button>
+    </div>
+  </div>
+  <div id="rdNarr" style="flex:1;overflow:auto;padding:12px 14px;font-size:16px;line-height:1.7;color:#f0ece4;white-space:pre-wrap">手を止めると、いま居る場所を解説します。</div>
+</div>
+
+<!-- LIVE COMMENTARY (実況中継) — floating, draggable, resizable -->
+<div id="livePanel" style="position:fixed;left:24px;top:80px;z-index:99997;
+     width:420px;height:280px;min-width:260px;min-height:160px;resize:both;overflow:hidden;display:none;
+     flex-direction:column;background:rgba(8,8,16,.97);border:1px solid #5a4a28;border-radius:10px;
+     box-shadow:0 6px 28px rgba(0,0,0,.7);font-family:'JetBrains Mono',monospace">
+  <div id="liveHead" style="display:flex;align-items:center;gap:8px;cursor:move;
+       padding:8px 10px;border-bottom:1px solid #3a3320;flex-shrink:0;user-select:none">
+    <span style="font-size:12px;color:#ffd47a;letter-spacing:.1em">🎙 実況中継 · LIVE</span>
+    <span id="liveStatus" style="font-size:12px;color:#888"></span>
+    <span style="font-size:11px;color:#888;margin-left:auto">間隔</span>
+    <input type="range" id="liveInt" min="3" max="12" value="5" style="width:64px;height:2px;accent-color:#ffd47a">
+    <span id="liveIntV" style="font-size:11px;color:#aaa">5s</span>
+    <button id="liveHide" title="隠す" style="font-size:13px;width:24px;height:22px;cursor:pointer;background:transparent;color:#888;border:1px solid #3a3320;border-radius:4px">×</button>
+  </div>
+  <div style="display:flex;padding:4px 14px 0;font-size:10px;color:#888;flex:0 0 auto">
+    <div style="flex:1">具象 — いま起きていること</div><div style="width:1px"></div>
+    <div style="flex:1;padding-left:10px;color:#88a">抽象 — それは何の現れか</div>
+  </div>
+  <div id="liveNow" style="flex:0 0 auto;padding:8px 14px 12px;border-bottom:1px solid #2a2618">—</div>
+  <div id="liveLog" style="flex:1 1 auto;overflow:auto;padding:8px 14px;color:#c8c2b8"></div>
+</div>
+
+<!-- FIELD MAP (磁場の地図) — floating, draggable, resizable -->
+<div id="fmapPanel" style="position:fixed;right:24px;bottom:24px;z-index:99997;
+     width:580px;height:560px;min-width:340px;min-height:360px;resize:both;overflow:hidden;display:none;
+     flex-direction:column;background:rgba(8,8,16,.97);border:1px solid #3a3a48;border-radius:10px;
+     box-shadow:0 6px 28px rgba(0,0,0,.7);font-family:'JetBrains Mono',monospace">
+  <div id="fmapHead" style="display:flex;align-items:center;gap:8px;cursor:move;
+       padding:8px 10px;border-bottom:1px solid #2a2a36;flex-shrink:0;user-select:none">
+    <span style="font-size:12px;color:#c8a040;letter-spacing:.1em">磁場の地図 · FIELD MAP</span>
+    <span style="font-size:11px;color:#888" title="各時点で磁場を判定する観測の粒度。小さい=細かく変化を拾う / 大きい=大局だけ">粒度</span>
+    <input type="range" id="fmapWin" min="4" max="48" value="16" style="width:80px;height:2px;accent-color:#c8a040">
+    <span id="fmapWinV" style="font-size:11px;color:#aaa">16拍</span>
+    <button id="fmapRefresh" style="font-size:11px;padding:4px 8px;cursor:pointer;background:#2a2a36;color:#f0ece4;border:1px solid #3a3a48;border-radius:4px">更新</button>
+    <button id="fmapHide" title="隠す" style="margin-left:auto;font-size:13px;width:24px;height:22px;cursor:pointer;background:transparent;color:#888;border:1px solid #2a2a36;border-radius:4px">×</button>
+  </div>
+  <div style="flex:0 0 auto;padding:2px 12px;font-size:9px;color:#888">▲ ピッチの磁場</div>
+  <canvas id="fmapCanvas" style="flex:1 1 auto;min-height:90px;width:100%;display:block"></canvas>
+  <div style="flex:0 0 auto;padding:2px 12px;font-size:9px;color:#7aa;border-top:1px solid #222">▼ リズムの磁場</div>
+  <canvas id="fmapRhythm" style="flex:0 0 auto;height:96px;min-height:70px;width:100%;display:block"></canvas>
+  <div id="fmapSummary" style="flex:0 0 auto;height:120px;min-height:80px;padding:10px 14px;border-top:1px solid #2a2a36;font-size:13px;color:#d8d2c8;line-height:1.7;overflow:auto;white-space:pre-wrap">磁場の地図はここに要約されます。</div>
+  <div style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid #2a2a36">
+    <button id="rhythmAiBtn" style="font-size:11px;padding:4px 10px;cursor:pointer;background:#1e3330;color:#9fe6c8;border:1px solid #2a5a4a;border-radius:4px">リズムの意図を読む</button>
+    <span id="rhythmAiStatus" style="font-size:11px;color:#888"></span>
+  </div>
+  <div id="fmapRhythmRead" style="flex:0 0 auto;max-height:120px;overflow:auto;padding:0 14px 10px;font-size:12px;color:#bfe8d8;line-height:1.6;white-space:pre-wrap"></div>
+</div>
+
+<!-- Prominent action buttons: 実況 (live) + 磁場 (map) -->
+<div style="position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:99998;
+     display:flex;gap:10px;font-family:'JetBrains Mono',monospace">
+  <button id="liveBtn" onclick="toggleLive()" title="世界最高の即興者の頭の中を、数秒遅れで実況する"
+     style="font-size:15px;font-weight:600;padding:10px 20px;cursor:pointer;
+            background:linear-gradient(135deg,#3a2a1a,#5a3a20);color:#ffd47a;
+            border:1.5px solid #7a5a2a;border-radius:10px;
+            box-shadow:0 4px 16px rgba(0,0,0,.5);letter-spacing:.04em">🎙 実況</button>
+  <button id="fmapBtn" onclick="toggleFieldMap()" title="ピッチとリズムの磁場を時間軸の地図で見る"
+     style="font-size:15px;font-weight:600;padding:10px 20px;cursor:pointer;
+            background:linear-gradient(135deg,#1a2a3a,#20405a);color:#7ac8ff;
+            border:1.5px solid #2a5a7a;border-radius:10px;
+            box-shadow:0 4px 16px rgba(0,0,0,.5);letter-spacing:.04em">🗺 磁場</button>
+</div>
+
+<!-- API KEY — collapsed into a small button; expands on click -->
+<div id="apiBar" style="position:fixed;top:8px;right:8px;z-index:99999;font-family:'JetBrains Mono',monospace">
+  <button id="apiToggle" title="Claude APIキー" style="font-size:12px;padding:6px 10px;cursor:pointer;
+     background:rgba(8,8,16,.96);color:#c8c2b8;border:1px solid #3a3a48;border-radius:8px;
+     box-shadow:0 4px 18px rgba(0,0,0,.6)">🔑 API <span id="apiDot" style="color:#888">●</span></button>
+  <div id="apiExpand" style="display:none;margin-top:6px;align-items:center;gap:8px;
+     background:rgba(8,8,16,.97);border:1px solid #3a3a48;border-radius:8px;
+     padding:8px 10px;box-shadow:0 4px 18px rgba(0,0,0,.6)">
+    <input type="password" id="apiKeyIn" placeholder="sk-ant-…" autocomplete="off"
+       style="width:220px;font-size:13px;padding:6px 8px;background:#0e0e14;
+              border:1px solid #2a2a36;color:#f0ece4;border-radius:5px;outline:none">
+    <button id="apiSaveBtn" style="font-size:12px;padding:6px 10px;cursor:pointer;
+       background:#2a2a36;color:#f0ece4;border:1px solid #3a3a48;border-radius:5px">保存</button>
+    <span id="apiStatus" style="font-size:12px;color:#888;white-space:nowrap">未設定</span>
+  </div>
+</div>
+
+
+<header>
+  <div>
+    <div class="logo">音伝盤</div>
+    <div class="logo-sub">OtoDenban · Universal Score</div>
+  </div>
+  <div class="ctrl">
+    <div class="mdot" id="mDot"></div>
+    <span style="font-size:.34rem;color:var(--dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="mStat">—</span>
+    <select id="mInSel" onchange="selIn(this.value)" style="max-width:130px">
+      <option value="">MIDI In —</option>
+    </select>
+    <button class="btn" onclick="initMIDI()">↻</button>
+    <div class="sep"></div>
+<!-- Root/Scale selectors removed — detection (Auto) always drives -->
+    <div class="sep"></div>
+    <span style="font-size:.32rem;color:var(--dim)">BPM</span>
+    <input type="number" id="bpmIn" value="105" min="20" max="300" style="width:40px">
+
+    <div class="sep"></div>
+    <span style="font-size:.32rem;color:var(--dim)">Speed</span>
+    <input type="range" id="speed" min="30" max="250" value="100" style="width:55px;height:2px;accent-color:var(--root)">
+    <div class="sep"></div>
+    <span id="reviewState" style="font-size:.5rem;color:var(--dim)"></span>
+    <button class="btn" onclick="clearAll()">✕</button>
+  </div>
+</header>
+
+<!-- 旧世界 -->
+<div class="world-label">
+  <span class="wl-name" style="color:#50506a">旧世界</span>
+  <div class="wl-sep"></div>
+  <span class="wl-desc">Western Staff Notation — Grand Staff · Key Signature · Dynamics · Articulation</span>
+</div>
+<div class="split">
+  <div class="stave-world">
+    <canvas id="staveC"></canvas>
+    <!-- Scale info panel -->
+    <div class="scale-panel" id="scalePanel" style="max-width:300px">
+      <div style="display:flex;align-items:center;gap:.3rem;margin-bottom:.1rem">
+        <div class="sp-root" id="spRoot" style="font-size:1.4rem">D</div>
+        <div class="sp-name" id="spName" style="font-size:13px">D Dorian</div>
+
+      </div>
+      <div class="sp-degs" id="spDegs" style="margin-bottom:.12rem"></div>
+      <!-- Detector -->
+      <div style="border-top:1px solid #181820;padding-top:.1rem;margin-top:.05rem">
+        <div style="display:flex;align-items:center;gap:.3rem;margin-bottom:.08rem">
+          <span style="font-size:.26rem;color:var(--dim)">Detect</span>
+          <div style="flex:1;height:2px;background:#181820;overflow:hidden">
+            <div id="detectBar" style="height:100%;background:var(--root);width:0%;transition:width .5s"></div>
+          </div>
+          <span id="detectConf" style="font-size:.3rem;color:var(--dim);width:28px;text-align:right">0%</span>
+          <span id="detectNotes" style="font-size:.26rem;color:var(--dim)">0 notes</span>
+          <button onclick="resetDetect()" style="padding:.03rem .1rem;border:1px solid #181820;background:transparent;color:var(--dim);font-size:.26rem;cursor:pointer">↺</button>
+        </div>
+        <div id="detectCands" style="min-height:14px"></div>
+      </div>
+      <!-- Narrative reading (止めた時の解説 · AI) -->
+      <div id="reading" style="border-top:1px solid #181820;padding-top:.12rem;margin-top:.08rem">
+        <div style="font-size:.26rem;color:var(--dim);letter-spacing:.1em">解説 · READING</div>
+        <div style="font-size:.28rem;color:var(--dim);line-height:1.5">解説は画面の浮動パネルに表示されます。</div>
+      </div>
+    </div>
+    <!-- Now playing -->
+    <div class="now-panel" id="nowPanel">
+      <div class="now-note" id="nowNote">—</div>
+      <div class="now-info" id="nowInfo">ST+0</div>
+      <div class="now-dyn" id="nowDyn">mp</div>
+    </div>
+  </div>
+
+  <!-- 新世界 -->
+  <div class="world-label" style="border-top:2px solid #202030">
+    <span class="wl-name" style="color:var(--root)">新世界</span>
+    <div class="wl-sep"></div>
+    <span class="wl-desc">音伝盤 — 数字(ST)と色で見る</span>
+  </div>
+  <div class="new-world">
+    <canvas id="otoC"></canvas>
+    <div class="legend" id="stLegend"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  THEORY
+// ══════════════════════════════════════════════════════
+const NOTE = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const SCALES = {
+  // Diatonic modes
+  ionian:     {name:'Ionian (Major)',  degs:[0,2,4,5,7,9,11]},
+  dorian:     {name:'Dorian',          degs:[0,2,3,5,7,9,10]},
+  phrygian:   {name:'Phrygian',        degs:[0,1,3,5,7,8,10]},
+  lydian:     {name:'Lydian',          degs:[0,2,4,6,7,9,11]},
+  mixolydian: {name:'Mixolydian',      degs:[0,2,4,5,7,9,10]},
+  aeolian:    {name:'Aeolian (Minor)', degs:[0,2,3,5,7,8,10]},
+  locrian:    {name:'Locrian',         degs:[0,1,3,5,6,8,10]},
+  // Melodic/Harmonic
+  mel_minor:  {name:'Melodic Minor',   degs:[0,2,3,5,7,9,11]},
+  har_minor:  {name:'Harmonic Minor',  degs:[0,2,3,5,7,8,11]},
+  har_major:  {name:'Harmonic Major',  degs:[0,2,4,5,7,8,11]},
+  // Pentatonic
+  majpenta:   {name:'Maj Pentatonic',  degs:[0,2,4,7,9]},
+  minpenta:   {name:'Min Pentatonic',  degs:[0,3,5,7,10]},
+  // Blues
+  blues:      {name:'Blues',           degs:[0,3,5,6,7,10]},
+  maj_blues:  {name:'Major Blues',     degs:[0,2,3,4,7,9]},
+  // Symmetric
+  wholetone:  {name:'Whole Tone',      degs:[0,2,4,6,8,10]},
+  dim_hw:     {name:'Diminished HW',   degs:[0,1,3,4,6,7,9,10]},
+  dim_wh:     {name:'Diminished WH',   degs:[0,2,3,5,6,8,9,11]},
+  // Other
+  spanish:    {name:'Spanish Phryg',   degs:[0,1,4,5,7,8,10]},
+  double_har: {name:'Double Harmonic', degs:[0,1,4,5,7,8,11]},
+  chromatic:  {name:'Chromatic',       degs:[0,1,2,3,4,5,6,7,8,9,10,11]},
+};
+
+// ST interval roles
+const ROLES = {
+  0: {name:'Root',   short:'R',   color:'#c8a040', priority:10},
+  1: {name:'b2',     short:'b2',  color:'#c04030', priority:1},
+  2: {name:'2nd',    short:'2',   color:'#607888', priority:3},
+  3: {name:'b3',     short:'b3',  color:'#70b878', priority:7},
+  4: {name:'3rd',    short:'3',   color:'#90d090', priority:7},
+  5: {name:'4th',    short:'4',   color:'#607888', priority:4},
+  6: {name:'b5/♯11', short:'b5',  color:'#c04030', priority:2},
+  7: {name:'5th',    short:'5',   color:'#4a90d0', priority:9},
+  8: {name:'b6',     short:'b6',  color:'#607888', priority:3},
+  9: {name:'6th',    short:'6',   color:'#607888', priority:4},
+  10:{name:'b7',     short:'b7',  color:'#9060c0', priority:6},
+  11:{name:'7th',    short:'7',   color:'#8050a8', priority:5},
+};
+
+let ROOT_PC = 2;
+let SCALE_KEY = 'dorian';
+const ST_COLORS_G = [
+  '#f0c040','#f03030','#60a8c8','#40d880',
+  '#80e880','#7090b8','#f06020','#40aaff',
+  '#c050c0','#80c8e8','#a060f0','#f080c0',
+];
+function buildSTLegend(){
+  const el=document.getElementById('stLegend'); if(!el) return;
+  const degs=(SCALES[SCALE_KEY]||SCALES.dorian).degs;
+  let html='';
+  for(let st=0; st<12; st++){
+    const inS=degs.indexOf(st)>=0;
+    const lbl='+'+st;
+    // in-field: solid dot. out-of-field: hollow ring (color preserved) + ⚡.
+    const dot = inS
+      ? '<div class="ldot" style="background:'+ST_COLORS_G[st]+'"></div>'
+      : '<div class="ldot" style="background:transparent;border:2px solid '+ST_COLORS_G[st]+'"></div>';
+    const mark = inS ? '' : '⚡';
+    html+='<div class="leg"><span style="font-size:9px;color:#c04030;width:8px;display:inline-block">'+mark+'</span>'
+       + dot + '<span class="llab" style="color:'+(inS?'#c8c2b8':'#8a8276')+'">'+lbl+'</span></div>';
+  }
+  html+='<div class="leg" style="margin-left:6px"><span style="font-size:9px;color:#c04030">⚡</span><span class="llab" style="color:#8a8276">＝磁場外（中抜き）</span></div>';
+  el.innerHTML=html;
+}
+
+function getDegs(){ return (SCALES[SCALE_KEY]||SCALES.dorian).degs; }
+function getST(midi){ return ((midi-ROOT_PC)%12+12)%12; }
+
+// ══════════════════════════════════════════════════════
+//  3-LAYER READING  (事実 / 可能性 / 物語)
+//  Fixed, objective tendencies distilled from how the world's
+//  musicians have moved — across genres. Condition for inclusion:
+//  only that it is music. No overtone ratios (Layer 2 / 闇).
+//  Nothing here says "do this." It says "the world did this."
+// ══════════════════════════════════════════════════════
+
+// FACT: what each degree is, and a plain "why it feels that way".
+const ST_FACT = {
+  0:{role:'Root (0)',     why:'磁場の中心。ここに帰ると、物語が一度とじる。'},
+  1:{role:'b2 (+1)',      why:'中心のすぐ隣。強く中心へ落ちたがる、最も近い緊張。'},
+  2:{role:'2nd (+2)',     why:'中心から一歩。明るくも暗くもない、開かれた通り道。'},
+  3:{role:'b3 (+3)',      why:'陰りの色。ここに居ると、響きが内へ向く。'},
+  4:{role:'3rd (+4)',     why:'光の色。ここに居ると、響きが外へ開く。'},
+  5:{role:'4th (+5)',     why:'中心へ帰る手前の柱。少しだけ前のめりな安定。'},
+  6:{role:'b5 (+6)',      why:'最も張りつめた距離。どちらへも強く動きたがる。'},
+  7:{role:'5th (+7)',     why:'中心に次ぐ柱。着地すると、ほどけて安らぐ。'},
+  8:{role:'b6 (+8)',      why:'沈む色。重力が下へ、内へと働く。'},
+  9:{role:'6th (+9)',     why:'浮く色。重力が上へ、外へと働く。'},
+  10:{role:'b7 (+10)',    why:'外へ連れ出す扉。中心から離れ、物語が動き出す。'},
+  11:{role:'7th (+11)',   why:'中心の真下。強く上の中心へ昇りたがる。'},
+};
+
+// POSSIBILITY: where the world tended to move next, from each degree.
+// weights are relative tendencies (not absolute truth) — shown as %.
+// motion: which direction the story opens. close=とじる open=ひらく
+//         sink=しずむ rise=のぼる stay=とどまる move=うごく
+const ST_NEXT = {
+  0:  [[7,28,'open'],[2,22,'move'],[4,18,'rise'],[5,16,'move'],[9,16,'rise']],
+  1:  [[0,52,'close'],[2,20,'move'],[3,14,'sink'],[11,14,'rise']],
+  2:  [[0,30,'close'],[4,24,'rise'],[3,18,'sink'],[7,16,'open'],[1,12,'sink']],
+  3:  [[2,28,'move'],[5,24,'move'],[0,20,'close'],[7,16,'open'],[4,12,'rise']],
+  4:  [[5,30,'move'],[2,24,'move'],[7,20,'open'],[0,16,'close'],[9,10,'rise']],
+  5:  [[4,30,'rise'],[7,24,'open'],[0,20,'close'],[2,14,'move'],[3,12,'sink']],
+  6:  [[7,40,'close'],[5,24,'move'],[0,18,'close'],[4,18,'rise']],
+  7:  [[0,36,'close'],[5,18,'move'],[9,16,'rise'],[10,16,'open'],[4,14,'sink']],
+  8:  [[7,40,'sink'],[5,22,'move'],[0,20,'close'],[10,18,'open']],
+  9:  [[7,30,'sink'],[0,24,'close'],[10,22,'open'],[4,12,'move'],[2,12,'move']],
+  10: [[0,30,'close'],[7,22,'sink'],[8,18,'sink'],[5,16,'move'],[3,14,'sink']],
+  11: [[0,58,'rise'],[9,16,'open'],[7,14,'sink'],[2,12,'move']],
+};
+
+// STORY: the motion vocabulary — universal directions, not subjective moods.
+const MOTION = {
+  close:{label:'とじる', en:'closing',  hint:'物語が一度おわる方へ'},
+  open: {label:'ひらく', en:'opening',  hint:'次の問いをひらく方へ'},
+  sink: {label:'しずむ', en:'sinking',  hint:'内へ、暗へ向かう方へ'},
+  rise: {label:'のぼる', en:'rising',   hint:'外へ、明へ向かう方へ'},
+  stay: {label:'とどまる',en:'staying', hint:'今の場にとどまる方へ'},
+  move: {label:'うごく', en:'moving',   hint:'隣へ、流れを進める方へ'},
+};
+
+let _lastReadDeg = null;
+
+// ── MOTION STATE (運動状態): is this note SETTLING (着地) or PASSING (途中)? ──
+// Read only from the stilled map — never predicts the next note's identity.
+// Signals (all visible once paused): length, gap to the following onset,
+// pillar-ness (near 0 or 7), and beat position.
+function motionState(note, idx){
+  const beatMs0 = 60000/((parseInt(document.getElementById('bpmIn').value)||105));
+  const dur = (note.t1!=null ? note.t1-note.t0 : 0);
+  const beats = dur/beatMs0;
+  // gap to the next onset in buf (if any)
+  let gapAfter = Infinity;
+  if(idx!=null){
+    for(let j=idx+1;j<buf.length;j++){
+      if(buf[j].t0>=note.t1-1){ gapAfter=buf[j].t0-note.t1; break; }
+    }
+  }
+  const rel = ((note.midi-ROOT_PC)%12+12)%12;
+  const pillar = (rel===0||rel===7);            // 中心・5度
+  // beat position: how close onset is to a strong beat
+  const phase = (note.t0 % (beatMs0*4)) / beatMs0;   // 0..4 within bar
+  const nearBeat = Math.abs(phase-Math.round(phase));
+  const onStrong = (Math.round(phase)%2===0) && nearBeat<0.18; // beats 1 & 3
+
+  // Score toward SETTLING (着地). Higher = more settled.
+  let s=0;
+  if(beats>=1.5) s+=2; else if(beats>=0.9) s+=1; else if(beats<0.4) s-=1;
+  if(gapAfter>beatMs0*0.75) s+=2; else if(gapAfter>beatMs0*0.35) s+=1;
+  if(pillar) s+=1.5;
+  if(onStrong) s+=1; else s-=0.5;
+  // classify
+  if(s>=3) return {state:'settle', score:s};
+  if(s<=0.5) return {state:'pass', score:s};
+  return {state:'mid', score:s};
+}
+
+function renderReading(midi){
+  const fEl=document.getElementById('rdFact');
+  const pEl=document.getElementById('rdPoss');
+  if(!fEl||!pEl) return;
+  const st=getST(midi);
+  if(st===_lastReadDeg) return;   // only update when the degree changes
+  _lastReadDeg=st;
+
+  // FACT
+  const fact=ST_FACT[st];
+  const inS=getDegs().includes(st);
+  fEl.innerHTML='<span style="color:'+(ROLES[st]?.color||'#999')+';font-weight:700">'
+    +fact.role+'</span>　'
+    +'<span style="color:var(--dim);font-size:.92em">'+(inS?'磁場の中':'磁場の外')+'</span><br>'
+    +'<span style="font-size:.9em;color:#c8c2b8">'+fact.why+'</span>';
+
+  // POSSIBILITY + STORY (only show next-degrees that are inside the current field;
+  // out-of-field ones are shown dim, never removed — choice stays free)
+  const nexts=ST_NEXT[st]||[];
+  pEl.innerHTML='';
+  nexts.forEach(function(n){
+    const [deg,w,mot]=n;
+    const m=MOTION[mot];
+    const inside=getDegs().includes(deg);
+    const col=ROLES[deg]?.color||'#888';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:.3rem;margin-bottom:.08rem;font-size:.3rem;opacity:'+(inside?1:0.4);
+    row.innerHTML=
+      '<span style="width:34px;color:'+col+';font-weight:700">'+(deg>=0?'+':'')+deg+'</span>'
+      +'<div style="width:34px;height:3px;background:#181820;border-radius:2px;overflow:hidden;flex-shrink:0">'
+        +'<div style="height:100%;width:'+w+'%;background:'+col+'"></div></div>'
+      +'<span style="width:22px;text-align:right;color:var(--dim)">'+w+'%</span>'
+      +'<span style="flex:1;color:#a8a29a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+        +'→ '+m.label+'<span style="color:var(--dim);font-size:.85em"> '+m.hint+'</span></span>';
+    pEl.appendChild(row);
+  });
+}
+
+function inScale(midi){ return getDegs().includes(getST(midi)); }
+function noteColor(midi){
+  const st=getST(midi);
+  if(!inScale(midi)) return '#c04030';
+  return ROLES[st]?ROLES[st].color:'#607888';
+}
+function velToDyn(v){
+  if(v<16) return 'ppp';
+  if(v<32) return 'pp';
+  if(v<48) return 'p';
+  if(v<64) return 'mp';
+  if(v<80) return 'mf';
+  if(v<96) return 'f';
+  if(v<112)return 'ff';
+  return 'fff';
+}
+
+// Key signature: accidentals for display
+function getKeyAccidentals(){
+  // Returns array of {pc, type:'sharp'|'flat'} to display
+  const scale = SCALES[SCALE_KEY]||SCALES.dorian;
+  const degs = scale.degs;
+  const acc = [];
+  degs.forEach(function(d){
+    const pc = (ROOT_PC+d)%12;
+    const name = NOTE[pc];
+    if(name.includes('#')) acc.push({pc, type:'sharp', name});
+    else if(name.includes('b')) acc.push({pc, type:'flat', name});
+  });
+  return acc;
+}
+
+// ══════════════════════════════════════════════════════
+//  SCALE DETECTOR — リアルタイム自動判定
+// ══════════════════════════════════════════════════════
+const DETECT = {
+  active:      true,
+  locked:      false,   // user locked a choice
+  pcWeights:   new Float32Array(12),  // pitch class weights
+  totalNotes:  0,
+  confidence:  0,       // 0-100
+  candidates:  [],      // top 3 candidates
+  lastUpdate:  0,
+};
+
+// Weight of each scale degree (by musical importance)
+const DEG_WEIGHT = {
+  0:3.0,  // root
+  7:2.0,  // 5th
+  3:1.5,  // b3
+  4:1.5,  // 3rd
+  10:1.4, // b7
+  11:1.4, // 7th
+  5:1.2,  // 4th
+  9:1.2,  // 6th
+  2:1.0,  // 2nd
+  8:1.0,  // b6
+  1:0.8,  // b2
+  6:0.8,  // b5/tritone
+};
+
+function detectFeed(midi, vel, durMs){
+  const pc = midi%12;
+  const w = (vel/127) * Math.max(0.2, Math.min(3.0, durMs/300));
+  DETECT.pcWeights[pc] += w;
+  DETECT.totalNotes++;
+  // Throttle: re-analyze every 3 notes or after 2s
+  const now2 = performance.now();
+  if(DETECT.totalNotes%3===0 || now2-DETECT.lastUpdate>2000){
+    analyzeScale();
+    DETECT.lastUpdate = now2;
+  }
+}
+
+function analyzeScale(){
+  const weights = DETECT.pcWeights;
+  const total = Array.from(weights).reduce(function(a,b){return a+b;},0);
+  if(total<0.5) return;
+
+  const scores = [];
+
+  // Try all 12 roots × all scales
+  Object.keys(SCALES).forEach(function(scaleKey){
+    if(scaleKey==='chromatic') return;
+    const scale = SCALES[scaleKey];
+    for(let root=0;root<12;root++){
+      let score = 0;
+      let penalty = 0;
+      let inScaleWeight = 0;
+      let outScaleWeight = 0;
+
+      scale.degs.forEach(function(d){
+        const pc = (root+d)%12;
+        const degW = DEG_WEIGHT[d]||1.0;
+        score += weights[pc] * degW;
+        inScaleWeight += weights[pc];
+      });
+
+      // Penalty for notes outside scale (stronger, so wrong-fit modes lose)
+      for(let pc=0;pc<12;pc++){
+        const relPc = (pc-root+12)%12;
+        if(!scale.degs.includes(relPc)){
+          penalty += weights[pc] * 2.6;
+          outScaleWeight += weights[pc];
+        }
+      }
+
+      score -= penalty;
+
+      // Characteristic-degree bonus: reward this mode's defining tones, so
+      // near-identical modes separate (minor's b6 vs Dorian's natural 6, etc.)
+      const chars=CHAR_DEG[scaleKey]||[];
+      chars.forEach(function(cd){ score += weights[(root+cd)%12] * 1.4; });
+
+      // Bonus: tonal-centre anchoring. The true tonic (vs its relative mode)
+      // is the one whose root AND fifth are strongly present, and whose root
+      // carries weight. Strengthen this so C-Ionian vs D-Dorian resolves.
+      const rootWeight = weights[root];
+      const fifthWeight = weights[(root+7)%12];
+      score += rootWeight * 3.2;            // root presence (was 1.5)
+      score += fifthWeight * 1.2;           // fifth anchors the tonic
+      // small bonus if the root is the single most-present pitch class
+      let maxPc=0; for(let p=0;p<12;p++){ if(weights[p]>weights[maxPc]) maxPc=p; }
+      if(maxPc===root) score += total*0.04;
+
+      // Normalize
+      const normalScore = total>0 ? score/total : 0;
+      const coverage = inScaleWeight/(inScaleWeight+outScaleWeight+0.001);
+
+      scores.push({
+        root, scaleKey,
+        score: normalScore,
+        coverage: coverage,
+        rootName: NOTE[root],
+        scaleName: scale.name,
+      });
+    }
+  });
+
+  scores.sort(function(a,b){return b.score-a.score;});
+  DETECT.candidates = scores.slice(0,5);
+
+  // Confidence = how cleanly the top field separates from the runner-up.
+  // Normalised by the top score so it's independent of note count.
+  if(scores.length>=2 && scores[0].score>0){
+    const gap = scores[0].score - scores[1].score;
+    const rel = gap / scores[0].score;          // 0..1 separation ratio
+    // ramp up only as enough evidence accrues, then saturate gently (cap 96)
+    const evidence = Math.min(1, DETECT.totalNotes/24);
+    DETECT.confidence = Math.max(0, Math.min(96, Math.round(rel*100*evidence)));
+  } else if(scores.length===1 && scores[0].score>0){
+    DETECT.confidence = Math.min(96, Math.round(Math.min(1,DETECT.totalNotes/24)*80));
+  } else {
+    DETECT.confidence = 0;
+  }
+
+  // Auto-apply the detected #1 once there's enough evidence. No strict confidence
+  // gate (chromatic improv rarely hits high confidence), so the display follows detection.
+  if(DETECT.candidates.length && DETECT.totalNotes>=12){
+    const best = DETECT.candidates[0];
+    if(best.root!==ROOT_PC || best.scaleKey!==SCALE_KEY){
+      ROOT_PC = best.root;
+      SCALE_KEY = best.scaleKey;
+      const rs=document.getElementById('rootSel');
+      const ss=document.getElementById('scaleSel');
+      if(rs)rs.value=best.root;
+      if(ss&&SCALES[best.scaleKey])ss.value=best.scaleKey;
+      updateScalePanel();
+    }
+  }
+
+  updateDetectUI();
+}
+
+function updateDetectUI(){
+  const conf = document.getElementById('detectConf');
+  const cands = document.getElementById('detectCands');
+  const bar = document.getElementById('detectBar');
+  if(!conf) return;
+
+  const n = DETECT.totalNotes;
+  const confidence = DETECT.confidence;
+  conf.textContent = confidence+'%';
+  conf.style.color = confidence>75?'var(--root)':confidence>40?'var(--fifth)':'var(--dim)';
+  if(bar) bar.style.width=Math.min(100,confidence)+'%';
+
+  if(cands && DETECT.candidates.length){
+    cands.innerHTML='';
+    DETECT.candidates.slice(0,3).forEach(function(c,i){
+      const el=document.createElement('div');
+      el.style.cssText='font-size:.3rem;color:'+(i===0?'var(--root)':'var(--dim)')+';cursor:pointer;padding:.06rem .12rem;border-radius:1px;';
+      el.style.background=i===0?'rgba(200,160,64,.08)':'transparent';
+      el.textContent=(i+1)+'. '+c.rootName+' '+c.scaleName;
+      el.title=c.rootName+' '+c.scaleName;
+      el.addEventListener('click',function(){
+        ROOT_PC=c.root;SCALE_KEY=c.scaleKey;
+        const rs=document.getElementById('rootSel');
+        const ss=document.getElementById('scaleSel');
+        if(rs)rs.value=c.root;
+        if(ss)ss.value=c.scaleKey;
+        updateScalePanel();
+        updateDetectUI();
+      });
+      cands.appendChild(el);
+    });
+  }
+
+  const nc=document.getElementById('detectNotes');
+  if(nc)nc.textContent=n+' notes';
+}
+
+function toggleDetectLock(){ /* lock removed — detection always drives */ }
+
+function resetDetect(){
+  DETECT.pcWeights.fill(0);
+  DETECT.totalNotes=0;
+  DETECT.confidence=0;
+  DETECT.candidates=[];
+  updateDetectUI();
+}
+
+// ══════════════════════════════════════════════════════
+//  NOTE BUFFER
+// ══════════════════════════════════════════════════════
+const MAX = 3000;
+const buf = [];
+const active = {};
+let paused = false;
+let T0 = performance.now();
+let pauseAt = 0;
+
+// ── REVIEW MODE (検討モード): freeze the view to study the whole phrase ──
+let review = false;          // are we studying a frozen phrase?
+let reviewScroll = 0;        // frozen scroll value framing the phrase
+let reviewSpeed = null;      // frozen speed used while framing
+let reviewSel = null;        // (legacy; manual selection removed)
+let readingWholeOverride = false;  // 全体 vs 現在まで
+let _lastInputT = 0;         // last time a note arrived
+const REVIEW_IDLE_MS = 1500; // hands-off this long → auto review
+
+function frameAllPhrase(){
+  // Choose scroll + speed so the entire buf phrase fits across MAIN_W.
+  if(!buf.length){ return; }
+  const nowT = now();
+  const t0 = buf[0].t0;
+  // last edge: use t1 if present, else current time for still-open notes
+  let t1 = t0;
+  buf.forEach(function(n){ const e=(n.t1!=null?n.t1:nowT); if(e>t1) t1=e; });
+  const span = Math.max(200, t1 - t0);     // at least 200ms so speed stays sane
+  const cv = document.getElementById('otoC');
+  const W = (cv && cv.width) ? cv.width : 1200;
+  const mainW = Math.max(200, W - 72);
+  const usable = mainW * 0.86;
+  // clamp speed to a reasonable on-screen range (px per ms)
+  let sp = usable / span;
+  sp = Math.max(0.0002, Math.min(sp, 0.6));  // allow whole long phrase to fit
+  reviewSpeed = sp;
+  // place the LAST edge a little in from the right margin
+  reviewScroll = t1 + (mainW * 0.06) / reviewSpeed;
+}
+
+function enterReview(){
+  if(review) return;
+  if(!buf.length) return;
+  // Freeze in place: keep the current scroll & speed, do NOT zoom out to whole.
+  reviewScroll = getScroll();
+  reviewSpeed  = getSpeed();
+  review=true;
+  narrateReading();
+  const fp=document.getElementById('fmapPanel');
+  if(fp && fp.style.display!=='none') drawFieldMap();
+  const s=document.getElementById('reviewState');
+  if(s){ s.textContent='● 検討中（弾くと再開）'; s.style.color='#c8a040'; }
+}
+function exitReview(){
+  if(!review) return;
+  review=false; reviewSpeed=null; reviewSel=null; _lastNarrSig=null;
+  // Rebase time: while reviewing, the clock kept running. Close the gap so the
+  // next note continues just after the buffered phrase, not seconds later.
+  if(buf.length){
+    const lastEdge=Math.max.apply(null,buf.map(function(n){return n.t1!=null?n.t1:n.t0;}));
+    // make now() return lastEdge + a small gap from here on
+    pauseAt = lastEdge + 120;       // ~120ms breath after the last note
+    T0 = performance.now();
+    paused = false;
+  }
+  const s=document.getElementById('reviewState');
+  if(s){ s.textContent=''; }
+}
+function toggleReview(){ review ? exitReview() : enterReview(); }
+
+// ══════════════════════════════════════════════════════
+//  READING NARRATION (止めた時の解説 · Claude API)
+//  Paste your key below. Leave "" before sharing the file.
+// ══════════════════════════════════════════════════════
+let API_KEY = (function(){ try{ return localStorage.getItem('oto_api_key')||""; }catch(e){ return ""; } })();
+function setApiKey(v){
+  API_KEY=(v||"").trim();
+  try{ localStorage.setItem('oto_api_key', API_KEY); }catch(e){}
+  const s=document.getElementById('apiStatus');
+  if(s){ s.textContent = API_KEY?('● 設定済 '+API_KEY.slice(0,7)+'…'):'未設定'; s.style.color=API_KEY?'#6fcf97':'var(--dim)'; }
+  const dot=document.getElementById('apiDot'); if(dot){ dot.style.color = API_KEY?'#6fcf97':'#888'; }
+  const inp=document.getElementById('apiKeyIn'); if(inp&&!v) inp.value='';
+  _lastNarrSig=null; // allow re-narration after key change
+}
+const API_MODEL = "claude-sonnet-4-6";   // 現行モデル（4-20250514は2026/4に廃止済）
+
+let _lastNarrSig = null;   // avoid re-asking for the same phrase
+
+// Serialize the frozen phrase in the NEW-WORLD language (numbers only).
+// Time window currently under observation (for AI reading scope).
+// If a selection exists, use it (precise). Else use what's visible on screen.
+function readingWindow(){
+  // No manual selection. The reading follows WHAT YOU SEE:
+  //   zoomed out (whole phrase visible) → analyze the whole phrase.
+  //   zoomed/panned in → analyze just the visible window on screen.
+  if(!buf.length) return { t0:0, t1:0, kind:'—' };
+  const bt0=buf[0].t0;
+  const bt1=Math.max.apply(null,buf.map(function(n){return n.t1||n.t0;}));
+  const scroll=getScroll(), speed=getSpeed();
+  const cv=document.getElementById('otoC');
+  const W=(cv&&cv.width)?cv.width:1200;
+  const mainW=Math.max(200, W-72);
+  let tLeft=scroll - mainW/speed;
+  let tRight=scroll;
+  // clamp to actual notes
+  tLeft=Math.max(tLeft, bt0); tRight=Math.min(tRight, bt1);
+  if(tRight-tLeft < 1){ tLeft=bt0; tRight=bt1; }
+  // if the visible window covers ~the whole phrase, call it 全体
+  const coversAll = (tLeft<=bt0+1) && (tRight>=bt1-1);
+  return { t0:tLeft, t1:tRight, kind: coversAll?'全体':'表示範囲' };
+}
+
+// ── RHYTHM FACTS (リズムの事実) — computed from BPM + MIDI onsets we already have.
+//   Not new measurement: just arithmetic on existing data, handed to the AI.
+//   push/pull(食う/ためる), density(密度), and inter-onset periodicity(周期).
+function rhythmFacts(notes){
+  if(!notes || notes.length<2) return null;
+  const beatMs=60000/((parseInt(document.getElementById('bpmIn').value)||105));
+  const grid=beatMs/2;                       // 8th-note grid
+  // push/pull: each onset's deviation from nearest grid point (ms; <0 ahead/食う, >0 behind/ためる)
+  let pushSum=0, pullSum=0, pushN=0, pullN=0, devAbsSum=0;
+  notes.forEach(function(n){
+    const nearest=Math.round(n.t0/grid)*grid;
+    const dev=n.t0-nearest;
+    devAbsSum+=Math.abs(dev);
+    if(dev<-grid*0.06){ pushSum+=dev; pushN++; }
+    else if(dev>grid*0.06){ pullSum+=dev; pullN++; }
+  });
+  const avgDev=devAbsSum/notes.length;
+  const feel = (pushN>pullN*1.4)?'食い気味(前ノリ)' : (pullN>pushN*1.4)?'ため気味(後ノリ)' : 'ほぼジャスト';
+  // density: notes per beat across the span
+  const t0=notes[0].t0, t1=notes[notes.length-1].t0;
+  const spanBeats=Math.max(0.001,(t1-t0)/beatMs);
+  const density=+(notes.length/spanBeats).toFixed(2);
+  // inter-onset intervals → dominant period (in beats), hints at pulse/polyrhythm
+  const iois=[];
+  for(let i=1;i<notes.length;i++){ const d=(notes[i].t0-notes[i-1].t0)/beatMs; if(d>0.05&&d<8) iois.push(+d.toFixed(2)); }
+  // fine histogram of IOI (in beats) to surface subdivisions & polyrhythm layers
+  const buckets={};
+  iois.forEach(function(d){ const key=(Math.round(d*4)/4).toFixed(2); buckets[key]=(buckets[key]||0)+1; });
+  const sortedIOI=Object.keys(buckets).sort(function(a,b){return buckets[b]-buckets[a];});
+  const topIOI=sortedIOI.slice(0,3);
+  // DIVISION: dominant subdivision of the beat (1=quarter, 0.5=8th, 0.33=triplet, 0.25=16th)
+  const domIOI=parseFloat(sortedIOI[0]||'0.5');
+  function divName(d){
+    if(d<=0)return '—';
+    const sub=1/d;  // how many per beat
+    if(Math.abs(sub-1)<0.15)return '1/4 (4分)';
+    if(Math.abs(sub-1.5)<0.2)return '付点 (3:2)';
+    if(Math.abs(sub-2)<0.2)return '1/8 (8分)';
+    if(Math.abs(sub-3)<0.3)return '1/8三連 (3分割)';
+    if(Math.abs(sub-4)<0.4)return '1/16 (16分)';
+    if(Math.abs(sub-5)<0.4)return '5連 (5分割)';
+    if(Math.abs(sub-6)<0.5)return '1/16三連 (6分割)';
+    if(Math.abs(sub-7)<0.6)return '7連 (7分割)';
+    return sub.toFixed(1)+'分割';
+  }
+  // POLYRHYTHM LAYERS: how many distinct strong periodicities coexist.
+  // Count IOI buckets that each hold a meaningful share (>=12%) of all onsets.
+  const totalIOI=iois.length||1;
+  // strong layers = IOI buckets each holding >=12% of onsets, with a valid (>0) period
+  const strongLayers=sortedIOI.filter(function(k){
+    const v=parseFloat(k);
+    return v>0.05 && (buckets[k]/totalIOI)>=0.12;
+  });
+  const layerCount=Math.max(1, Math.min(5, strongLayers.length));
+  // describe layers by their period in beats (e.g. "0.5拍 : 1拍 : 2拍 が同時進行")
+  let polyDesc='';
+  if(strongLayers.length>=2){
+    const periods=strongLayers.slice(0,3).map(function(k){return parseFloat(k);});
+    polyDesc=periods.map(function(p){ return p+'拍'; }).join(' : ')+' が同時進行';
+  }
+  return {
+    feel:feel,
+    avgDevMs:Math.round(avgDev),
+    pushN:pushN, pullN:pullN,
+    density:density,
+    commonIntervals:topIOI.map(function(k){return k+'拍';}).join(', '),
+    division:divName(domIOI),
+    layerCount:layerCount,
+    polyDesc:polyDesc,
+    swingPct: Math.round(50 + (pullN-pushN)/(pushN+pullN+0.001)*18)  // ~50 just, >50 後ノリ
+  };
+}
+
+function serializePhrase(){
+  if(!buf.length) return null;
+  const win=readingWindow();
+  const beatMs0 = 60000/((parseInt(document.getElementById('bpmIn').value)||105));
+  // notes whose onset falls within the window
+  let inWin = buf.filter(function(n){ return n.t0>=win.t0-1 && n.t0<=win.t1+1; });
+  if(!inWin.length){
+    // fallback: nearest few to the window center
+    inWin = buf.slice(-8);
+  }
+  // cap to keep prompt small but PRESERVE the shape: sample evenly across the
+  // visible range rather than truncating to the tail (which misrepresents it).
+  const CAP=60, visibleCount=inWin.length;
+  if(inWin.length>CAP){
+    const step=inWin.length/CAP;
+    const sampled=[];
+    for(let i=0;i<CAP;i++){ sampled.push(inWin[Math.floor(i*step)]); }
+    inWin=sampled;
+  }
+  const scale = (SCALES[SCALE_KEY]||SCALES.dorian);
+  const sdegs = scale.degs;
+  const items = inWin.map(function(n){
+    const absST = n.midi - (ROOT_PC+36);
+    const rel = ((n.midi-ROOT_PC)%12+12)%12;       // 0..11 within octave
+    const inScale = sdegs.includes(rel);
+    const dur = (n.t1!=null?n.t1-n.t0:0);
+    const beats = +(dur/beatMs0).toFixed(2);
+    const idxInBuf = buf.indexOf(n);
+    const ms = motionState(n, idxInBuf).state;
+    const motion = ms==='settle'?'着地':ms==='pass'?'途中':'中間';
+    return {st:(absST>=0?'+':'')+absST, rel:rel, inScale:inScale, beats:beats, motion:motion};
+  });
+  // span based on the ACTUAL notes in the window (clamped), so it matches the map.
+  let _wt0=win.t0, _wt1=win.t1;
+  if(inWin.length){
+    const it0=inWin[0].t0, it1=Math.max.apply(null,inWin.map(function(n){return n.t1||n.t0;}));
+    _wt0=Math.max(win.t0, it0); _wt1=Math.min(win.t1, it1);
+    if(_wt1<=_wt0){ _wt0=it0; _wt1=it1; }
+  }
+  const spanBeats = +(((_wt1-_wt0))/beatMs0).toFixed(1);
+  // BACKGROUND: coarse summary of the WHOLE phrase, so local detail can be
+  // located within the larger structure (Schenkerian layering).
+  let bg=null;
+  if(buf.length){
+    const allAbs=buf.map(function(n){return n.midi-(ROOT_PC+36);});
+    const lo=Math.min.apply(null,allAbs), hi=Math.max.apply(null,allAbs);
+    const first=allAbs[0], last=allAbs[allAbs.length-1];
+    const t0a=buf[0].t0, t1a=Math.max.apply(null,buf.map(function(n){return n.t1||n.t0;}));
+    const totalBeats=+(((t1a-t0a))/beatMs0).toFixed(1);
+    // where does the current window sit inside the whole? (0=start,1=end)
+    const winMid=(win.t0+win.t1)/2;
+    const posInWhole = (t1a>t0a)? Math.max(0,Math.min(1,(winMid-t0a)/(t1a-t0a))) : 0;
+    bg={ lo:lo, hi:hi, first:first, last:last, totalBeats:totalBeats,
+         totalNotes:buf.length, posInWhole:+(posInWhole.toFixed(2)) };
+  }
+  const rf=rhythmFacts(inWin);
+  return { field: scale.name, fieldDegs: scale.degs.slice(), rootName: NOTE[ROOT_PC],
+           rootPc: ROOT_PC, notes: items, background: bg, rhythm: rf,
+           scope: win.kind, spanBeats: spanBeats, noteCount: visibleCount,
+           sampled: (visibleCount>items.length) };
+}
+
+function phraseSignature(p){
+  if(!p) return null;
+  return p.field+'|'+p.notes.map(function(n){return n.st+n.motion;}).join(',');
+}
+
+const READING_SYSTEM = [
+  "あなたは「音伝盤」という、音楽を数字(ルートからの半音距離=ST)で表す新しい楽譜の解説者です。",
+  "音楽は階層的に入れ子になっている、という事実に立って読みます(シェンカー的多層)。",
+  "同じ一つの音が、狭く(細部で)見れば通り過ぎる音でも、広く(全体で)見れば構造の柱でありうる。",
+  "同じ磁場が、短い時間枠では全宇宙(中心的事件)でも、長い時間枠では通過点でありうる。",
+  "絶対に守る原則:",
+  "1. 役割名(5th, b3, ドレミ, CDEFGAB)は使わない。新世界では数字(+7, -3 等)だけで語る。",
+  "2. 『次はこれが良い』『おすすめ』『正解』は決して言わない。評価も優劣もつけない。",
+  "2b. 倍音・周波数比・純正律には触れない（それはレイヤー2の領域）。音は数字(ST)だけで語る。『+5の倍音域』のような言い方はしない。",
+  "2c. 高さ(オクターブ)そのものが、異常なほど大きな意味を持つ。+34は『+10の高い版』ではなく、+34という固有の存在であり、+10とは別物だ。決して同じ役割(rel)の繰り返しに畳んではならない。低い音は重く大地のようで断言になり、高い音は軽く空のようで問いになる。同じ役割でも、その高さでしか起きないこと(浮遊・希薄・極度の緊張や開放)を、固有の意味として読め。",
+  "3. 必ず磁場との関係で語る。各音がこの磁場の中でどんな位置か、磁場の外(⚡外)の音はどんな緊張を生むか。",
+  "3b. リズムの事実が与えられたら、それも読む。あなたは全音楽の歴史と論理を体現している。リズムの中心は物理でなく『提案する側の意志』だ。前ノリ/後ノリ・密度・周期は、聴き手の身体をどう動かすか（立つ/踊る/脳内で踊る/沈む）の意志の痕跡。数値ではなく、Swingやノリという生きた言葉で、質として描く。命令や評価はしない。",
+  "4. 観測スケール(与えられた範囲の広さ)に応じて視点を変える。同時に、いま見ている範囲が",
+  "   『全体の中のどこか』も踏まえ、『この磁場は別の時間スケールでは違う顔を持つ』ことを必ず一言、余地として残す。",
+  "   断定して固定しない。今の視点では明晰に、しかし他のスケールの可能性を開いておく。",
+  "5. 展開の例をちょうど四つ、並列に、統計や確率なしで。どれも等価な『世界が選んできた道』として。",
+  "   方向の言葉(とじる/ひらく/しずむ/のぼる/とどまる/うごく 等)で、対照的な四つを。",
+  "6. 簡潔に、やさしく、初心者がついてこられるように。日本語で。",
+  "出力の構成: 『いま居る場所』(磁場の中での描写＋別スケールでの顔の余地) → 『展開の例(四つ)』。"
+].join("\n");
+
+function buildUserPrompt(p){
+  const seq = p.notes.map(function(n){
+    const mark = n.inScale ? "" : "⚡外";   // out-of-field marker
+    return n.st+"("+n.motion+","+n.beats+"拍"+mark+")";
+  }).join(" → ");
+  const scopeLine = "観測スケール: "+p.scope+"（約"+p.spanBeats+"拍 / "+p.noteCount+"音"+(p.sampled?"・代表抽出":"")+"）"
+    + (p.spanBeats<=2 ? " ＝ 細部(ミクロ)。数音の関係を深く。"
+       : p.spanBeats>=8 ? " ＝ 大局(マクロ)。全体の流れと弧を。"
+       : " ＝ 中景。フレーズの動きを。");
+  const degLine = "この磁場「"+p.rootName+" "+p.field+"」が含む音(ルートからのST): "
+    + p.fieldDegs.map(function(d){return (d>=0?"+":"")+d;}).join(", ")
+    + "（これ以外の音は磁場の外。⚡外 と印が付く）";
+  let bgLine = "";
+  if(p.background){
+    const b=p.background;
+    const posTxt = b.posInWhole<0.33?"前半":b.posInWhole>0.66?"後半":"中盤";
+    bgLine = "全体の文脈(背景): フレーズ全体は約"+b.totalBeats+"拍・"+b.totalNotes+"音、"
+      + "最低"+(b.lo>=0?"+":"")+b.lo+"〜最高"+(b.hi>=0?"+":"")+b.hi+"の幅。"
+      + "始まり"+(b.first>=0?"+":"")+b.first+"、終わり"+(b.last>=0?"+":"")+b.last+"。"
+      + "いま見ている範囲は、全体の中の【"+posTxt+"】に位置する。";
+  }
+  let rhythmLine="";
+  if(p.rhythm){
+    rhythmLine="リズムの事実: "+p.rhythm.feel+"（格子からの平均ズレ"+p.rhythm.avgDevMs+"ms、食い"
+      +p.rhythm.pushN+"・ため"+p.rhythm.pullN+"）、密度"+p.rhythm.density+"音/拍、よく出る間隔 "+p.rhythm.commonIntervals;
+  }
+  return [
+    "磁場: "+p.rootName+" "+p.field,
+    degLine,
+    bgLine,
+    rhythmLine,
+    scopeLine,
+    "フレーズ(左から右へ。数字はルートからのST距離、括弧は運動状態・長さ・磁場外の印):",
+    seq,
+    "",
+    "重要: 必ず磁場との関係で語ること。単なる数直線の上下ではなく、この磁場の中での意味として。",
+    "そして、いま見ている範囲を『全体の中のどこか』として位置づけ、",
+    "『この磁場/この音は、別の時間スケールでは違う顔を持つ』ことを必ず一言、余地として残すこと。",
+    "（例: 細部では通り過ぎる音だが、全体では弧の頂点を支える柱になっている――のように）",
+    "その上で『いま居る場所』を描写し、続けて展開の例を四つ、並列で挙げてください。",
+    "展開例も、この磁場の中の音を使って語ること。"
+  ].join("\n");
+}
+
+async function narrateReading(){
+  const narrEl = document.getElementById('rdNarr');
+  const stEl = document.getElementById('rdStatus');
+  const p = serializePhrase();
+  if(!p){ if(narrEl) narrEl.textContent='まだ音がありません。'; return; }
+  const sig = phraseSignature(p);
+  if(sig===_lastNarrSig) return;      // same phrase, don't re-ask
+  _lastNarrSig = sig;
+
+  if(!API_KEY){
+    if(narrEl) narrEl.textContent='(APIキー未設定) コード先頭の API_KEY に自分の鍵を貼ると、ここに解説が出ます。';
+    return;
+  }
+  if(stEl) stEl.textContent='· 解説中…';
+  try{
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "content-type":"application/json",
+        "x-api-key":API_KEY,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body: JSON.stringify({
+        model: API_MODEL,
+        max_tokens: 1500,
+        system: READING_SYSTEM,
+        messages:[{role:"user", content: buildUserPrompt(p)}]
+      })
+    });
+    if(!res.ok){
+      const t=await res.text();
+      if(narrEl) narrEl.textContent='解説エラー: '+res.status+'\n'+t.slice(0,200);
+      if(stEl) stEl.textContent='';
+      return;
+    }
+    const data = await res.json();
+    const text = (data.content||[]).filter(function(b){return b.type==='text';})
+                  .map(function(b){return b.text;}).join("\n").trim();
+    if(narrEl) narrEl.textContent = text || '(空の応答)';
+  }catch(e){
+    if(narrEl) narrEl.textContent='解説に失敗しました（通信/CORS）。\n'+String(e).slice(0,160);
+  }finally{
+    if(stEl) stEl.textContent='';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  LIVE COMMENTARY (実況中継) — the mind of a world-class
+//  improviser/conductor, voiced a few seconds behind the playing.
+//  Continuous thought: each call remembers the last.
+//  AI-only: lending a fully law-mastered musical mind in real time.
+// ══════════════════════════════════════════════════════
+let liveOn = false;
+let liveTimer = null;
+let liveHistory = [];        // recent commentary lines (for continuity)
+let liveInFlight = false;
+let LIVE_INTERVAL_MS = 5000; // ~5s cadence
+let _liveLastFireT = 0;
+
+const LIVE_SYSTEM = [
+  "あなたは、芸術（最終的な美の選択）以外の音楽法則を、すべて論理的にマスターした、世界最高の即興者であり指揮者である。",
+  "最高の頭脳は、その場で抽象と具象を往復している。目の前の具体的な事象から普遍的な原理へ、そしてまた具体へ——この往復運動そのものが、最高の音楽思考だ。",
+  "実況では、この抽象と具象の往復を、一つの思考の流れの中で見せること。何を抽象とし何を具象とするかは、あなた自身が見出す。固定された枠はない。あなたの芸術的思考力で、その都度もっとも本質的な往復を選べ。",
+  "音は数字(ルートからのST距離)で捉える。役割名(5th,b3,ドレミ)や倍音・周波数比には触れない。",
+  "高さ(オクターブ)そのものが異常なほどの意味を持つ。+34は+10の高い版ではなく、+10とは別物の固有の存在だ。同じ役割の繰り返しに畳むな。その高さでしか起きないこと——空に浮く軽さ、根から遠い希薄、極限の緊張や開放——を固有に読め。低い=重い断言、高い=軽い問い。",
+  "読むもの：いま何が起きているか、それが何の現れか、何が準備されているか。磁場の操作、引力への従順と反抗、緊張の蓄積と解放、運動状態、全体の弧の中での位置、過去の瞬間の変奏としての特異性——これらは手がかりであって、枠ではない。",
+  "リズムについて：あなたは全音楽の歴史と論理を体現している。リズムの中心は物理ではなく『提案する側の意志』だ。前ノリ／後ノリ・密度・周期の重なりは、聴き手の身体をどう動かすか（立つ・踊る・脳内で踊る・沈む）の意志の痕跡である。数値は出さず、Swingやノリといった生きた言葉で、その意志を質として読め。音楽史のどんな文脈とも結びつけてよい。ただし命令はしない。",
+  "読まないもの：なぜ美しいか（それは芸術=闇）。『次はこうすべき』という命令や評価（絶対に言わない）。",
+  "極めて重要：特筆すべきものが無い凡庸な箇所では、語らなくてよい。沈黙も最高の頭脳の判断だ。その場合は「—」とだけ返す。特異な瞬間にだけ口を開く。",
+  "一回の発話は短く（1〜3文）。熱く、的確に。直前の自分の思考を踏まえ、連続した一つの頭脳として往復し続ける。日本語。前置き・締めは不要。"
+].join("\n");
+
+function serializeRecent(seconds){
+  if(!buf.length && !Object.keys(active).length) return null;
+  const tNow=now();
+  const winMs=seconds*1000;
+  const a=tNow-winMs;
+  const beatMs0=60000/((parseInt(document.getElementById('bpmIn').value)||105));
+  const recent=buf.filter(function(n){ return n.t0>=a; });
+  if(recent.length<1) return null;
+  const scale=(SCALES[SCALE_KEY]||SCALES.dorian), sdegs=scale.degs;
+  const items=recent.slice(-24).map(function(n){
+    const absST=n.midi-(ROOT_PC+36);
+    const rel=((n.midi-ROOT_PC)%12+12)%12;
+    const dur=(n.t1!=null?n.t1-n.t0:0);
+    const beats=+(dur/beatMs0).toFixed(2);
+    const idx=buf.indexOf(n);
+    const ms=motionState(n,idx).state;
+    const motion=ms==='settle'?'着地':ms==='pass'?'途中':'中間';
+    const mark=sdegs.includes(rel)?'':'⚡外';
+    return (absST>=0?'+':'')+absST+'('+motion+(mark?','+mark:'')+')';
+  });
+  const rf=rhythmFacts(recent);
+  return { field:NOTE[ROOT_PC]+' '+scale.name, seq:items.join(' → '), count:recent.length, rhythm:rf };
+}
+
+function buildLivePrompt(p){
+  const hist = liveHistory.length ? ("直前までのあなたの思考(森と木の連続):\n"+liveHistory.slice(-3).join("\n")+"\n\n") : "";
+  // FOREST: whole-phrase background so the tree can be placed in the arc.
+  let forest="";
+  if(buf.length){
+    const beatMs0=60000/((parseInt(document.getElementById('bpmIn').value)||105));
+    const allAbs=buf.map(function(n){return n.midi-(ROOT_PC+36);});
+    const lo=Math.min.apply(null,allAbs), hi=Math.max.apply(null,allAbs);
+    const t0a=buf[0].t0, t1a=Math.max.apply(null,buf.map(function(n){return n.t1||n.t0;}));
+    const totalBeats=Math.round((t1a-t0a)/beatMs0);
+    const posPct=Math.round(((now()-t0a)/Math.max(1,(t1a-t0a)))*100);
+    forest="（全体の文脈）約"+totalBeats+"拍、最低"+(lo>=0?'+':'')+lo+"〜最高"+(hi>=0?'+':'')+hi
+         +"。いまは全体の"+posPct+"%地点。\n";
+  }
+  let rhythmLine="";
+  if(p.rhythm){
+    rhythmLine="リズムの事実: "+p.rhythm.feel+"（格子からの平均ズレ"+p.rhythm.avgDevMs+"ms、"
+      +"食い"+p.rhythm.pushN+"・ため"+p.rhythm.pullN+"）、密度"+p.rhythm.density+"音/拍、"
+      +"よく出る間隔 "+p.rhythm.commonIntervals+"。\n";
+  }
+  return hist
+    + forest
+    + "磁場: "+p.field+"\n"
+    + rhythmLine
+    + "直近数秒の音列(数字=ルートからのST距離, 括弧=運動状態/磁場外):\n"
+    + p.seq + "\n\n"
+    + "出力形式: 「具象｜抽象」の形で、縦線 ｜ を一本だけ挟んで左右に分けて返す。左に具象(いま起きている具体)、右に抽象(それが何の現れか・原理)。各側1〜2文。何を具象/抽象とするかはあなたが見出せ。特筆すべきものが無ければ「—」だけ返す。";
+}
+
+async function fireLive(){
+  if(!liveOn || liveInFlight) return;
+  if(!API_KEY){ pushLive('（APIキー未設定）右上にキーを入れると実況が始まる。'); return; }
+  const p=serializeRecent(6);
+  if(!p){ return; }   // nothing played recently; stay silent
+  liveInFlight=true;
+  setLiveStatus('…');
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"content-type":"application/json","x-api-key":API_KEY,
+        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({ model:API_MODEL, max_tokens:160, system:LIVE_SYSTEM,
+        messages:[{role:"user", content:buildLivePrompt(p)}] })
+    });
+    if(!res.ok){ setLiveStatus(''); liveInFlight=false; return; }
+    const data=await res.json();
+    let text=(data.content||[]).filter(function(b){return b.type==='text';})
+                .map(function(b){return b.text;}).join(' ').trim();
+    // silence is a valid judgment: if the mind says "—" (nothing remarkable), stay quiet.
+    const isSilence = !text || text==='—' || text==='-' || /^[—\-\s。]*$/.test(text);
+    if(!isSilence){
+      liveHistory.push(text); if(liveHistory.length>8) liveHistory.shift();
+      pushLive(text);
+    } else {
+      setLiveStatus('· 静観');
+    }
+  }catch(e){ /* silent */ }
+  finally{ liveInFlight=false; setLiveStatus(''); }
+}
+
+function setLiveStatus(s){ const el=document.getElementById('liveStatus'); if(el) el.textContent=s; }
+function splitConcreteAbstract(text){
+  const parts=text.split(/\s*[｜|]\s*/);
+  if(parts.length>=2) return {c:parts[0].trim(), a:parts.slice(1).join(' ').trim()};
+  return {c:text.trim(), a:''};
+}
+function renderSplit(container, text, big){
+  const {c,a}=splitConcreteAbstract(text);
+  container.innerHTML='';
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;gap:0;align-items:stretch';
+  const left=document.createElement('div');
+  left.style.cssText='flex:1;padding-right:10px;'+(big?'font-size:16px;color:#ffe9b8;':'font-size:12px;color:#c8c2b8;')+'line-height:1.5';
+  left.textContent=c||'—';
+  const bar=document.createElement('div');
+  bar.style.cssText='width:1px;background:'+(big?'#ffd47a':'#3a3320')+';flex:0 0 1px';
+  const right=document.createElement('div');
+  right.style.cssText='flex:1;padding-left:10px;'+(big?'font-size:16px;color:#c0d8ff;':'font-size:12px;color:#9ab0c8;')+'line-height:1.5';
+  right.textContent=a||'';
+  row.appendChild(left); row.appendChild(bar); row.appendChild(right);
+  container.appendChild(row);
+}
+function pushLive(text){
+  const now0=document.getElementById('liveNow');
+  const log=document.getElementById('liveLog');
+  if(now0) renderSplit(now0, text, true);
+  if(log){
+    const div=document.createElement('div');
+    div.style.cssText='opacity:.6;margin-top:8px;border-top:1px dotted #2a2618;padding-top:6px';
+    renderSplit(div, text, false);
+    log.insertBefore(div, log.firstChild);
+    while(log.children.length>30) log.removeChild(log.lastChild);
+  }
+}
+
+function toggleLive(){
+  liveOn=!liveOn;
+  const panel=document.getElementById('livePanel');
+  const btn=document.getElementById('liveBtn');
+  if(liveOn){
+    if(panel) panel.style.display='flex';
+    if(btn){ btn.textContent='● 実況中'; btn.classList.add('on'); btn.style.boxShadow='0 0 18px rgba(255,212,122,.6)'; btn.style.borderColor='#ffd47a'; }
+    liveHistory=[]; _liveLastFireT=0;
+    pushLive('実況、はじめます。弾いてください。');
+  }else{
+    if(btn){ btn.textContent='🎙 実況'; btn.classList.remove('on'); btn.style.boxShadow='0 4px 16px rgba(0,0,0,.5)'; btn.style.borderColor='#7a5a2a'; }
+    setLiveStatus('');
+  }
+}
+
+function now(){ return paused ? pauseAt : performance.now()-T0+pauseAt; }
+
+function noteOn(midi, vel, ch){
+  if(review) exitReview();      // playing again → back to live
+  _lastInputT=performance.now();
+  const k=ch+'_'+midi;
+  active[k]={midi,vel,ch,t:now()};
+  updateNow(midi,vel);
+}
+function noteOff(midi, ch){
+  const k=ch+'_'+midi;
+  const a=active[k]; if(!a) return;
+  const t=now();
+  buf.push({midi:a.midi,vel:a.vel,ch:a.ch,t0:a.t,t1:t,dur:t-a.t});
+  if(buf.length>MAX) buf.shift();
+  // Feed detector with completed note
+  detectFeed(a.midi, a.vel, t-a.t);
+  delete active[k];
+  if(!Object.keys(active).length) document.getElementById('nowPanel').style.display='none';
+}
+
+function updateNow(midi,vel){
+  const st=getST(midi);
+  const role=ROLES[st]||{name:'?',color:'#607888'};
+  const col=noteColor(midi);
+  const p=document.getElementById('nowPanel'); p.style.display='block';
+  const nn=document.getElementById('nowNote'); nn.textContent=NOTE[midi%12]; nn.style.color=col;
+  document.getElementById('nowInfo').textContent='ST+'+st+' · '+role.name+(inScale(midi)?'':' ⚡');
+  const dyn=document.getElementById('nowDyn'); dyn.textContent=velToDyn(vel); dyn.style.color=col;
+}
+
+// ══════════════════════════════════════════════════════
+//  STAVE ENGINE — 旧世界
+// ══════════════════════════════════════════════════════
+
+// Grand staff constants
+// Treble: E4(64) G4(67) B4(71) D5(74) F5(77) — lines bottom to top
+// Bass:   G2(43) B2(47) D3(50) F3(53) A3(57) — lines bottom to top
+const TREBLE_LINES = [64,67,71,74,77]; // E4 G4 B4 D5 F5
+const BASS_LINES   = [43,47,50,53,57]; // G2 B2 D3 F3 A3
+const TREBLE_MID   = 71; // B4 — middle of treble staff
+const BASS_MID     = 50; // D3 — middle of bass staff
+
+// Staff layout (as fraction of half-height)
+// Top half = treble, bottom half = bass
+function getStaffLayout(H){
+  const half = H/2;
+  const margin = half*0.15;
+  const staffH = half*0.55; // height of 5 lines
+  const lineGap = staffH/4; // gap between lines
+  return {
+    half, margin, staffH, lineGap,
+    trebleCenter: half*0.5,
+    bassCenter: half + half*0.5,
+  };
+}
+
+function midiToStaveY(midi, H){
+  const L = getStaffLayout(H);
+  // Determine if treble or bass
+  const isTreble = midi >= 55; // above low G3
+  if(isTreble){
+    const refLine = TREBLE_LINES[0]; // E4=64, lowest staff line
+    const semisFromRef = midi - refLine;
+    // Each staff "step" = half tone in piano but visually
+    // we need diatonic steps... use chromatic distance scaled
+    const y = L.trebleCenter + L.staffH*0.5 - (semisFromRef/14)*L.staffH;
+    return Math.max(H*0.02, Math.min(H*0.48, y));
+  } else {
+    const refLine = BASS_LINES[0]; // G2=43
+    const semisFromRef = midi - refLine;
+    const y = L.bassCenter + L.staffH*0.5 - (semisFromRef/14)*L.staffH;
+    return Math.max(H*0.52, Math.min(H*0.98, y));
+  }
+}
+
+// Note value from duration in ms and BPM
+function durToNoteVal(durMs){
+  const bpm = parseInt(document.getElementById('bpmIn').value)||105;
+  const beatMs = 60000/bpm;
+  const beats = durMs/beatMs;
+  if(beats >= 3.5) return 1;      // whole
+  if(beats >= 1.75) return 2;     // half
+  if(beats >= 0.875) return 4;    // quarter
+  if(beats >= 0.4375) return 8;   // eighth
+  if(beats >= 0.2) return 16;     // sixteenth
+  return 32;
+}
+
+// Draw a note head + stem
+function drawNote(ctx, x, y, noteVal, color, vel, stemUp, active){
+  ctx.save();
+  const alpha = active?0.95:0.5+vel/127*0.45;
+  ctx.globalAlpha = alpha;
+
+  const headW = 7, headH = 4.5;
+
+  // Note head
+  if(noteVal===1){
+    // Whole note: open ellipse
+    ctx.beginPath();
+    ctx.ellipse(x, y, headW, headH, -0.15, 0, Math.PI*2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Inner hole
+    ctx.beginPath();
+    ctx.ellipse(x+1, y, headW*0.45, headH*0.6, -0.15, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  } else if(noteVal===2){
+    // Half note: open
+    ctx.beginPath();
+    ctx.ellipse(x, y, headW, headH, -0.2, 0, Math.PI*2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  } else {
+    // Filled note head
+    ctx.beginPath();
+    ctx.ellipse(x, y, headW, headH, -0.2, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  // Stem (not for whole note)
+  if(noteVal > 1){
+    const stemLen = 28;
+    const stemX = stemUp ? x+headW-1 : x-headW+1;
+    const stemY = stemUp ? y-stemLen : y+stemLen;
+    ctx.beginPath();
+    ctx.moveTo(stemX, y);
+    ctx.lineTo(stemX, stemY);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Flags / beams for 8th and 16th
+    if(noteVal===8){
+      const fx = stemUp?stemX:stemX;
+      const fy = stemY;
+      ctx.beginPath();
+      ctx.moveTo(fx, fy);
+      ctx.bezierCurveTo(fx+14, fy+8, fx+12, fy+16, fx+2, fy+20);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    } else if(noteVal>=16){
+      for(let f=0;f<(noteVal===16?2:3);f++){
+        const fy = stemY + (stemUp?f*6:-f*6);
+        ctx.beginPath();
+        ctx.moveTo(stemX, fy);
+        ctx.bezierCurveTo(stemX+12, fy+6, stemX+10, fy+12, stemX+2, fy+15);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Active glow
+  if(active){
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(x, y, headW+2, headH+2, -0.2, 0, Math.PI*2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.restore();
+}
+
+// Draw ledger lines for notes outside staff
+function drawLedgerLines(ctx, x, midi, y, H, color){
+  const L = getStaffLayout(H);
+  const lineGap = L.lineGap;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.2)';
+  ctx.lineWidth = 0.9;
+
+  const isTreble = midi >= 55;
+  const lines = isTreble ? TREBLE_LINES : BASS_LINES;
+  const lowestLine = midiToStaveY(lines[0], H);
+  const highestLine = midiToStaveY(lines[4], H);
+
+  // Below staff
+  if(y > lowestLine + lineGap*0.5){
+    let ly = lowestLine + lineGap;
+    while(ly < y + lineGap*0.5){
+      ctx.beginPath();ctx.moveTo(x-10,ly);ctx.lineTo(x+16,ly);ctx.stroke();
+      ly += lineGap;
+    }
+  }
+  // Above staff
+  if(y < highestLine - lineGap*0.5){
+    let ly = highestLine - lineGap;
+    while(ly > y - lineGap*0.5){
+      ctx.beginPath();ctx.moveTo(x-10,ly);ctx.lineTo(x+16,ly);ctx.stroke();
+      ly -= lineGap;
+    }
+  }
+  // Middle C ledger line
+  const c4y = midiToStaveY(60, H);
+  if(Math.abs(y-c4y) < lineGap*0.6){
+    ctx.strokeStyle='rgba(255,255,255,.15)';
+    ctx.beginPath();ctx.moveTo(x-10,c4y);ctx.lineTo(x+16,c4y);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawStave(cv, ctx, W, H){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#08081a'; ctx.fillRect(0,0,W,H);
+
+  const scrollPx = getScroll();
+  const speed    = getSpeed();
+  const bpm      = parseInt(document.getElementById('bpmIn').value)||105;
+  const beatMs   = 60000/bpm;
+  const barMs    = beatMs*4;
+
+  // ── DIATONIC POSITION SYSTEM ──
+  // Staff position: C4=0, D4=1, E4=2... each diatonic step
+  // Chromatic PC → (diatonic_step_from_C, accidental: -1=b, 0=nat, 1=#)
+  const PC_TO_DIA = [
+    [0,0],[0,1],[1,0],[2,-1],[2,0],[3,0],
+    [3,1],[4,0],[5,-1],[5,0],[6,-1],[6,0]
+  ];
+  // Standard accidentals preference: use flats for b2,b3,b6,b7; sharps for #4,#5
+  const PREFER_FLAT = [1,3,8,10]; // Eb, Ab, Bb, Db
+
+  function midiToDia(midi){
+    const pc = midi%12;
+    const oct = Math.floor(midi/12)-5; // relative to C4 octave
+    const [step, acc] = PC_TO_DIA[pc];
+    // For accidentals: use flat preference
+    if(acc===1 && PREFER_FLAT.includes(pc)){
+      // Use flat of next note instead
+      const nextStep = (step+1)%7;
+      return { step: oct*7+step+1, acc:-1 };
+    }
+    return { step: oct*7+step, acc };
+  }
+
+  // Layout constants — sized to fit full grand staff range
+  const LINE_GAP  = Math.min(9, Math.max(6, H*0.038));
+  const HALF_STEP = LINE_GAP/2;
+  // C4 at 50% — true center, smaller line gap gives more range
+  const C4_Y = H*0.50;
+
+  function staffY(diaPos){
+    // Higher position = higher pitch = lower Y
+    const y = C4_Y - diaPos * HALF_STEP;
+    // Soft clip — don't go outside 2% to 98% of height
+    return Math.max(H*0.02, Math.min(H*0.98, y));
+  }
+
+  // Treble staff: lines at E4(+2), G4(+4), B4(+6), D5(+8), F5(+10)
+  const TREBLE_LINE_STEPS = [2,4,6,8,10];
+  // Bass staff: lines at G2(-10), B2(-8), D3(-6), F3(-4), A3(-2)
+  const BASS_LINE_STEPS   = [-10,-8,-6,-4,-2];
+
+  // ── STAFF LINES ──
+  function drawLines(steps, col){
+    ctx.strokeStyle=col; ctx.lineWidth=0.9;
+    steps.forEach(function(s){
+      const y=staffY(s);
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    });
+  }
+  drawLines(TREBLE_LINE_STEPS,'rgba(255,255,255,.22)');
+  drawLines(BASS_LINE_STEPS,  'rgba(255,255,255,.22)');
+
+  // Staff bracket
+  const staffTop    = staffY(TREBLE_LINE_STEPS[4]);
+  const staffBottom = staffY(BASS_LINE_STEPS[0]);
+  ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(28,staffTop-2);ctx.lineTo(28,staffBottom+2);ctx.stroke();
+  // Thin lines connecting staves on left/right
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(28,staffTop);ctx.lineTo(W,staffTop);ctx.strokeStyle='transparent';ctx.stroke();
+
+  // ── CLEFS ──
+  const trebleBot = staffY(TREBLE_LINE_STEPS[0]);
+  const trebleTop2 = staffY(TREBLE_LINE_STEPS[4]);
+  const bassBot   = staffY(BASS_LINE_STEPS[0]);
+  const bassTop2  = staffY(BASS_LINE_STEPS[4]);
+
+  ctx.font='56px Georgia,serif';
+  ctx.fillStyle='rgba(255,255,255,.55)';
+  ctx.textAlign='left';
+  ctx.fillText('𝄞', 30, trebleBot+14);
+
+  // Bass clef — positioned at F3 line (step=-4)
+  const bassLineF = staffY(-4); // F3
+  ctx.font='28px Georgia,serif';
+  ctx.fillStyle='rgba(255,255,255,.52)';
+  ctx.fillText('𝄢', 32, bassLineF+22);
+  // Two dots of bass clef
+  ctx.fillStyle='rgba(255,255,255,.45)';
+  ctx.beginPath();ctx.arc(52,bassLineF+8,2.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(52,bassLineF+15,2.5,0,Math.PI*2);ctx.fill();
+
+  // Middle C line (dashed)
+  const c4y = staffY(0);
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(0,c4y);ctx.lineTo(W,c4y);
+  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=0.6;ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font='7px JetBrains Mono';
+  ctx.fillStyle='rgba(255,255,255,.2)';
+  ctx.fillText('C4',2,c4y-2);
+
+  // ── KEY SIGNATURE ──
+  const scalePCs = getDegs().map(function(d){return (ROOT_PC+d)%12;});
+  const NOTE_NAMES_KS = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  const keyAccs = [];
+  scalePCs.forEach(function(pc){
+    const name = NOTE_NAMES_KS[pc];
+    if(name.includes('#')||name.includes('b')){
+      keyAccs.push({pc, type:name.includes('#')?'sharp':'flat', sym:name.includes('#')?'♯':'♭'});
+    }
+  });
+
+  // Key sig positions on treble/bass staff
+  const KS_SHARP_ORDER = [8,5,10,7,2,9,4]; // F C G D A E B staff positions (treble)
+  const KS_FLAT_ORDER  = [4,7,2,5,0,3,8];  // Bb Eb Ab Db Gb Cb Fb
+  const clefW = 78;
+  keyAccs.slice(0,7).forEach(function(acc,i){
+    ctx.font='13px Georgia,serif';
+    ctx.fillStyle='rgba(255,255,255,.45)';
+    ctx.textAlign='left';
+    const tx = clefW + i*10;
+    // Treble: standard sharp/flat positions
+    const TREBLE_SHARP_POS = [10,7,11,8,5,9,6]; // F5 C5 G5 D5 A4 E5 B4
+    const TREBLE_FLAT_POS  = [6,9,5,8,4,7,3];   // Bb Eb Ab Db Gb Cb Fb
+    const BASS_SHARP_POS   = [3,0,4,1,-2,2,-1];  // F3 C3 G3 D3 A2 E3 B2
+    const BASS_FLAT_POS    = [-1,2,-2,1,-3,0,-4]; // Bb2 Eb3 Ab2 Db3 Gb2 Cb3 Fb2
+    const tpos = acc.type==='sharp'?TREBLE_SHARP_POS[i]:TREBLE_FLAT_POS[i];
+    const bpos = acc.type==='sharp'?BASS_SHARP_POS[i]:BASS_FLAT_POS[i];
+    ctx.fillText(acc.sym, tx, staffY(tpos)+5);
+    ctx.fillText(acc.sym, tx, staffY(bpos)+5);
+  });
+
+  // ── TIME SIGNATURE ──
+  const tsX = clefW + keyAccs.length*10 + 8;
+  ctx.font='bold 20px Georgia,serif';
+  ctx.fillStyle='rgba(255,255,255,.4)';
+  ctx.textAlign='center';
+  const tMid = (staffY(TREBLE_LINE_STEPS[4])+staffY(TREBLE_LINE_STEPS[0]))/2;
+  const bMid = (staffY(BASS_LINE_STEPS[4])+staffY(BASS_LINE_STEPS[0]))/2;
+  ctx.fillText('4',tsX,tMid-4); ctx.fillText('4',tsX,tMid+14);
+  ctx.fillText('4',tsX,bMid-4); ctx.fillText('4',tsX,bMid+14);
+
+  const NOTES_X = tsX+18; // where notes start
+
+  // ── BAR LINES ──
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=0.9;
+  const fb = Math.floor(scrollPx/barMs/speed)*barMs;
+  for(let t=fb; t<scrollPx+W/speed+barMs; t+=barMs){
+    const x=NOTES_X+W-(scrollPx-t)*speed;
+    if(x<NOTES_X||x>W) continue;
+    ctx.beginPath();ctx.moveTo(x,trebleTop2-2);ctx.lineTo(x,trebleBot+2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,bassTop2-2);ctx.lineTo(x,bassBot+2);ctx.stroke();
+    // Bar number
+    const bn=Math.round(t/barMs);
+    ctx.font='7px JetBrains Mono';ctx.fillStyle='rgba(255,255,255,.15)';
+    ctx.textAlign='center';ctx.fillText(bn,x,trebleTop2-5);
+  }
+
+  // Beat lines
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=0.4;
+  for(let t=0; t<scrollPx+W/speed+beatMs; t+=beatMs){
+    const x=NOTES_X+W-(scrollPx-t)*speed;
+    if(x<NOTES_X||x>W) continue;
+    ctx.beginPath();ctx.moveTo(x,trebleTop2);ctx.lineTo(x,trebleBot);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,bassTop2);ctx.lineTo(x,bassBot);ctx.stroke();
+  }
+
+  // ── DRAW NOTE FUNCTION ──
+  function drawNoteHead(nx, ny, noteVal, col, vel, stemUp, isActive, accidental){
+    ctx.save();
+    const alpha = isActive?0.95:0.45+vel/127*0.5;
+    ctx.globalAlpha=alpha;
+    const hW=6.5, hH=4.2;
+
+    // Accidental
+    if(accidental!==0){
+      ctx.font='11px Georgia,serif';
+      ctx.fillStyle=col;
+      ctx.textAlign='right';
+      ctx.fillText(accidental===1?'♯':'♭', nx-2, ny+4);
+    }
+
+    if(noteVal===1){
+      ctx.beginPath();ctx.ellipse(nx,ny,hW,hH,-0.18,0,Math.PI*2);
+      ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.stroke();
+      ctx.beginPath();ctx.ellipse(nx+1.5,ny,hW*0.4,hH*0.55,-0.18,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.fill();
+    } else if(noteVal===2){
+      ctx.beginPath();ctx.ellipse(nx,ny,hW,hH,-0.22,0,Math.PI*2);
+      ctx.strokeStyle=col;ctx.lineWidth=1.6;ctx.stroke();
+    } else {
+      ctx.beginPath();ctx.ellipse(nx,ny,hW,hH,-0.22,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.fill();
+    }
+
+    // Stem
+    if(noteVal>1){
+      const stemLen=32;
+      const sx=stemUp?nx+hW-0.5:nx-hW+0.5;
+      const sy=stemUp?ny-stemLen:ny+stemLen;
+      ctx.beginPath();ctx.moveTo(sx,ny+(stemUp?-hH:hH));ctx.lineTo(sx,sy);
+      ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.stroke();
+      // Flags
+      if(noteVal===8){
+        ctx.beginPath();ctx.moveTo(sx,sy);
+        ctx.bezierCurveTo(sx+14,sy+6,sx+12,sy+14,sx+3,sy+18);
+        ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.stroke();
+      } else if(noteVal>=16){
+        for(let f=0;f<2;f++){
+          const fy=sy+(stemUp?f*7:-f*7);
+          ctx.beginPath();ctx.moveTo(sx,fy);
+          ctx.bezierCurveTo(sx+12,fy+5,sx+10,fy+11,sx+3,fy+14);
+          ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.stroke();
+        }
+      }
+    }
+
+    // Active glow
+    if(isActive){
+      ctx.shadowColor=col;ctx.shadowBlur=12;
+      ctx.beginPath();ctx.ellipse(nx,ny,hW+2,hH+2,-0.22,0,Math.PI*2);
+      ctx.strokeStyle=col;ctx.lineWidth=1;ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    ctx.restore();
+  }
+
+  // Ledger lines
+  function drawLedger(nx, diaPos){
+    ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=0.9;
+    // Treble: ledger below E4(+2), above F5(+10)
+    if(diaPos<2){
+      for(let s=0;s>=diaPos-1;s-=2){
+        if(s<2){const y=staffY(s);ctx.beginPath();ctx.moveTo(nx-9,y);ctx.lineTo(nx+15,y);ctx.stroke();}
+      }
+    }
+    if(diaPos>10&&diaPos<-9+14){
+      for(let s=12;s<=diaPos+1;s+=2){
+        const y=staffY(s);ctx.beginPath();ctx.moveTo(nx-9,y);ctx.lineTo(nx+15,y);ctx.stroke();
+      }
+    }
+    // Bass: ledger below G2(-10), above A3(-2), and middle C
+    if(diaPos>-2&&diaPos<2){
+      // Middle C region
+      const y=staffY(0);ctx.beginPath();ctx.moveTo(nx-9,y);ctx.lineTo(nx+15,y);ctx.stroke();
+    }
+    if(diaPos>-2&&diaPos<2){return;}
+    if(diaPos<-10){
+      for(let s=-12;s>=diaPos-1;s-=2){
+        const y=staffY(s);ctx.beginPath();ctx.moveTo(nx-9,y);ctx.lineTo(nx+15,y);ctx.stroke();
+      }
+    }
+  }
+
+  // Draw note from buffer/active
+  function renderNote(n, isActive){
+    const xEnd   = NOTES_X+W-(scrollPx-( isActive?now():n.t1))*speed;
+    const xStart = NOTES_X+W-(scrollPx-(isActive?n.t:n.t0))*speed;
+    if(xEnd<0||xStart>W+30) return;
+    const {step, acc} = midiToDia(n.midi);
+    const ny = staffY(step);
+    const color = noteColor(n.midi);
+    const noteVal = isActive?4:durToNoteVal(n.dur);
+    // Stem direction: up if below B4 (step=6), down if above
+    const stemUp = step < 6;
+
+    drawLedger(xStart, step);
+    drawNoteHead(xStart, ny, noteVal, color, n.vel, stemUp, isActive, acc);
+
+    // Duration line (for active sustain)
+    if(isActive){
+      const sw=Math.max(0,xEnd-xStart-13);
+      if(sw>2){ctx.fillStyle=color;ctx.globalAlpha=0.18;ctx.fillRect(xStart+13,ny-2,sw,4);ctx.globalAlpha=1;}
+    }
+
+    // Dynamic marking
+    ctx.save();
+    ctx.font='italic 9px Georgia,serif';
+    ctx.fillStyle=color;ctx.globalAlpha=0.6;ctx.textAlign='left';
+    const isTreble=n.midi>=55;
+    const dynY=isTreble?Math.max(trebleBot+14,ny+20):Math.min(bassTop2-8,ny-12);
+    ctx.fillText(velToDyn(n.vel),xStart,dynY);
+    ctx.restore();
+  }
+
+  // ── RENDER ALL NOTES with beaming + chord stacking ──
+
+  // Group notes by approximate time (within 30ms = chord)
+  // and by staff (treble/bass)
+  const allNotes = [
+    ...buf.map(function(n){return{n,isActive:false};}),
+    ...Object.values(active).map(function(n){return{n,isActive:true};}),
+  ];
+
+  // Sort by start time
+  allNotes.sort(function(a,b){
+    const ta=a.isActive?a.n.t:a.n.t0;
+    const tb=b.isActive?b.n.t:b.n.t0;
+    return ta-tb;
+  });
+
+  // Group into chords (notes within 40ms of each other)
+  const CHORD_GAP = 40;
+  const groups = [];
+  allNotes.forEach(function(item){
+    const t = item.isActive?item.n.t:item.n.t0;
+    const last = groups[groups.length-1];
+    const lastT = last?last.t:null;
+    if(last && Math.abs(t-lastT)<CHORD_GAP){
+      last.items.push(item);
+    } else {
+      groups.push({t, items:[item]});
+    }
+  });
+
+  // Render each group
+  groups.forEach(function(group){
+    const items = group.items;
+    const baseX = (function(){
+      const item=items[0];
+      return NOTES_X+W-(scrollPx-(item.isActive?item.n.t:item.n.t0))*speed;
+    })();
+
+    // Sort by pitch within group (low to high)
+    items.sort(function(a,b){return a.n.midi-b.n.midi;});
+
+    // Detect if chord notes have adjacent diatonic steps (need offset)
+    const steps = items.map(function(item){
+      return midiToDia(item.n.midi).step;
+    });
+
+    // Check for adjacent steps and offset
+    const offsets = new Array(items.length).fill(0);
+    for(let i=1;i<steps.length;i++){
+      if(Math.abs(steps[i]-steps[i-1])<=1){
+        // Adjacent: offset alternately
+        offsets[i] = 13; // shift right by one note width
+      }
+    }
+
+    // Collect beamable groups (8th/16th notes, same stem direction, same staff)
+    const beamCandidates = [];
+
+    items.forEach(function(item, i){
+      const n=item.n;
+      const isActive=item.isActive;
+      const xEnd   = NOTES_X+W-(scrollPx-(isActive?now():n.t1))*speed;
+      const xStart = baseX + offsets[i];
+      if(xEnd<0||xStart>W+30) return;
+
+      const {step, acc} = midiToDia(n.midi);
+      const ny = staffY(step);
+      const color = noteColor(n.midi);
+      const noteVal = isActive?4:durToNoteVal(n.dur);
+      const stemUp = step < 6;
+
+      drawLedger(xStart, step);
+      drawNoteHead(xStart, ny, noteVal, color, n.vel, stemUp, isActive, acc);
+
+      // Duration sustain line
+      if(isActive){
+        const sw=Math.max(0,xEnd-xStart-13);
+        if(sw>2){ctx.fillStyle=color;ctx.globalAlpha=0.18;ctx.fillRect(xStart+13,ny-2,sw,4);ctx.globalAlpha=1;}
+      }
+
+      // Collect for beam
+      if(noteVal>=8&&!isActive){
+        beamCandidates.push({xStart,ny,noteVal,stemUp,color,step});
+      }
+    });
+
+    // Dynamic marking (once per group, lowest note)
+    const first=items[0];
+    if(first){
+      const n=first.n,isActive=first.isActive;
+      const xStart=baseX+offsets[0];
+      const {step}=midiToDia(n.midi);
+      const ny=staffY(step);
+      ctx.save();
+      ctx.font='italic 9px Georgia,serif';
+      ctx.fillStyle=noteColor(n.midi);ctx.globalAlpha=0.55;ctx.textAlign='left';
+      const isTreble=n.midi>=55;
+      const dynY=isTreble?Math.max(trebleBot+14,ny+24):Math.min(bassTop2-8,ny-14);
+      ctx.fillText(velToDyn(n.vel),xStart,dynY);
+      ctx.restore();
+    }
+  });
+
+  // ── BEAMING: connect 8th/16th notes within same bar ──
+  // Group consecutive 8th/16th notes (within 1 beat) and draw beams
+  const beamableNotes = [];
+  buf.forEach(function(n){
+    const nv=durToNoteVal(n.dur);
+    if(nv<8) return;
+    const xStart=NOTES_X+W-(scrollPx-n.t0)*speed;
+    if(xStart<0||xStart>W+30) return;
+    const {step}=midiToDia(n.midi);
+    beamableNotes.push({
+      n,xStart,step,ny:staffY(step),noteVal:nv,
+      stemUp:step<6,color:noteColor(n.midi),t:n.t0,
+    });
+  });
+
+  // Sort by time, group within a beat
+  beamableNotes.sort(function(a,b){return a.t-b.t;});
+  const bpm2=parseInt(document.getElementById('bpmIn').value)||105;
+  const beatMs2=60000/bpm2;
+
+  let beamGroup=[];
+  function flushBeam(){
+    if(beamGroup.length<2){beamGroup=[];return;}
+    // Draw beam connecting stems
+    const first=beamGroup[0],last=beamGroup[beamGroup.length-1];
+    const avgUp=beamGroup.filter(function(b){return b.stemUp;}).length>beamGroup.length/2;
+    const stemLen=28;
+    const y1=avgUp?first.ny-stemLen:first.ny+stemLen;
+    const y2=avgUp?last.ny-stemLen:last.ny+stemLen;
+    const sx1=avgUp?first.xStart+6:first.xStart-6;
+    const sx2=avgUp?last.xStart+6:last.xStart-6;
+    // Draw beam line (use average color)
+    const beamCol='rgba(255,255,255,.45)';
+    ctx.beginPath();ctx.moveTo(sx1,y1);ctx.lineTo(sx2,y2);
+    ctx.strokeStyle=beamCol;ctx.lineWidth=3;ctx.globalAlpha=0.65;ctx.stroke();ctx.globalAlpha=1;
+    // Second beam for 16th notes
+    if(beamGroup.some(function(b){return b.noteVal>=16;})){
+      const off=avgUp?7:-7;
+      ctx.beginPath();ctx.moveTo(sx1,y1+off);ctx.lineTo(sx2,y2+off);
+      ctx.strokeStyle=beamCol;ctx.lineWidth=2.5;ctx.globalAlpha=0.55;ctx.stroke();ctx.globalAlpha=1;
+    }
+    beamGroup=[];
+  }
+
+  beamableNotes.forEach(function(item,i){
+    if(beamGroup.length===0){beamGroup.push(item);return;}
+    const prev=beamGroup[beamGroup.length-1];
+    const sameBar=Math.floor(item.t/beatMs2)===Math.floor(prev.t/beatMs2);
+    const sameStem=item.stemUp===prev.stemUp;
+    const closeEnough=(item.t-prev.t)<beatMs2*0.55;
+    if(sameBar&&sameStem&&closeEnough&&beamGroup.length<6){
+      beamGroup.push(item);
+    } else {
+      flushBeam();
+      beamGroup=[item];
+    }
+  });
+  flushBeam();
+
+  // ── REST SYMBOLS ──
+  // Show rest symbols in gaps between notes
+  if(buf.length>=1){
+    const bpm4=parseInt(document.getElementById('bpmIn').value)||105;
+    const beatMs4=60000/bpm4;
+    // Find silences > 1 beat
+    let prevEnd = buf.length>0?buf[0].t0:0;
+    buf.forEach(function(n){
+      const gap = n.t0 - prevEnd;
+      if(gap > beatMs4*0.8 && gap < beatMs4*8){
+        const xGap = NOTES_X+W-(scrollPx-prevEnd)*speed + (gap*speed)*0.5;
+        if(xGap>NOTES_X&&xGap<W){
+          // Quarter rest or half rest symbol
+          const restVal = gap<beatMs4*1.5?4:gap<beatMs4*2.5?2:1;
+          const ry = staffY(4); // mid treble
+          ctx.save();
+          ctx.font=(restVal===4?'16px':'18px')+' Georgia,serif';
+          ctx.fillStyle='rgba(255,255,255,.25)';
+          ctx.textAlign='center';
+          // Draw rest shapes manually (Unicode unreliable in canvas)
+          ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1.2;
+          if(restVal===4){
+            // Quarter rest: zigzag
+            ctx.beginPath();
+            ctx.moveTo(xGap,ry-8);ctx.lineTo(xGap+4,ry-4);
+            ctx.lineTo(xGap-2,ry);ctx.lineTo(xGap+4,ry+4);
+            ctx.lineTo(xGap,ry+8);
+            ctx.stroke();
+          } else if(restVal===2){
+            // Half rest: filled rectangle on line
+            ctx.fillStyle='rgba(255,255,255,.3)';
+            ctx.fillRect(xGap-5,ry,10,4);
+          } else {
+            // Whole rest: filled rectangle hanging below line
+            ctx.fillStyle='rgba(255,255,255,.3)';
+            ctx.fillRect(xGap-5,ry-4,10,4);
+          }
+          ctx.restore();
+        }
+      }
+      prevEnd = n.t1;
+    });
+  }
+
+  // ── TIES — same pitch repeated within 200ms ──
+  for(let i=0;i<buf.length-1;i++){
+    const a=buf[i], b=buf[i+1];
+    if(a.midi!==b.midi) continue;
+    const gap=b.t0-a.t1;
+    if(gap>200||gap<-50) continue; // not tied
+    const xa=NOTES_X+W-(scrollPx-a.t0)*speed;
+    const xb=NOTES_X+W-(scrollPx-b.t0)*speed;
+    if(xb<0||xa>W) continue;
+    const {step}=midiToDia(a.midi);
+    const ny=staffY(step);
+    const col=noteColor(a.midi);
+    const isTreble=a.midi>=55;
+    const curveY=isTreble?ny+10:ny-10;
+    ctx.beginPath();
+    ctx.moveTo(xa+8,ny+(isTreble?4:-4));
+    ctx.bezierCurveTo(
+      xa+(xb-xa)*0.3, curveY,
+      xa+(xb-xa)*0.7, curveY,
+      xb-4, ny+(isTreble?4:-4)
+    );
+    ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.globalAlpha=0.5;ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  // ── SLURS — phrase arcs over consecutive notes ──
+  // Group consecutive notes into phrases (gap < 1 beat)
+  if(buf.length>=2){
+    const bpm3=parseInt(document.getElementById('bpmIn').value)||105;
+    const beatMs3=60000/bpm3;
+    let phraseStart=0;
+    for(let i=1;i<=buf.length;i++){
+      const isEnd = i===buf.length;
+      const gap = isEnd?999:(buf[i].t0-buf[i-1].t1);
+      if(gap>beatMs3||isEnd){
+        // Draw slur over buf[phraseStart..i-1]
+        const pLen=i-phraseStart;
+        if(pLen>=3){
+          const first=buf[phraseStart], last=buf[i-1];
+          const xa=NOTES_X+W-(scrollPx-first.t0)*speed+8;
+          const xb=NOTES_X+W-(scrollPx-last.t0)*speed+8;
+          if(xb>0&&xa<W){
+            const isTreble=first.midi>=55;
+            const {step:sa}=midiToDia(first.midi);
+            const {step:sb}=midiToDia(last.midi);
+            const ya=staffY(sa)+(isTreble?16:-16);
+            const yb=staffY(sb)+(isTreble?16:-16);
+            const mid=(ya+yb)/2+(isTreble?8:-8);
+            ctx.beginPath();
+            ctx.moveTo(xa,ya);
+            ctx.bezierCurveTo(xa+(xb-xa)*0.3,mid,xa+(xb-xa)*0.7,mid,xb,yb);
+            ctx.strokeStyle='rgba(255,255,255,.12)';
+            ctx.lineWidth=1.2;ctx.globalAlpha=0.6;ctx.stroke();ctx.globalAlpha=1;
+          }
+        }
+        phraseStart=i;
+      }
+    }
+  }
+
+  // ── PLAYHEAD ──
+  ctx.beginPath();ctx.moveTo(W-2,0);ctx.lineTo(W-2,H);
+  ctx.strokeStyle='rgba(200,160,64,.45)';ctx.lineWidth=1.5;ctx.stroke();
+}
+
+// ══════════════════════════════════════════════════════
+//  OTO CANVAS — 新世界
+// ══════════════════════════════════════════════════════
+const OTO_LO=28, OTO_HI=100;
+const OTO_ST=OTO_HI-OTO_LO;
+
+function drawOto(cv, ctx, W, H){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#02020c'; ctx.fillRect(0,0,W,H);
+
+  const scrollPx = getScroll();
+  const speed    = getSpeed();
+  const bpm      = parseInt(document.getElementById('bpmIn').value)||105;
+  const beatMs   = 60000/bpm;
+  const barMs    = beatMs*4;
+  const degs     = getDegs();
+
+  // Root MIDI (use octave 4 as reference)
+  const rootMidi4 = ROOT_PC + 36; // root in octave 2 = 0ST (low anchor)
+
+  // Absolute ST from root: midi → rootMidi4+(offset)
+  // Display range: -24 to +48 (6 octaves total, root near bottom third)
+  const ST_LO  = -6;   // a little below the octave-2 root
+  const ST_HI  = +48;  // up to 4 octaves above the 0 anchor
+  const ST_RANGE = ST_HI - ST_LO;  // 72 semitones
+
+  const SCALE_W = 72;
+  const MAIN_W  = W - SCALE_W;
+
+  // Bottom velocity strip reserved height
+  const VELO_H = Math.max(40, H*0.12);
+  const GH = H - VELO_H;       // grid drawing height (above velocity strip)
+
+  // Y from absolute ST (mapped into grid height GH)
+  function stY(absST){
+    return GH - ((absST - ST_LO) / ST_RANGE) * GH;
+  }
+  const CELL_H = GH / ST_RANGE;
+
+  // Absolute ST from midi
+  function midiToAbsST(midi){
+    return midi - rootMidi4;
+  }
+
+  // Relative ST (0-11) from absolute
+  function absToRel(absST){
+    return ((absST % 12) + 12) % 12;
+  }
+
+  const ST_COLORS = ST_COLORS_G;
+  const ST_NAMES = ['R','b2','2','b3','3','4','b5','5','b6','6','b7','7'];
+
+  // ── CELL GRID ──
+  for(let absST=ST_LO; absST<ST_HI; absST++){
+    const relST = absToRel(absST);
+    const col   = ST_COLORS[relST];
+    const inS   = degs.includes(relST);
+    const isRoot= relST === 0;
+    const is5th = relST === 7;
+    const cy    = stY(absST);
+
+    // Background
+    ctx.fillStyle=col;
+    ctx.globalAlpha = isRoot ? 0.18 : inS ? 0.10 : 0.03;
+    ctx.fillRect(1, cy, MAIN_W-2, CELL_H);
+    ctx.globalAlpha=1;
+
+    // Border
+    ctx.strokeStyle=col;
+    ctx.lineWidth = isRoot ? 0.8 : inS ? 0.4 : 0.12;
+    ctx.globalAlpha = isRoot ? 0.45 : inS ? 0.22 : 0.07;
+    ctx.strokeRect(0.5, cy, MAIN_W-1, CELL_H);
+    ctx.globalAlpha=1;
+
+    // Octave separator at root multiples
+    if(absST % 12 === 0){
+      ctx.beginPath();ctx.moveTo(0,cy+CELL_H);ctx.lineTo(MAIN_W,cy+CELL_H);
+      ctx.strokeStyle='rgba(240,192,64,.28)';ctx.lineWidth=1.2;ctx.stroke();
+    }
+
+    // Left axis label
+    if(absST % 12 === 0 || inS){
+      const labelEvery = CELL_H > 5 ? 1 : CELL_H > 3 ? 2 : 3;
+      if(Math.abs(absST) % labelEvery === 0){
+        ctx.font='6px JetBrains Mono';
+        ctx.fillStyle=col;
+        ctx.globalAlpha = isRoot?0.9:inS?0.5:0.18;
+        ctx.textAlign='left';
+        // Show absolute ST number
+        ctx.fillText((absST>=0?'+':'')+absST, 2, cy+CELL_H*0.75);
+        ctx.globalAlpha=1;
+      }
+    }
+  }
+
+  // ── BEAT-STRENGTH BACKGROUND BANDS (idea #1) ──
+  // 4/4 metric weight: beat1 strong, beat3 medium, 2&4 weak.
+  // Draw a faint vertical band per beat so downbeats read instantly.
+  const sixteenMs=beatMs/4, eighthMs=beatMs/2;
+  const fb=Math.floor(scrollPx/barMs/speed)*barMs;
+  const beatWeight=[0.060,0.012,0.032,0.012]; // 1,2,3,4 within a 4/4 bar
+  for(let t=Math.floor(scrollPx/beatMs/speed)*beatMs - beatMs;
+        t<scrollPx+MAIN_W/speed+beatMs; t+=beatMs){
+    const x0=MAIN_W-(scrollPx-t)*speed;
+    const x1=MAIN_W-(scrollPx-(t+beatMs))*speed;
+    if(x1<0||x0>MAIN_W) continue;
+    const beatIdx=((Math.round(t/beatMs)%4)+4)%4;
+    const w=beatWeight[beatIdx];
+    if(w<=0) continue;
+    ctx.fillStyle='rgba(240,210,150,'+w+')';
+    ctx.fillRect(Math.max(0,x0),0,Math.min(MAIN_W,x1)-Math.max(0,x0),GH);
+  }
+
+  // ── TIME GRID (lines stop at GH, above velocity strip) ──
+  ctx.strokeStyle='rgba(255,255,255,.025)';ctx.lineWidth=0.2;
+  for(let t=0;t<scrollPx+MAIN_W/speed+sixteenMs/2;t+=sixteenMs/2){
+    const x=MAIN_W-(scrollPx-t)*speed; if(x<0||x>MAIN_W) continue;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,GH);ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=0.3;
+  for(let t=0;t<scrollPx+MAIN_W/speed+sixteenMs;t+=sixteenMs){
+    const x=MAIN_W-(scrollPx-t)*speed; if(x<0||x>MAIN_W) continue;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,GH);ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(255,255,255,.09)';ctx.lineWidth=0.4;
+  for(let t=0;t<scrollPx+MAIN_W/speed+eighthMs;t+=eighthMs){
+    const x=MAIN_W-(scrollPx-t)*speed; if(x<0||x>MAIN_W) continue;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,GH);ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=0.6;
+  for(let t=0;t<scrollPx+MAIN_W/speed+beatMs;t+=beatMs){
+    const x=MAIN_W-(scrollPx-t)*speed; if(x<0||x>MAIN_W) continue;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,GH);ctx.stroke();
+    ctx.font='5px JetBrains Mono';ctx.fillStyle='rgba(255,255,255,.18)';
+    ctx.textAlign='center';ctx.fillText('♩',x,GH-1);
+  }
+  ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=0.9;
+  for(let t=fb;t<scrollPx+MAIN_W/speed+barMs;t+=barMs){
+    const x=MAIN_W-(scrollPx-t)*speed; if(x<0||x>MAIN_W) continue;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,GH);ctx.stroke();
+    ctx.font='7px JetBrains Mono';ctx.fillStyle='rgba(255,255,255,.28)';
+    ctx.textAlign='center';ctx.fillText(Math.round(t/barMs),x,9);
+  }
+
+  // ── DRAW PLAYED NOTES ──
+  function drawCell(midi, vel, t0, t1, isActive, noteRef, bufIdx){
+    const xS=MAIN_W-(scrollPx-t0)*speed;
+    const xE=isActive?MAIN_W-1:MAIN_W-(scrollPx-t1)*speed;
+    if(xE<0||xS>MAIN_W+20) return;
+    const absST = midiToAbsST(midi);
+    if(absST<ST_LO||absST>=ST_HI) return;
+    const relST = absToRel(absST);
+    const col   = ST_COLORS[relST];
+    const inS   = degs.includes(relST);
+    const cy    = stY(absST);
+    const bw    = Math.max(2, xE-xS);
+    const alpha = isActive?1.0:0.6+vel/127*0.38;
+
+    if(isActive){ctx.shadowColor=col;ctx.shadowBlur=12;}
+    if(inS){
+      // IN-FIELD: solid fill
+      ctx.fillStyle=col;ctx.globalAlpha=alpha;
+      ctx.fillRect(xS,cy,bw,CELL_H);
+      ctx.strokeStyle=isActive?'rgba(255,255,255,.9)':col;
+      ctx.lineWidth=isActive?1.5:0.6;ctx.globalAlpha=isActive?0.95:0.45;
+      ctx.strokeRect(xS,cy,bw,CELL_H);
+    } else {
+      // OUT-OF-FIELD (⚡外): hollow cell with a bold bright outline — reads as "outside"
+      ctx.fillStyle=col;ctx.globalAlpha=alpha*0.22;
+      ctx.fillRect(xS,cy,bw,CELL_H);
+      ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.95;
+      ctx.strokeRect(xS+1,cy+1,Math.max(1,bw-2),CELL_H-2);
+      // bright lightning at left edge
+      if(bw>4){
+        ctx.font='bold 11px JetBrains Mono';ctx.fillStyle='#ff5a40';ctx.textAlign='left';ctx.globalAlpha=1;
+        ctx.fillText('\u26a1',xS+1,cy+CELL_H*0.82);
+      }
+    }
+    ctx.globalAlpha=1;ctx.shadowBlur=0;
+
+    // (in-cell ST number removed — the big balloon number is the single ST display)
+
+    // ── MOTION POSTURE (paused only): same tone, different bearing ──
+    // Settling(着地) = grounded & rounded. Passing(途中) = leaning, with travel.
+    if(review && !isActive && noteRef){
+      const ms=motionState(noteRef, bufIdx);
+      ctx.save();
+      const midY=cy+CELL_H/2;
+      if(ms.state==='settle'){
+        // grounded: a heavy base line + small downward roots + rounded left cap
+        ctx.globalAlpha=0.95;
+        ctx.fillStyle='#ffffff';
+        ctx.fillRect(xS, cy+CELL_H-1.5, bw, 1.5);              // heavy base
+        ctx.beginPath();                                       // roots
+        for(let rx=xS+2; rx<xS+bw; rx+=6){
+          ctx.moveTo(rx,cy+CELL_H);
+          ctx.lineTo(rx,cy+CELL_H+2.5);
+        }
+        ctx.strokeStyle=col; ctx.lineWidth=1; ctx.globalAlpha=0.7; ctx.stroke();
+        // rounded settle dot at left (anchor)
+        ctx.globalAlpha=0.9; ctx.fillStyle=col;
+        ctx.beginPath(); ctx.arc(xS, midY, Math.min(3,CELL_H*0.4), 0, Math.PI*2); ctx.fill();
+      } else if(ms.state==='pass'){
+        // leaning forward: a forward skew streak + travel arrow on the right
+        ctx.globalAlpha=0.5; ctx.strokeStyle='#ffffff'; ctx.lineWidth=1;
+        for(let lx=xS; lx<xS+bw; lx+=4){
+          ctx.beginPath();
+          ctx.moveTo(lx, cy+CELL_H);
+          ctx.lineTo(lx+CELL_H*0.6, cy);                       // forward lean
+          ctx.stroke();
+        }
+        // travel arrow at the leading edge
+        ctx.globalAlpha=0.9; ctx.fillStyle='#ffffff';
+        const axx=xS+bw, ayy=midY;
+        ctx.beginPath();
+        ctx.moveTo(axx+5,ayy); ctx.lineTo(axx,ayy-3); ctx.lineTo(axx,ayy+3);
+        ctx.closePath(); ctx.fill();
+      } else {
+        // mid: faint neutral tick, undecided
+        ctx.globalAlpha=0.3; ctx.strokeStyle='#ffffff'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(xS+bw/2,cy); ctx.lineTo(xS+bw/2,cy+CELL_H); ctx.stroke();
+      }
+      ctx.restore();
+
+      // ── FULL NUMERIC LABELS (new-world language only: numbers, no role names) ──
+      ctx.save();
+      // absolute ST on every note, above the cell
+      const lbl=(absST>=0?'+':'')+absST;
+      const fs=Math.max(8,Math.min(13,CELL_H*1.4));
+      ctx.font='bold '+fs+'px JetBrains Mono';
+      ctx.textAlign='left';
+      ctx.fillStyle=col; ctx.globalAlpha=0.95;
+      ctx.fillText(lbl, xS+1, cy-2);
+      // interval from the previous note in buf (どこから来たか — 文脈②)
+      if(bufIdx!=null && bufIdx>0){
+        const prev=buf[bufIdx-1];
+        const di=midi-prev.midi;       // semitone leap from previous
+        if(di!==0){
+          const arrow = di>0?'↗':'↘';
+          const istr = arrow+(di>0?'+':'')+di;
+          ctx.font=Math.max(7,fs*0.8)+'px JetBrains Mono';
+          ctx.fillStyle='rgba(255,255,255,.6)';
+          ctx.globalAlpha=0.85;
+          ctx.fillText(istr, xS+1, cy+CELL_H+fs*0.7);
+        }
+      }
+      ctx.restore();
+    }
+}
+
+  buf.forEach(function(n,bi){drawCell(n.midi,n.vel,n.t0,n.t1,false,n,bi);});
+  Object.values(active).forEach(function(n){drawCell(n.midi,n.vel,n.t,null,true,null,null);});
+
+  // ── CHORD SPINES (idea B): link notes struck together as one vertical stack ──
+  // Group note onsets within a small window; if >=2 share it, draw a faint
+  // vertical spine through their cells so the chord reads as one gesture.
+  (function(){
+    const all=[...buf, ...Object.values(active).map(function(n){return{midi:n.midi,vel:n.vel,t0:n.t};})];
+    if(all.length<2) return;
+    const WIN=45; // ms grouping window
+    const sorted=all.slice().sort(function(a,b){return a.t0-b.t0;});
+    let i=0;
+    while(i<sorted.length){
+      let j=i+1;
+      while(j<sorted.length && sorted[j].t0-sorted[i].t0<WIN) j++;
+      const group=sorted.slice(i,j);
+      if(group.length>=2){
+        // x at the group's mean onset
+        const tMean=group.reduce(function(s2,n){return s2+n.t0;},0)/group.length;
+        const x=MAIN_W-(scrollPx-tMean)*speed;
+        if(x>=0 && x<=MAIN_W){
+          // vertical extent across the chord's cells
+          let yTop=Infinity,yBot=-Infinity;
+          group.forEach(function(n){
+            const a=midiToAbsST(n.midi);
+            if(a<ST_LO||a>=ST_HI) return;
+            const y=stY(a)+CELL_H*0.5;
+            if(y<yTop)yTop=y; if(y>yBot)yBot=y;
+          });
+          if(yBot>yTop){
+            ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(x,yTop);ctx.lineTo(x,yBot);ctx.stroke();
+            // little nodes at each chord tone
+            group.forEach(function(n){
+              const a=midiToAbsST(n.midi);
+              if(a<ST_LO||a>=ST_HI) return;
+              const y=stY(a)+CELL_H*0.5;
+              ctx.beginPath();ctx.arc(x,y,1.6,0,Math.PI*2);
+              ctx.fillStyle='rgba(255,255,255,.5)';ctx.fill();
+            });
+          }
+        }
+      }
+      i=j;
+    }
+  })();
+
+  // ── BALLOON NUMBERS ──
+  const allNotes2=[
+    ...buf.map(function(n){
+      return{midi:n.midi,vel:n.vel,
+        xS:MAIN_W-(scrollPx-n.t0)*speed,
+        xE:MAIN_W-(scrollPx-n.t1)*speed};
+    }),
+    ...Object.values(active).map(function(n){
+      return{midi:n.midi,vel:n.vel,
+        xS:MAIN_W-(scrollPx-n.t)*speed,xE:MAIN_W-1};
+    }),
+  ];
+
+  allNotes2.forEach(function(item){
+    if(item.xE<0||item.xS>MAIN_W+20) return;
+    // Use NOTE START for position — dramatic entry at playhead
+    const xPos = item.xS;
+    if(xPos < 0 || xPos > MAIN_W+10) return;
+
+    const absST=midiToAbsST(item.midi);
+    if(absST<ST_LO||absST>=ST_HI) return;
+    const relST=absToRel(absST);
+    const col=ST_COLORS[relST];
+    const inS=degs.includes(relST);
+    const cy2=stY(absST)+CELL_H*0.5 - CELL_H*2.2; // float above cell
+
+    // Fade curve: 
+    // Right 80% (near playhead): LARGE and BRIGHT — dramatic entry
+    // Left 20%: small and fading out
+    const entryZone = MAIN_W * 0.82;  // bright zone
+    const fadeZone  = MAIN_W * 0.18;  // fade-out zone
+
+    let fadePct, sizeMult;
+    if(xPos >= entryZone){
+      // Entry zone: bright, large
+      fadePct  = 1.0;
+      sizeMult = 1.0;
+    } else if(xPos >= fadeZone){
+      // Traveling: gradually shrink and fade
+      const t = (xPos - fadeZone) / (entryZone - fadeZone);
+      fadePct  = t * t;           // quadratic fade
+      sizeMult = 0.3 + t * 0.7;  // shrinks as it moves left
+    } else {
+      return; // gone
+    }
+
+    const velFactor = 0.5 + item.vel/127*0.5;
+    // Large font in entry zone, shrinks to left
+    const maxFont = Math.max(28, Math.min(72, CELL_H*7));
+    const fontSize = Math.floor(maxFont * sizeMult);
+    const baseAlpha = fadePct * velFactor * (inS ? 0.88 : 0.38);
+
+    ctx.save();
+    ctx.textAlign='center';
+
+    // Glow only in entry zone
+    if(fadePct > 0.7){
+      ctx.shadowColor=col;
+      ctx.shadowBlur=fontSize*0.5;
+    }
+
+    const stLabel=(absST>=0?'+':'')+absST;
+    const yPos=cy2+fontSize*0.38;
+    ctx.font='bold '+fontSize+'px JetBrains Mono';
+    ctx.fillStyle=col;
+    ctx.globalAlpha=baseAlpha;
+    ctx.fillText(stLabel, xPos, yPos);
+    ctx.shadowBlur=0;
+
+    ctx.restore();
+  });
+
+  // ── RIGHT PANEL ──
+  ctx.fillStyle='rgba(2,2,12,.97)';ctx.fillRect(MAIN_W,0,SCALE_W,H);
+  ctx.beginPath();ctx.moveTo(MAIN_W,0);ctx.lineTo(MAIN_W,H);
+  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;ctx.stroke();
+
+  // Scale panel: show all 12 ST roles mapped to absolute ST range
+  // Each row corresponds to a cell row
+  for(let absST=ST_LO;absST<ST_HI;absST++){
+    const relST=absToRel(absST);
+    const col=ST_COLORS[relST];
+    const inS=degs.includes(relST);
+    const cy2=stY(absST);
+    const panH=CELL_H;
+
+    ctx.fillStyle=col;ctx.globalAlpha=inS?0.18:0.04;
+    ctx.fillRect(MAIN_W,cy2,SCALE_W,panH);ctx.globalAlpha=1;
+    if(inS){ctx.fillStyle=col;ctx.globalAlpha=0.7;ctx.fillRect(MAIN_W,cy2,2,panH);ctx.globalAlpha=1;}
+
+    const fontSize2=Math.max(7,Math.min(13,panH*0.78));
+    // Show absolute ST
+    ctx.font='bold '+fontSize2+'px JetBrains Mono';
+    ctx.fillStyle=col;ctx.globalAlpha=inS?0.95:0.18;
+    ctx.textAlign='left';
+    ctx.fillText((absST>=0?'+':'')+absST, MAIN_W+3, cy2+panH*0.75);
+    // Role name
+    if(inS&&panH>8){
+      ctx.font='5px JetBrains Mono';ctx.fillStyle='rgba(255,255,255,.55)';
+      ctx.globalAlpha=0.7;ctx.textAlign='right';
+      ctx.fillText(ST_NAMES[relST],MAIN_W+SCALE_W-2,cy2+panH*0.75);
+      ctx.globalAlpha=1;
+    }
+    // Octave separator
+    if(absST%12===0){
+      ctx.beginPath();ctx.moveTo(MAIN_W,cy2+panH);ctx.lineTo(MAIN_W+SCALE_W,cy2+panH);
+      ctx.strokeStyle='rgba(240,192,64,.2)';ctx.lineWidth=0.8;ctx.stroke();
+    }
+  }
+
+  // Panel header — Root + Scale in bottom strip (won't overlap grid)
+  const headerH=22;
+  ctx.fillStyle='rgba(2,2,12,.95)';ctx.fillRect(MAIN_W,H-headerH,SCALE_W,headerH);
+  ctx.beginPath();ctx.moveTo(MAIN_W,H-headerH);ctx.lineTo(MAIN_W+SCALE_W,H-headerH);
+  ctx.strokeStyle='rgba(240,192,64,.2)';ctx.lineWidth=0.5;ctx.stroke();
+  ctx.font='bold 11px JetBrains Mono';ctx.fillStyle='rgba(240,192,64,.9)';
+  ctx.textAlign='center';ctx.fillText(NOTE[ROOT_PC],MAIN_W+SCALE_W*0.32,H-8);
+  ctx.font='7px JetBrains Mono';ctx.fillStyle='rgba(255,255,255,.45)';
+  ctx.fillText((SCALES[SCALE_KEY]||SCALES.dorian).name.slice(0,6),MAIN_W+SCALE_W*0.72,H-8);
+
+  // ── VELOCITY BAR GRAPH (bottom strip, sequencer-style) ──
+  const vTop = GH;                 // top of velocity strip
+  // strip background
+  ctx.fillStyle='rgba(255,255,255,.025)';
+  ctx.fillRect(0,vTop,MAIN_W,VELO_H);
+  ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(0,vTop);ctx.lineTo(MAIN_W,vTop);ctx.stroke();
+  // horizontal guides at 1/4,1/2,3/4
+  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=0.5;
+  [0.25,0.5,0.75].forEach(function(g){
+    const gy=vTop+VELO_H*(1-g);
+    ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(MAIN_W,gy);ctx.stroke();
+  });
+  ctx.font='6px JetBrains Mono';ctx.fillStyle='rgba(255,255,255,.3)';
+  ctx.textAlign='left';ctx.fillText('vel',2,vTop+9);
+
+  function drawVeloBar(midi,vel,t0,isActive){
+    const x=MAIN_W-(scrollPx-t0)*speed;
+    if(x<0||x>MAIN_W) return;
+    const absST=midiToAbsST(midi);
+    const relST=absToRel(absST);
+    const col=ST_COLORS[relST];
+    const h=(vel/127)*(VELO_H-6);
+    const bw=3;
+    ctx.fillStyle=col;
+    ctx.globalAlpha=isActive?1.0:0.75;
+    ctx.fillRect(x-bw/2,vTop+VELO_H-h-2,bw,h);
+    ctx.globalAlpha=1;
+    if(isActive){
+      // little cap dot
+      ctx.beginPath();ctx.arc(x,vTop+VELO_H-h-2,2,0,Math.PI*2);
+      ctx.fillStyle='#fff';ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
+    }
+  }
+  buf.forEach(function(n){drawVeloBar(n.midi,n.vel,n.t0,false);});
+  Object.values(active).forEach(function(n){drawVeloBar(n.midi,n.vel,n.t,true);});
+
+  // ── RHYTHM PATTERN REPETITION (idea #4) ──
+  // Build onset list (bar-relative beat positions, quantized to 16ths),
+  // group by bar, and if two consecutive bars share the same onset pattern,
+  // tint those bars' backgrounds with a soft matching hue.
+  (function(){
+    if(buf.length<4) return;
+    const q=sixteenMs;
+    const barOnsets={}; // barIndex -> Set of sixteenth-slots
+    buf.forEach(function(n){
+      const bar=Math.floor(n.t0/barMs);
+      const slot=Math.round((n.t0-bar*barMs)/q);
+      (barOnsets[bar]=barOnsets[bar]||new Set()).add(slot);
+    });
+    const bars=Object.keys(barOnsets).map(Number).sort(function(a,b){return a-b;});
+    function sig(set){return Array.from(set).sort(function(a,b){return a-b;}).join(',');}
+    // assign a hue per distinct signature
+    const sigHue={};let hueN=0;
+    bars.forEach(function(b){
+      const g=sig(barOnsets[b]);
+      if(g==='') return;
+      if(!(g in sigHue)){sigHue[g]=(hueN*67)%360;hueN++;}
+    });
+    // only highlight signatures that repeat
+    const sigCount={};
+    bars.forEach(function(b){const g=sig(barOnsets[b]);if(g)sigCount[g]=(sigCount[g]||0)+1;});
+    bars.forEach(function(b){
+      const g=sig(barOnsets[b]);
+      if(!g||sigCount[g]<2) return;
+      const x0=MAIN_W-(scrollPx-b*barMs)*speed;
+      const x1=MAIN_W-(scrollPx-(b+1)*barMs)*speed;
+      if(x1<0||x0>MAIN_W) return;
+      const hue=sigHue[g];
+      ctx.fillStyle='hsla('+hue+',65%,55%,0.11)';
+      ctx.fillRect(Math.max(0,x0),0,Math.min(MAIN_W,x1)-Math.max(0,x0),GH);
+      // top marker line
+      ctx.strokeStyle='hsla('+hue+',75%,62%,0.6)';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(Math.max(0,x0),2);ctx.lineTo(Math.min(MAIN_W,x1),2);ctx.stroke();
+    });
+  })();
+
+  // ── POLYRHYTHM LAYERS (idea C): reveal layered cross-rhythms ──
+  // Gismonti territory: 7, 11, 16 against 4. Detect up to TWO simultaneous
+  // periods (incl. primes & 16) and draw each as its own colored grid so a
+  // 16:11:7 lattice reads as distinct overlapping pulses, not one blur.
+  (function(){
+    const recent=buf.slice(-72);
+    if(recent.length<8) return;
+    const phases=recent.map(function(n){return (n.t0%barMs)/barMs;});
+    function fitError(N){
+      let err=0;
+      phases.forEach(function(p){err+=Math.abs(p-Math.round(p*N)/N);});
+      return err/phases.length;
+    }
+    // candidate subdivisions: musical primes/odd + 16 grouping
+    const CANDS=[3,5,6,7,9,11,13,16];
+    const scored=CANDS.map(function(N){
+      return {N:N, err:fitError(N)+N*0.0009};
+    }).sort(function(a,b){return a.err-b.err;});
+
+    // keep up to 2 tight, non-redundant layers (avoid N and its multiple)
+    const layers=[];
+    for(const c of scored){
+      if(c.err>0.05) continue;
+      if(layers.some(function(L){return c.N%L.N===0 || L.N%c.N===0;})) continue;
+      layers.push(c);
+      if(layers.length>=2) break;
+    }
+    if(!layers.length) return;
+
+    const hueFor=function(N){
+      return N===3?285 : N===5?160 : N===6?200 : N===7?20 :
+             N===9?330 : N===11?50 : N===13?0 : N===16?110 : 240;
+    };
+
+    const fbb=Math.floor(scrollPx/barMs/speed)*barMs;
+    ctx.save();
+    layers.forEach(function(L,li){
+      const hue=hueFor(L.N);
+      const dash= li===0?[4,5]:[2,7];
+      for(let t=fbb;t<scrollPx+MAIN_W/speed+barMs;t+=barMs){
+        for(let k=1;k<L.N;k++){
+          const tt=t+(k/L.N)*barMs;
+          const x=MAIN_W-(scrollPx-tt)*speed;
+          if(x<0||x>MAIN_W) continue;
+          ctx.strokeStyle='hsla('+hue+',82%,62%,'+(li===0?0.18:0.13)+')';
+          ctx.lineWidth=1; ctx.setLineDash(dash);
+          ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,GH);ctx.stroke();
+        }
+      }
+    });
+    ctx.setLineDash([]);
+    // label: e.g. "16:7" or "11 poly"
+    const lbl=layers.map(function(L){return L.N;}).join(':')+' poly';
+    ctx.font='bold 10px JetBrains Mono';
+    ctx.fillStyle='hsla('+hueFor(layers[0].N)+',85%,70%,0.9)';
+    ctx.textAlign='left';
+    ctx.fillText(lbl, 6, 20);
+    ctx.restore();
+  })();
+
+
+  // ── BREATHING PULSE (idea #5): whole grid pulses on each beat ──
+  (function(){
+    const phase=((scrollPx % beatMs)/beatMs); // 0..1 within current beat
+    // brightest right at the beat (phase near 0), decays quickly
+    const pulse=Math.max(0,1-phase*3);
+    if(pulse>0.02){
+      ctx.fillStyle='rgba(240,210,150,'+(pulse*0.05)+')';
+      ctx.fillRect(0,0,MAIN_W,GH);
+    }
+    // pulse dot near playhead
+    const py=12;
+    ctx.beginPath();ctx.arc(MAIN_W-12,py,2+pulse*4,0,Math.PI*2);
+    ctx.fillStyle='rgba(240,192,64,'+(0.25+pulse*0.6)+')';ctx.fill();
+  })();
+
+  // ── PLAYHEAD ──
+  ctx.beginPath();ctx.moveTo(MAIN_W-2,0);ctx.lineTo(MAIN_W-2,H);
+  ctx.strokeStyle='rgba(240,192,64,.55)';ctx.lineWidth=1.5;ctx.stroke();
+
+  // ── scope hint, drawn in review (no manual selection) ──
+  if(review){
+    ctx.save();
+    ctx.font='9px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillStyle='rgba(240,192,64,.8)';
+    ctx.fillText('🔍 ホイール=ズーム＝分析範囲 / ドラッグ=移動', 8, 16);
+    ctx.restore();
+  }
+
+  // ── PAUSED LEGEND: explain the postures (止めた時だけ) ──
+  if(review){
+    const lx=8, ly=H-30;
+    ctx.save();
+    ctx.font='8px JetBrains Mono';
+    ctx.fillStyle='rgba(255,255,255,.5)';
+    ctx.textAlign='left';
+    ctx.fillText('● 検討 — 同じ音の表情を読む', lx, ly);
+    // settle glyph
+    ctx.fillStyle='#ffffff'; ctx.fillRect(lx, ly+8, 14, 1.5);
+    ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(lx+3,ly+9.5);ctx.lineTo(lx+3,ly+12);ctx.moveTo(lx+10,ly+9.5);ctx.lineTo(lx+10,ly+12);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fillText('着地 settling', lx+20, ly+12);
+    // pass glyph
+    ctx.strokeStyle='rgba(255,255,255,.7)';
+    ctx.beginPath();ctx.moveTo(lx,ly+22);ctx.lineTo(lx+8,ly+16);ctx.stroke();
+    ctx.fillStyle='#ffffff';
+    ctx.beginPath();ctx.moveTo(lx+15,ly+19);ctx.lineTo(lx+10,ly+16);ctx.lineTo(lx+10,ly+22);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fillText('途中 passing', lx+20, ly+21);
+    ctx.restore();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  SCROLL / SPEED
+// ══════════════════════════════════════════════════════
+function getScroll(){ if(review) return reviewScroll; return paused?pauseAt:now(); }
+function getSpeed(){ if(review&&reviewSpeed!=null) return reviewSpeed; return parseInt(document.getElementById('speed').value)/1000||0.1; }
+
+// ══════════════════════════════════════════════════════
+//  SCALE PANEL
+// ══════════════════════════════════════════════════════
+function updateScalePanel(){
+  const scale=SCALES[SCALE_KEY]||SCALES.dorian;
+  const rootName=NOTE[ROOT_PC];
+  document.getElementById('spName').textContent=rootName+' '+scale.name;
+  document.getElementById('spRoot').textContent=rootName;
+  const degsEl=document.getElementById('spDegs');
+  degsEl.innerHTML='';
+  scale.degs.forEach(function(d){
+    const col=ST_COLORS_G[d]||'#607888';
+    const el=document.createElement('div');
+    el.className='sp-deg';
+    el.style.background=col+'22';
+    el.style.color=col;
+    el.style.border='1px solid '+col+'44';
+    el.textContent='+'+d;
+    degsEl.appendChild(el);
+  });
+  buildSTLegend();   // keep the bottom-left legend in sync with the same colors
+}
+
+// Show, per culture, the nearest field to the current one — parallel, no ranking of "correct".
+
+function onRootChange(){ const e=document.getElementById('rootSel'); if(e){ ROOT_PC=parseInt(e.value)||0; updateScalePanel(); } }
+function onScaleChange(){ const e=document.getElementById('scaleSel'); if(e){ SCALE_KEY=e.value; updateScalePanel(); } }
+
+// ══════════════════════════════════════════════════════
+//  FIELD MAP (磁場の地図) — time-series of which field is winning,
+//  with boundaries and the "culprit ST" that moved the field.
+//  Auto-detected. Confidence shown as %. No sense required (岡本太郎).
+// ══════════════════════════════════════════════════════
+let fieldMapWinBeats = 16;
+let fmapWholeOverride = false;   // 全体 button forces whole-phrase range   // observation window width (拍) — zoomable
+
+function rootPcOf(midi){ return ((midi%12)+12)%12; }
+
+// score how well a multiset of pitch-classes fits a scale (rooted at ROOT_PC)
+// Characteristic (mode-defining) degrees: presence of these separates
+// otherwise near-identical modes (Dorian vs Mixolydian vs Aeolian, etc.).
+const CHAR_DEG = {
+  ionian:[4,11], dorian:[3,9,10], phrygian:[1,8], lydian:[6,11],
+  mixolydian:[4,10], aeolian:[3,8], locrian:[1,6],
+  mel_minor:[3,9,11], har_minor:[3,8,11], har_major:[4,8],
+};
+function fitScale(pcCounts, degs, scaleKey, rootPc){
+  const rp = (rootPc==null)?ROOT_PC:rootPc;
+  let inside=0, total=0, charHit=0, rootCnt=0, fifthCnt=0;
+  const chars=(scaleKey&&CHAR_DEG[scaleKey])||[];
+  for(let pc=0; pc<12; pc++){
+    const cnt=pcCounts[pc]||0; if(!cnt) continue;
+    total+=cnt;
+    const rel=((pc-rp)%12+12)%12;
+    if(rel===0) rootCnt+=cnt;
+    if(rel===7) fifthCnt+=cnt;
+    if(degs.indexOf(rel)>=0){ inside+=cnt; if(chars.indexOf(rel)>=0) charHit+=cnt; }
+  }
+  if(!total) return 0;
+  const base=inside/total;
+  const charBonus = (charHit/total)*0.7;     // weight mode-defining tones more (color)
+  // tonal-centre anchoring (kept modest so same-root color shifts can still register)
+  const rootBonus = (rootCnt/total)*0.35 + (fifthCnt/total)*0.12;
+  return base + charBonus + rootBonus;
+}
+
+function computeFieldMap(){
+  if(buf.length<4) return null;
+  const beatMs = 60000/((parseInt(document.getElementById('bpmIn').value)||105));
+  const winMs = Math.max(1, fieldMapWinBeats)*beatMs;
+  // RANGE — unified with the reading:
+  //  • review + selection → that selection
+  //  • review (no selection) → the visible window on screen (止まった分析)
+  //  • live → whole phrase
+  let rangeT0, rangeT1;
+  const _bt0=buf[0].t0, _bt1=Math.max.apply(null,buf.map(function(n){return n.t1||n.t0;}));
+  // Range follows the visible window (zoom = scope), in review or not.
+  const rw=readingWindow();
+  rangeT0=Math.max(rw.t0,_bt0); rangeT1=Math.min(rw.t1,_bt1);
+  if(rangeT1-rangeT0 < 1){ rangeT0=_bt0; rangeT1=_bt1; }
+  const t0=rangeT0, t1=rangeT1;
+  const span=Math.max(1,t1-t0);
+  const STEPS=Math.max(12, Math.min(160, Math.round(span/(beatMs*0.5)))); // ~2 samples/beat
+  const keys=Object.keys(SCALES).filter(function(k){return k!=='chromatic';});
+  const series=[];   // [{t, scores:{key:fit}, lead:key, lead2:key, sep}]
+  for(let s=0;s<=STEPS;s++){
+    const tc=t0 + (span*s/STEPS);
+    const a=tc-winMs/2, b=tc+winMs/2;
+    const pc={};
+    buf.forEach(function(n){ if(n.t0>=a && n.t0<=b){ const p=rootPcOf(n.midi); pc[p]=(pc[p]||0)+1; } });
+    // Try ALL 12 roots × all scales. The field is a (root, scale) pair, so the
+    // map can find Bb Lydian, key changes, modal interchange — not just D-rooted.
+    const scores={};
+    let best=null,bestV=-1,secondV=-1,bestRoot=ROOT_PC,bestScale='dorian';
+    for(let r=0;r<12;r++){
+      keys.forEach(function(k){
+        const v=fitScale(pc, SCALES[k].degs, k, r);
+        const id=r+':'+k;
+        scores[id]=v;
+        if(v>bestV){ secondV=bestV; bestV=v; best=id; bestRoot=r; bestScale=k; }
+        else if(v>secondV){ secondV=v; }
+      });
+    }
+    // tension = out-of-field density relative to the WINNING (root,scale)
+    let inC=0,outC=0;
+    const ldegs=SCALES[bestScale]?SCALES[bestScale].degs:[];
+    Object.keys(pc).forEach(function(p){
+      const rel=((parseInt(p)-bestRoot)%12+12)%12;
+      if(ldegs.indexOf(rel)>=0) inC+=pc[p]; else outC+=pc[p];
+    });
+    const tension=(inC+outC)>0 ? outC/(inC+outC) : 0;
+    // RHYTHM at this sample: push/pull balance and density, from onsets in the window.
+    const grid=beatMs/2;
+    let pN=0, qN=0, cnt=0, first=null, last=null;
+    buf.forEach(function(n){ if(n.t0>=a && n.t0<=b){
+      cnt++; if(first==null)first=n.t0; last=n.t0;
+      const nearest=Math.round(n.t0/grid)*grid; const dev=n.t0-nearest;
+      if(dev<-grid*0.06) pN++; else if(dev>grid*0.06) qN++;
+    }});
+    // feel: -1 fully 食う(push/ahead) .. 0 just .. +1 fully ためる(pull/behind)
+    const feelBal=(pN+qN)>0 ? (qN-pN)/(pN+qN) : 0;
+    const winBeats=Math.max(0.001,(b-a)/beatMs);
+    const dens=cnt/winBeats;   // notes per beat
+    series.push({t:tc, scores:scores, lead:best, leadRoot:bestRoot, leadScale:bestScale,
+                 leadV:bestV, sep:(bestV-secondV), tension:tension,
+                 feelBal:feelBal, density:dens});
+  }
+  // boundaries: a field change that PERSISTS (hysteresis) and is decisive enough.
+  // This avoids picking up flicker between near-identical fields (e.g. Dorian↔Aeolian).
+  const PERSIST=2;          // the new lead must hold for >=2 samples
+  // Finer granularity (small window) flickers more → demand higher confidence there.
+  // Coarse window → trust boundaries more readily. Keeps the map legible.
+  const MIN_CONF = fieldMapWinBeats<=6 ? 45 : fieldMapWinBeats<=16 ? 32 : 24;
+  const bounds=[];
+  let lastLead=series[0].lead, lastRoot=series[0].leadRoot, lastScale=series[0].leadScale, lastBoundI=-999;
+  for(let i=1;i<series.length;i++){
+    if(series[i].lead!==lastLead){
+      let persists=true;
+      for(let j=i;j<Math.min(series.length,i+PERSIST);j++){
+        if(series[j].lead!==series[i].lead){ persists=false; break; }
+      }
+      if(!persists) continue;
+      if(i-lastBoundI < PERSIST) { lastLead=series[i].lead; lastRoot=series[i].leadRoot; lastScale=series[i].leadScale; continue; }
+      const sepAvg=(series[i-1].sep+series[i].sep)/2;
+      const conf=Math.round(Math.max(0,Math.min(1, sepAvg*1.6 + 0.10))*100);
+      if(conf<MIN_CONF){ lastLead=series[i].lead; lastRoot=series[i].leadRoot; lastScale=series[i].leadScale; continue; }
+      const before=fieldWindowPCs(series[i-1].t, winMs, lastRoot);
+      const after =fieldWindowPCs(series[i].t, winMs, series[i].leadRoot);
+      const culprit=culpritST(before, after,
+                    SCALES[lastScale].degs, SCALES[series[i].leadScale].degs);
+      bounds.push({ t:series[i].t,
+                    fromName:NOTE[lastRoot]+' '+SCALES[lastScale].name,
+                    toName:NOTE[series[i].leadRoot]+' '+SCALES[series[i].leadScale].name,
+                    conf:Math.min(96,conf), culprit:culprit });
+      lastBoundI=i; lastLead=series[i].lead; lastRoot=series[i].leadRoot; lastScale=series[i].leadScale;
+    }
+  }
+  // overall summary: dominant (root,scale) by area + core/ornament STs
+  const leadArea={};
+  series.forEach(function(p){ leadArea[p.lead]=(leadArea[p.lead]||0)+1; });
+  let domId=null,domV=-1; Object.keys(leadArea).forEach(function(k){ if(leadArea[k]>domV){domV=leadArea[k];domId=k;} });
+  const domRoot=domId?parseInt(domId.split(':')[0]):ROOT_PC;
+  const domScale=domId?domId.split(':')[1]:'dorian';
+  // core/ornament STs measured RELATIVE TO THE DOMINANT ROOT
+  const allPC={}; buf.forEach(function(n){ const r=((rootPcOf(n.midi)-domRoot)%12+12)%12; allPC[r]=(allPC[r]||0)+1; });
+  const sortedRel=Object.keys(allPC).map(Number).sort(function(a,b){return allPC[b]-allPC[a];});
+  const domDegs=SCALES[domScale].degs;
+  const coreST=sortedRel.filter(function(r){return domDegs.indexOf(r)>=0;}).slice(0,5);
+  const ornST =sortedRel.filter(function(r){return domDegs.indexOf(r)<0;}).slice(0,3);
+  let maxDens=0.001; series.forEach(function(p){ if(p.density>maxDens) maxDens=p.density; });
+  // overall rhythm facts for the whole mapped range (for the summary line)
+  const rangeNotes=buf.filter(function(n){ return n.t0>=t0-1 && n.t0<=t1+1; });
+  const rf=rhythmFacts(rangeNotes);
+  return { series:series, bounds:bounds,
+           domRoot:domRoot, domScale:domScale,
+           domName:NOTE[domRoot]+' '+SCALES[domScale].name, coreST:coreST, ornST:ornST,
+           t0:t0, t1:t1, topKeys:topKeysByArea(leadArea,4), maxDens:maxDens, rhythm:rf };
+}
+
+function fieldWindowPCs(tc, winMs, rootPc){
+  const rp=(rootPc==null)?ROOT_PC:rootPc;
+  const pc={}; const a=tc-winMs/2, b=tc+winMs/2;
+  buf.forEach(function(n){ if(n.t0>=a && n.t0<=b){ const p=((rootPcOf(n.midi)-rp)%12+12)%12; pc[p]=(pc[p]||0)+1; } });
+  return pc;
+}
+function culpritST(before, after, fromDegs, toDegs){
+  // the ST (relative) that best explains the shift: in toDegs but not fromDegs, and rising in count
+  let best=null, bestScore=-1;
+  for(let r=0;r<12;r++){
+    const inFrom=fromDegs.indexOf(r)>=0, inTo=toDegs.indexOf(r)>=0;
+    if(inTo && !inFrom){
+      const rise=(after[r]||0)-(before[r]||0);
+      const score=rise + ( (after[r]||0) );
+      if(score>bestScore){ bestScore=score; best=r; }
+    }
+  }
+  // fallback: ST that vanished (in from, not to)
+  if(best===null){
+    for(let r=0;r<12;r++){
+      const inFrom=fromDegs.indexOf(r)>=0, inTo=toDegs.indexOf(r)>=0;
+      if(inFrom && !inTo){
+        const drop=(before[r]||0)-(after[r]||0);
+        if(drop>bestScore){ bestScore=drop; best=r; }
+      }
+    }
+  }
+  return best;
+}
+function topKeysByArea(leadArea, n){
+  return Object.keys(leadArea).sort(function(a,b){return leadArea[b]-leadArea[a];}).slice(0,n);
+}
+
+// ── FIELD MAP rendering + control ───────────────────────
+const FIELD_COLORS=['#c8a040','#4a90d0','#70b878','#c060c0','#e08040','#50b0a0'];
+
+const RHYTHM_AI_SYSTEM = [
+  "あなたは全音楽の歴史と論理を体現した、世界最高のリズムの読み手だ。",
+  "リズムの中心は物理ではなく『提案する側の意志』である。与えられたリズムの事実（速度・密度・揺れ/Swing・基本分割・走る層の数・ポリリズム）から、その意志を読む。",
+  "読むこと：(1) 意図推測 — この人は聴き手の身体をどう動かそうとしているか（立つ/踊る/脳内で踊る/沈む/前へ押す/引きずる）。(2) 感情身体操作度 — その誘導がどれだけ強いか、質として。",
+  "数値を並べ直すな。事実の奥にある意志を、生きた言葉で短く（2〜4文）。Swingやノリ、音楽史の文脈と結びつけてよい。命令や評価はしない。日本語。"
+].join("\n");
+
+async function readRhythmIntent(){
+  const btn=document.getElementById('rhythmAiBtn');
+  const stEl=document.getElementById('rhythmAiStatus');
+  const out=document.getElementById('fmapRhythmRead');
+  if(!API_KEY){ if(out) out.textContent='（APIキー未設定）右上にキーを入れると読めます。'; return; }
+  const map=computeFieldMap();
+  if(!map||!map.rhythm){ if(out) out.textContent='音が足りません。'; return; }
+  const r=map.rhythm;
+  const bpm=(parseInt(document.getElementById('bpmIn').value)||105);
+  const facts="速度 "+bpm+" BPM／密度 "+r.density+"音/拍／揺れ "+r.feel+"(Swing "+r.swingPct+"%相当)／基本分割 "+r.division+"／走る層 "+r.layerCount+(r.polyDesc?("("+r.polyDesc+")"):"");
+  if(stEl) stEl.textContent='…';
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"content-type":"application/json","x-api-key":API_KEY,
+        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({ model:API_MODEL, max_tokens:400, system:RHYTHM_AI_SYSTEM,
+        messages:[{role:"user", content:"リズムの事実:\n"+facts+"\n\nこの意図と、身体操作の質を読んでください。"}] })
+    });
+    if(!res.ok){ if(stEl) stEl.textContent='通信失敗'; return; }
+    const data=await res.json();
+    const text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join(' ').trim();
+    if(out) out.textContent=text||'—';
+  }catch(e){ if(stEl) stEl.textContent='エラー'; }
+  finally{ if(stEl) stEl.textContent=''; }
+}
+
+function toggleFieldMap(){
+  const p=document.getElementById('fmapPanel');
+  const btn=document.getElementById('fmapBtn');
+  if(!p) return;
+  if(p.style.display==='none'||!p.style.display){ p.style.display='flex'; drawFieldMap();
+    if(btn){ btn.style.boxShadow='0 0 18px rgba(122,200,255,.6)'; btn.style.borderColor='#7ac8ff'; } }
+  else { p.style.display='none'; if(btn){ btn.style.boxShadow='0 4px 16px rgba(0,0,0,.5)'; btn.style.borderColor='#2a5a7a'; } }
+}
+
+function drawFieldMap(){
+  const cv=document.getElementById('fmapCanvas');
+  const sum=document.getElementById('fmapSummary');
+  if(!cv) return;
+  const rect=cv.getBoundingClientRect();
+  cv.width=Math.max(200,Math.round(rect.width));
+  cv.height=Math.max(120,Math.round(rect.height));
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const map=computeFieldMap();
+  if(!map){ ctx.fillStyle='#888'; ctx.font='12px JetBrains Mono'; ctx.fillText('音が足りません（4音以上）',12,24); if(sum)sum.textContent=''; return; }
+
+  const W=cv.width, H=cv.height, padL=8, padR=8, padT=10, padB=58;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const t0=map.t0, t1=map.t1, span=Math.max(1,t1-t0);
+  function tx(t){ return padL + (t-t0)/span*plotW; }
+  function vy(v){ return padT + (1-v)*plotH; }
+
+  // choose top fields to draw as lines
+  const keys=map.topKeys;
+  // grid baseline
+  ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,vy(0)); ctx.lineTo(W-padR,vy(0)); ctx.stroke();
+
+  // tension (out-of-field density) — filled area behind the lines
+  ctx.save();
+  ctx.beginPath();
+  map.series.forEach(function(p,i){
+    const x=tx(p.t), y=vy(p.tension||0);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.lineTo(tx(map.series[map.series.length-1].t), vy(0));
+  ctx.lineTo(tx(map.series[0].t), vy(0));
+  ctx.closePath();
+  ctx.fillStyle='rgba(224,80,64,.12)';   // red = chromatic tension
+  ctx.fill();
+  // tension outline
+  ctx.beginPath();
+  map.series.forEach(function(p,i){
+    const x=tx(p.t), y=vy(p.tension||0);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(224,80,64,.5)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='rgba(224,80,64,.75)'; ctx.font='9px JetBrains Mono';
+  ctx.fillText('⚡外の密度(緊張)', W-padR-90, padT+10);
+  ctx.restore();
+
+  // (rhythm lines removed — rhythm is voiced by the AIs, not charted here)
+
+  // draw fitness lines for the TOP fields (each id = "root:scale")
+  function idName(id){ const p=id.split(':'); return NOTE[parseInt(p[0])]+' '+SCALES[p[1]].name; }
+  map.topKeys.forEach(function(id,ki){
+    const col=FIELD_COLORS[ki%FIELD_COLORS.length];
+    ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.globalAlpha=0.95;
+    ctx.beginPath();
+    map.series.forEach(function(p,i){
+      const v=p.scores[id]||0;
+      const x=tx(p.t), y=vy(v/2);   // scores can exceed 1 (bonuses); scale down for plot
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha=1; ctx.font='10px JetBrains Mono';
+    const lx0=padL+4+ki*128;
+    ctx.fillStyle=col; ctx.fillRect(lx0, padT+plotH+19, 8, 8);
+    ctx.fillStyle=col; ctx.fillText(idName(id).slice(0,15), lx0+12, padT+plotH+26);
+  });
+  ctx.globalAlpha=1;
+
+  // boundaries: vertical lines + confidence% + culprit ST
+  // anti-overlap: stagger labels vertically when boundaries are close in x.
+  let _lastLblX=-999, _lblRow=0;
+  map.bounds.forEach(function(b){
+    const x=tx(b.t);
+    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+plotH); ctx.stroke();
+    ctx.setLineDash([]);
+    // stagger if too close to previous label
+    if(x-_lastLblX < 34){ _lblRow=(_lblRow+1)%3; } else { _lblRow=0; }
+    _lastLblX=x;
+    const yOff=_lblRow*11;   // push down by row
+    // culprit ST tag (below plot, staggered)
+    const cul=b.culprit;
+    const tag=(cul!=null?((cul>=0?'+':'')+cul):'—');
+    ctx.fillStyle='#ffd47a'; ctx.font='bold 11px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('ST'+tag, x, padT+plotH+12+yOff);
+    // confidence % (above plot, staggered opposite)
+    ctx.fillStyle='rgba(255,255,255,.65)'; ctx.font='9px JetBrains Mono';
+    ctx.fillText(b.conf+'%', x, padT+9-(_lblRow* (_lblRow?9:0)));
+    ctx.textAlign='left';
+  });
+
+  // summary text
+  if(sum){
+    const core=map.coreST.map(function(r){return (r>=0?'+':'')+r;}).join(', ');
+    const orn =map.ornST.map(function(r){return (r>=0?'+':'')+r;}).join(', ');
+    const beatMsS=60000/((parseInt(document.getElementById('bpmIn').value)||105));
+    const spanBeatsS=Math.round((map.t1-map.t0)/beatMsS);
+    const rangeTxt = review ? ('【'+spanBeatsS+'拍・止】 ') : ('【'+spanBeatsS+'拍・live】 ');
+    let txt=rangeTxt+'概ね '+map.domName+'。核のST: '+core
+          + (orn?('　装飾にST: '+orn+' をたまに'):'');
+    // (rhythm summary removed — the AIs describe rhythm in words)
+    if(map.bounds.length){
+      txt+='\n磁場の変遷 '+map.bounds.length+'箇所: ';
+      txt+=map.bounds.map(function(b){
+        const tag=(b.culprit!=null?((b.culprit>=0?'+':'')+b.culprit):'—');
+        return b.fromName.slice(0,10)+'→'+b.toName.slice(0,10)+'(ST'+tag+', '+b.conf+'%)';
+      }).join(' / ');
+    } else {
+      txt+='\n磁場の変化は検出されず（単一の磁場圏）。';
+    }
+    if(map.rhythm){
+      const r=map.rhythm;
+      txt+='\n\n── リズムの磁場 ──';
+      txt+='\n速度: '+(parseInt(document.getElementById('bpmIn').value)||105)+' BPM／密度: '+r.density+'音/拍';
+      txt+='\n揺れ: '+r.feel+'（Swing '+r.swingPct+'%相当）';
+      txt+='\n基本分割: '+r.division;
+      txt+='\n走るリズムの本数: '+r.layerCount+(r.polyDesc?('（'+r.polyDesc+'）'):'');
+    }
+    sum.textContent=txt;
+  }
+  drawRhythmMap(map);
+}
+
+function drawRhythmMap(map){
+  const cv=document.getElementById('fmapRhythm');
+  if(!cv) return;
+  const rect=cv.getBoundingClientRect();
+  cv.width=Math.max(200,Math.round(rect.width));
+  cv.height=Math.max(60,Math.round(rect.height));
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(!map || !map.series || !map.series.length){ return; }
+  const W=cv.width,H=cv.height,padL=8,padR=8,padT=12,padB=14;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const t0=map.t0,t1=map.t1,span=Math.max(1,t1-t0);
+  function tx(t){ return padL+(t-t0)/span*plotW; }
+  function vy(v){ return padT+(1-v)*plotH; }
+  // mid line (Swing 50 / just)
+  ctx.strokeStyle='rgba(120,180,255,.14)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,vy(0.5)); ctx.lineTo(W-padR,vy(0.5)); ctx.stroke();
+  // density (green dotted, normalized)
+  ctx.beginPath(); ctx.setLineDash([2,3]);
+  map.series.forEach(function(p,i){
+    const v=Math.min(1,(p.density||0)/(map.maxDens||1));
+    const x=tx(p.t),y=vy(v); if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(150,230,180,.7)'; ctx.lineWidth=1.2; ctx.stroke(); ctx.setLineDash([]);
+  // feel/swing (blue, around mid)
+  ctx.beginPath();
+  map.series.forEach(function(p,i){
+    const v=0.5+(p.feelBal||0)*0.42;
+    const x=tx(p.t),y=vy(v); if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(120,180,255,.8)'; ctx.lineWidth=1.5; ctx.stroke();
+  // labels
+  ctx.font='9px JetBrains Mono';
+  ctx.fillStyle='rgba(120,180,255,.85)'; ctx.fillText('揺れ：上=ため／下=食う', padL+2, padT+9);
+  ctx.fillStyle='rgba(150,230,180,.8)'; ctx.fillText('‥密度', W-padR-46, padT+9);
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER LOOP
+// ══════════════════════════════════════════════════════
+let staveC,staveCtx,otoC,otoCtx;
+
+function resize(){
+  [staveC,otoC].forEach(function(cv){
+    cv.width=cv.offsetWidth||cv.parentElement.offsetWidth;
+    cv.height=cv.offsetHeight||cv.parentElement.offsetHeight;
+  });
+}
+
+let _fmapTick=0;
+function render(){
+  // keep the field map fresh while its panel is open (even when paused/review)
+  const fp=document.getElementById('fmapPanel');
+  if(fp && fp.style.display!=='none' && !review){ if((_fmapTick++ % 60)===0) drawFieldMap(); }
+  // live commentary cadence
+  if(liveOn && !paused && !review){
+    const tn=performance.now();
+    if(tn-_liveLastFireT >= LIVE_INTERVAL_MS){ _liveLastFireT=tn; fireLive(); }
+  }
+  // Auto-enter review when hands lift (no input) and notes are held & none sounding.
+  if(!review && buf.length && !Object.keys(active).length && _lastInputT>0){
+    if(performance.now()-_lastInputT > REVIEW_IDLE_MS) enterReview();
+  }
+  const SW=staveC.width,SH=staveC.height;
+  const OW=otoC.width,OH=otoC.height;
+  if(SW>0&&SH>0) drawStave(staveC,staveCtx,SW,SH);
+  if(OW>0&&OH>0) drawOto(otoC,otoCtx,OW,OH);
+  requestAnimationFrame(render);
+}
+
+function togglePause(){
+  paused=!paused;
+  if(paused){ pauseAt=now(); T0=performance.now(); }
+  else{ T0=performance.now(); }
+  const b=document.getElementById('btnPause');
+  b.textContent=paused?'▶':'⏸';
+  b.classList.toggle('on',paused);
+}
+
+function clearAll(){
+  buf.length=0;
+  for(const k in active) delete active[k];
+  T0=performance.now();pauseAt=0;paused=false;
+  document.getElementById('btnPause').textContent='⏸';
+  document.getElementById('btnPause').classList.remove('on');
+  document.getElementById('nowPanel').style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+//  MIDI
+// ══════════════════════════════════════════════════════
+let midiAcc=null,midiIn=null,clockPort=null;
+let clockActive=false;
+let lastClockT=0,smoothBpm=105;
+
+function initMIDI(){
+  if(!navigator.requestMIDIAccess){setMS(false,'N/A');return;}
+  navigator.requestMIDIAccess().then(function(ma){
+    midiAcc=ma;ma.onstatechange=function(){popPorts();};popPorts();
+  }).catch(function(){setMS(false,'denied');});
+}
+
+function popPorts(){
+  if(!midiAcc) return;
+  const inSel=document.getElementById('mInSel');
+  if(!inSel) return;
+  const prevIn=inSel.value;
+  inSel.innerHTML='<option value="">MIDI In —</option>';
+  midiAcc.inputs.forEach(function(p,id){
+    const o=document.createElement('option');
+    o.value=id;o.textContent=p.name;inSel.appendChild(o);
+  });
+  if(prevIn)inSel.value=prevIn;
+  // Auto IAC
+  [...inSel.options].forEach(function(o){
+    if(o.textContent.includes('IAC')&&!inSel.value){inSel.value=o.value;selIn(o.value);}
+  });
+}
+
+function selIn(id){
+  if(midiIn)midiIn.onmidimessage=null;
+  if(!id||!midiAcc){setMS(false,'—');return;}
+  midiIn=midiAcc.inputs.get(id);
+  if(midiIn){midiIn.onmidimessage=onMsg;setMS(true,midiIn.name);}
+}
+
+
+
+
+
+
+
+function onMsg(e){
+  const[st,d1,d2]=e.data;
+  const type=st&0xF0,ch=st&0x0F;
+  if(type===0x90&&d2>0) noteOn(d1,d2,ch);
+  else if(type===0x80||(type===0x90&&d2===0)) noteOff(d1,ch);
+}
+
+function setMS(ok,n){
+  const d=document.getElementById('mDot'),s=document.getElementById('mStat');
+  if(d)d.classList.toggle('on',ok);
+  if(s){s.textContent=ok?'✓ '+n:n;s.style.color=ok?'var(--root)':'var(--dim)';}
+}
+
+// Keyboard test input
+const KEYS={a:60,w:61,s:62,e:63,d:64,f:65,t:66,g:67,y:68,h:69,u:70,j:71,k:72,o:73,l:74};
+// (computer-keyboard→MIDI mapping removed: real MIDI only)
+
+window.addEventListener('load',function(){
+  staveC=document.getElementById('staveC');
+  otoC=document.getElementById('otoC');
+  staveCtx=staveC.getContext('2d');
+  otoCtx=otoC.getContext('2d');
+  resize();
+  window.addEventListener('resize',resize);
+  updateScalePanel();
+  render();
+  initMIDI();
+});
+window.addEventListener('load',function(){
+  try{
+    const k=localStorage.getItem('oto_api_key')||'';
+    const i=document.getElementById('apiKeyIn');
+    if(i){ if(k) i.value=k;
+      i.addEventListener('keydown',function(e){ if(e.key==='Enter'){ setApiKey(i.value); } });
+    }
+    const sb=document.getElementById('apiSaveBtn');
+    if(sb) sb.addEventListener('click',function(){ setApiKey(document.getElementById('apiKeyIn').value); const ex=document.getElementById('apiExpand'); if(ex) ex.style.display='none'; });
+    const tg=document.getElementById('apiToggle');
+    if(tg) tg.addEventListener('click',function(){ const ex=document.getElementById('apiExpand'); if(ex) ex.style.display = (ex.style.display==='none'||!ex.style.display) ? 'flex' : 'none'; });
+    setApiKey(k);
+
+    // --- live panel: drag, interval slider, hide ---
+    (function(){
+      const panel=document.getElementById('livePanel');
+      const head=document.getElementById('liveHead');
+      if(!panel||!head) return;
+      let dx=0,dy=0,drag=false;
+      head.addEventListener('pointerdown',function(e){
+        if(e.target.tagName==='BUTTON'||e.target.tagName==='INPUT') return;
+        drag=true; const r=panel.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top;
+        head.setPointerCapture(e.pointerId);
+      });
+      head.addEventListener('pointermove',function(e){ if(!drag)return;
+        panel.style.left=Math.max(0,e.clientX-dx)+'px'; panel.style.top=Math.max(0,e.clientY-dy)+'px'; });
+      head.addEventListener('pointerup',function(){ drag=false; });
+      const intR=document.getElementById('liveInt'), intV=document.getElementById('liveIntV');
+      intR.addEventListener('input',function(){ LIVE_INTERVAL_MS=(parseInt(intR.value)||5)*1000; intV.textContent=intR.value+'s'; });
+      document.getElementById('liveHide').addEventListener('click',function(){ panel.style.display='none'; if(typeof liveOn!=='undefined'&&liveOn) toggleLive(); });
+    })();
+
+    // --- field map panel: drag, window slider, refresh, hide ---
+    (function(){
+      const panel=document.getElementById('fmapPanel');
+      const head=document.getElementById('fmapHead');
+      if(!panel||!head) return;
+      let dx=0,dy=0,drag=false;
+      head.addEventListener('pointerdown',function(e){
+        if(e.target.tagName==='BUTTON'||e.target.tagName==='INPUT') return;
+        drag=true; const r=panel.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top;
+        panel.style.bottom='auto'; panel.style.right='auto'; head.setPointerCapture(e.pointerId);
+      });
+      head.addEventListener('pointermove',function(e){ if(!drag)return;
+        panel.style.left=Math.max(0,e.clientX-dx)+'px'; panel.style.top=Math.max(0,e.clientY-dy)+'px'; });
+      head.addEventListener('pointerup',function(){ drag=false; });
+      const win=document.getElementById('fmapWin'), winV=document.getElementById('fmapWinV');
+      win.addEventListener('input',function(){ fieldMapWinBeats=parseInt(win.value)||8; winV.textContent=fieldMapWinBeats+'拍'; drawFieldMap(); });
+      document.getElementById('fmapRefresh').addEventListener('click',function(){ drawFieldMap(); });
+      const rab=document.getElementById('rhythmAiBtn'); if(rab) rab.addEventListener('click', readRhythmIntent);
+      document.getElementById('fmapHide').addEventListener('click',function(){ panel.style.display='none'; });
+      try{ new ResizeObserver(function(){ if(panel.style.display!=='none') drawFieldMap(); }).observe(panel); }catch(e){}
+    })();
+
+    // --- floating narration panel: drag, resize(font), hide ---
+    (function(){
+      const panel=document.getElementById('narrPanel');
+      const head=document.getElementById('narrHead');
+      const narr=document.getElementById('rdNarr');
+      if(!panel||!head||!narr) return;
+      // restore saved geometry/font
+      try{
+        const g=JSON.parse(localStorage.getItem('oto_narr_geo')||'null');
+        if(g){ if(g.l!=null)panel.style.left=g.l+'px'; if(g.t!=null){panel.style.top=g.t+'px';panel.style.bottom='auto';}
+               if(g.w)panel.style.width=g.w+'px'; if(g.h)panel.style.height=g.h+'px'; if(g.f)narr.style.fontSize=g.f+'px'; }
+      }catch(e){}
+      function saveGeo(){
+        try{
+          const r=panel.getBoundingClientRect();
+          const f=parseInt(narr.style.fontSize)||16;
+          localStorage.setItem('oto_narr_geo',JSON.stringify({l:Math.round(r.left),t:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),f:f}));
+        }catch(e){}
+      }
+      // drag by header
+      let dx=0,dy=0,drag=false;
+      head.addEventListener('pointerdown',function(e){
+        if(e.target.tagName==='BUTTON') return;
+        drag=true; const r=panel.getBoundingClientRect();
+        dx=e.clientX-r.left; dy=e.clientY-r.top;
+        panel.style.bottom='auto'; head.setPointerCapture(e.pointerId);
+      });
+      head.addEventListener('pointermove',function(e){
+        if(!drag) return;
+        panel.style.left=Math.max(0,e.clientX-dx)+'px';
+        panel.style.top =Math.max(0,e.clientY-dy)+'px';
+      });
+      head.addEventListener('pointerup',function(e){ drag=false; saveGeo(); });
+      // font size
+      function setF(d){ const cur=parseInt(narr.style.fontSize)||16; const n=Math.max(10,Math.min(40,cur+d)); narr.style.fontSize=n+'px'; saveGeo(); }
+      document.getElementById('narrFont+').addEventListener('click',function(){setF(2);});
+      document.getElementById('narrFont-').addEventListener('click',function(){setF(-2);});
+      // hide / re-show
+      const hide=document.getElementById('narrHide');
+      hide.addEventListener('click',function(){ panel.style.display='none'; showReshow(); });
+      function showReshow(){
+        if(document.getElementById('narrReshow')) return;
+        const b=document.createElement('button');
+        b.id='narrReshow'; b.textContent='解説を表示';
+        b.style.cssText='position:fixed;left:24px;bottom:24px;z-index:99998;font-size:12px;padding:8px 12px;cursor:pointer;background:#2a2a36;color:#f0ece4;border:1px solid #3a3a48;border-radius:6px;font-family:JetBrains Mono,monospace';
+        b.addEventListener('click',function(){ panel.style.display='flex'; b.remove(); });
+        document.body.appendChild(b);
+      }
+      // save geometry when resized (ResizeObserver)
+      try{ new ResizeObserver(function(){ saveGeo(); }).observe(panel); }catch(e){}
+    })();
+
+    // --- review observation: wheel = zoom, drag = pan (no manual range select) ---
+    (function(){
+      const cv=document.getElementById('otoC');
+      if(!cv) return;
+      let panning=false, lastX=0;
+      let renarrTimer=null;
+      function scheduleRenarr(){
+        clearTimeout(renarrTimer);
+        renarrTimer=setTimeout(function(){
+          if(review){ _lastNarrSig=null; narrateReading(); }
+          const fp=document.getElementById('fmapPanel');
+          if(fp && fp.style.display!=='none') drawFieldMap();
+        }, 650);
+      }
+      function xToTime(clientX){
+        const r=cv.getBoundingClientRect();
+        const px=(clientX-r.left)*(cv.width/r.width);
+        const W=cv.width, mainW=Math.max(200,W-72);
+        const scroll=getScroll(), speed=getSpeed();
+        return scroll - (mainW - px)/speed;
+      }
+      cv.addEventListener('wheel',function(e){
+        // Trackpad: respond ONLY to pinch (open/close) — macOS fires wheel+ctrlKey for pinch.
+        // Plain two-finger swipe (ctrlKey=false) is ignored, so it won't pan/scroll.
+        const isPinch = e.ctrlKey;
+        if(!isPinch) return;          // ignore two-finger swipe entirely
+        if(!review){ if(buf.length) enterReview(); else return; }
+        e.preventDefault();
+        const tCursor=xToTime(e.clientX);
+        // pinch-open (deltaY<0) = zoom in; pinch-close (deltaY>0) = zoom out
+        const factor = e.deltaY>0 ? 0.90 : 1.11;
+        let sp=getSpeed()*factor;
+        sp=Math.max(0.0002, Math.min(sp, 1.2));
+        const W=cv.width, mainW=Math.max(200,W-72);
+        const r=cv.getBoundingClientRect();
+        const px=(e.clientX-r.left)*(cv.width/r.width);
+        reviewSpeed=sp;
+        reviewScroll = tCursor + (mainW - px)/sp;
+        const fp=document.getElementById('fmapPanel');
+        if(fp && fp.style.display!=='none') drawFieldMap();
+        scheduleRenarr();
+      },{passive:false});
+      cv.addEventListener('pointerdown',function(e){
+        if(!review) return;
+        panning=true; lastX=e.clientX; cv.setPointerCapture(e.pointerId);
+      });
+      cv.addEventListener('pointermove',function(e){
+        if(!review || !panning) return;
+        const dx=e.clientX-lastX; lastX=e.clientX;
+        reviewScroll -= dx/getSpeed();
+        const fp=document.getElementById('fmapPanel');
+        if(fp && fp.style.display!=='none') drawFieldMap();
+      });
+      cv.addEventListener('pointerup',function(e){
+        if(!review) return;
+        if(panning){ panning=false; scheduleRenarr(); }
+      });
+    })();
+  }catch(e){}
+});
+</script>
+</body>
+</html>

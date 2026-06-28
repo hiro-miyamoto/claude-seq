@@ -1,0 +1,3474 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ali Akbar Khan — Raga Sequencer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #07080a;
+  --s0:      #0d0f12;
+  --s1:      #141720;
+  --s2:      #1c2030;
+  --bd:      #242840;
+  --text:    #d8cfc0;
+  --dim:     #5c6080;
+  --gold:    #c8a850;
+  --gold2:   #e0c070;
+  --copper:  #b06040;
+  --sage:    #608870;
+  --dawn:    #d07050;
+  --dusk:    #7060c0;
+  --night:   #3050a0;
+  --morning: #c08830;
+  --ivory:   #e8dfc8;
+  --tanpura: #405060;
+  --re-c:    #ff6b35;
+  --re-b:    #ff3d7f;
+  --sh-c:    #4fc3f7;
+  --tdm-c:   #80deea;
+  --cp-c:    #ffd54f;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Tanpura drone texture ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(200,168,80,.06) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 40% at 80% 110%, rgba(112,96,192,.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ────────────────────────────
+   HEADER
+──────────────────────────── */
+header {
+  padding: 1.2rem 1.5rem .8rem;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: flex-end;
+  gap: 2rem;
+  position: relative;
+  z-index: 10;
+}
+
+.hdr-title {
+  flex: 1;
+}
+
+.hdr-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  font-weight: 300;
+  letter-spacing: .08em;
+  color: var(--gold2);
+  line-height: 1;
+}
+
+.hdr-sub {
+  font-size: .52rem;
+  color: var(--dim);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  margin-top: .2rem;
+}
+
+.hdr-raga-info {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.hdr-raga-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--gold);
+  line-height: 1.1;
+}
+
+.hdr-raga-time {
+  font-size: .46rem;
+  color: var(--dim);
+  letter-spacing: .2em;
+}
+
+/* ── Time of day arc ── */
+.time-arc-wrap {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.time-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  transition: background .5s, box-shadow .5s;
+}
+
+/* ────────────────────────────
+   RAGA SELECTOR STRIP
+──────────────────────────── */
+.raga-strip {
+  border-bottom: 1px solid var(--bd);
+  padding: .4rem 1.2rem;
+  display: flex;
+  gap: .3rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  align-items: center;
+  background: var(--s0);
+  position: relative;
+  z-index: 9;
+}
+.raga-strip::-webkit-scrollbar { display: none; }
+
+.raga-chip {
+  padding: .22rem .55rem;
+  border: 1px solid var(--bd);
+  border-radius: 2px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: .9rem;
+  font-style: italic;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: transparent;
+}
+.raga-chip:hover { color: var(--gold); border-color: rgba(200,168,80,.4); }
+.raga-chip.active {
+  color: var(--gold2);
+  border-color: var(--gold);
+  background: rgba(200,168,80,.08);
+  box-shadow: 0 0 8px rgba(200,168,80,.15);
+}
+.raga-chip .chip-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .36rem;
+  letter-spacing: .1em;
+  opacity: .6;
+  margin-left: .25rem;
+}
+
+/* ────────────────────────────
+   MAIN LAYOUT
+──────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 130px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ────────────────────────────
+   LEFT PANEL — Raga DNA
+──────────────────────────── */
+.left-panel {
+  border-right: 1px solid var(--bd);
+  padding: .8rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  overflow-y: auto;
+}
+
+.panel {
+  background: var(--s0);
+  border: 1px solid var(--bd);
+  border-radius: 3px;
+  padding: .6rem .7rem;
+}
+
+.panel-title {
+  font-size: .44rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+.panel-title::before {
+  content: '';
+  width: 2px; height: 9px;
+  background: var(--gold);
+  border-radius: 1px;
+}
+
+/* Shruti (microtonal) display */
+.shruti-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+  margin: .4rem 0;
+}
+
+.shruti-cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--s1);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .35rem;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.shruti-cell.vadi {
+  background: rgba(200,168,80,.2);
+  border-color: var(--gold);
+  color: var(--gold2);
+  box-shadow: 0 0 6px rgba(200,168,80,.3);
+}
+.shruti-cell.samvadi {
+  background: rgba(96,136,112,.2);
+  border-color: var(--sage);
+  color: var(--sage);
+}
+.shruti-cell.aro {
+  background: rgba(176,96,64,.15);
+  border-color: rgba(176,96,64,.5);
+  color: var(--copper);
+}
+.shruti-cell.avaro {
+  background: rgba(112,96,192,.15);
+  border-color: rgba(112,96,192,.5);
+  color: var(--dusk);
+}
+.shruti-cell.vivadi {
+  background: rgba(255,61,127,.08);
+  border-color: rgba(255,61,127,.3);
+  color: rgba(255,61,127,.7);
+}
+
+.shruti-cent {
+  font-size: .3rem;
+  color: var(--dim);
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+}
+
+/* Aroha/Avaroha */
+.aroa-row {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  margin-bottom: .25rem;
+  flex-wrap: wrap;
+}
+.aroa-label {
+  font-size: .4rem;
+  color: var(--dim);
+  width: 48px;
+  flex-shrink: 0;
+}
+.aroa-note {
+  padding: .1rem .28rem;
+  border-radius: 2px;
+  font-size: .48rem;
+  font-family: 'Cormorant Garamond', serif;
+  border: 1px solid var(--bd);
+}
+
+/* Pitch bend / cent offset controls */
+.cent-row {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  margin-bottom: .18rem;
+}
+.cent-note {
+  width: 22px;
+  font-size: .44rem;
+  color: var(--ivory);
+  font-family: 'Cormorant Garamond', serif;
+}
+.cent-slider {
+  flex: 1;
+  accent-color: var(--gold);
+  height: 2px;
+}
+.cent-val {
+  font-size: .42rem;
+  color: var(--gold);
+  width: 36px;
+  text-align: right;
+}
+
+/* ────────────────────────────
+   MAIN AREA — Sequencer
+──────────────────────────── */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Transport */
+.transport {
+  padding: .5rem 1rem;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  background: var(--s0);
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: .2rem .6rem;
+  border: 1px solid var(--bd);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .52rem;
+  cursor: pointer;
+  transition: all .12s;
+}
+.btn:hover { border-color: var(--gold); color: var(--gold); }
+.btn.gold { border-color: rgba(200,168,80,.5); color: var(--gold); background: rgba(200,168,80,.07); }
+.btn.active { border-color: var(--gold); color: var(--gold); background: rgba(200,168,80,.12); box-shadow: 0 0 8px rgba(200,168,80,.2); }
+
+.param-row {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+.param-label {
+  font-size: .44rem;
+  color: var(--dim);
+}
+.param-val {
+  font-size: .46rem;
+  color: var(--gold);
+  width: 28px;
+}
+
+/* ── Section indicator ── */
+.section-bar {
+  display: flex;
+  gap: 2px;
+  padding: .35rem 1rem;
+  border-bottom: 1px solid var(--bd);
+  background: var(--s0);
+  align-items: center;
+}
+
+.section-seg {
+  flex: 1;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: .85rem;
+  font-style: italic;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all .2s;
+  border: 1px solid transparent;
+  color: var(--dim);
+}
+.section-seg:hover { color: var(--gold); }
+.section-seg.active {
+  color: var(--gold2);
+  border-color: rgba(200,168,80,.4);
+  background: rgba(200,168,80,.07);
+}
+.section-seg .seg-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .34rem;
+  letter-spacing: .1em;
+  margin-left: .3rem;
+  opacity: .5;
+}
+
+/* ── Phrase grid ── */
+.phrase-area {
+  flex: 1;
+  padding: .8rem 1rem;
+  overflow-y: auto;
+}
+
+.voice-block {
+  margin-bottom: .9rem;
+}
+
+.voice-header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .3rem;
+}
+
+.voice-label {
+  font-size: .46rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.voice-info {
+  font-size: .42rem;
+  color: var(--dim);
+  margin-left: auto;
+}
+
+.step-grid {
+  display: flex;
+  gap: 2px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bd) transparent;
+}
+
+.step {
+  flex-shrink: 0;
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  border-radius: 2px;
+  padding: .15rem .1rem;
+  border: 1px solid transparent;
+  transition: border-color .1s;
+  position: relative;
+}
+.step:hover { border-color: var(--bd); }
+.step.playing { border-color: var(--gold) !important; background: rgba(200,168,80,.08); }
+.step.bar4 { border-left: 1px solid var(--bd) !important; }
+
+.step-note {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: .75rem;
+  color: var(--dim);
+  line-height: 1;
+}
+.step-note.active-note { color: var(--ivory); }
+.step-bar {
+  width: 28px;
+  border-radius: 1px;
+  min-height: 3px;
+  transition: height .15s, background .2s;
+}
+.step-num {
+  font-size: .32rem;
+  color: rgba(92,96,128,.4);
+}
+.step-gamak {
+  font-size: .28rem;
+  color: var(--gold);
+  opacity: .7;
+  position: absolute;
+  top: 1px;
+  right: 2px;
+}
+
+/* ────────────────────────────
+   ENGINE DOCK
+──────────────────────────── */
+.engine-dock {
+  border-top: 1px solid var(--bd);
+  background: var(--s0);
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+}
+
+.dock-tabbar {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--bd);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dock-tabbar::-webkit-scrollbar { display: none; }
+
+.dock-tab {
+  padding: .28rem .6rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .44rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.dock-tab:hover { color: var(--text); }
+.dock-tab.active { color: var(--text); border-bottom-color: var(--tc, var(--gold)); }
+.dock-tdot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  opacity: .5;
+  transition: opacity .15s;
+}
+.dock-tab.active .dock-tdot { opacity: 1; }
+
+.dock-minibar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 0 .8rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.mini-lbl { font-size: .36rem; color: var(--dim); }
+.mini-bar { width: 32px; height: 3px; background: var(--s1); border-radius: 2px; overflow: hidden; }
+.mini-fill { height: 100%; border-radius: 2px; transition: width .2s; width: 0%; }
+
+.dock-panels {
+  max-height: 220px;
+  overflow: hidden;
+  transition: max-height .25s cubic-bezier(.4,0,.2,1);
+}
+.dock-panels.collapsed { max-height: 0 !important; }
+
+.dock-panel { display: none; padding: .5rem .8rem .7rem; }
+.dock-panel.active { display: block; }
+
+.dpanel-grid {
+  display: grid;
+  gap: .5rem;
+}
+.dpg-2 { grid-template-columns: 1fr 1fr; }
+.dpg-3 { grid-template-columns: 1fr 1fr 1fr; }
+.dpg-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+.dsub {
+  background: rgba(255,255,255,.02);
+  border: 1px solid var(--bd);
+  border-radius: 3px;
+  padding: .45rem .55rem;
+}
+.dsub-t {
+  font-size: .4rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  margin-bottom: .35rem;
+  padding-left: .3rem;
+  border-left: 2px solid currentColor;
+}
+.dg-row { display: flex; align-items: center; gap: .3rem; margin-bottom: .2rem; }
+.dg-lbl { font-size: .4rem; color: var(--dim); width: 50px; flex-shrink: 0; }
+.dg-track { flex: 1; height: 4px; background: var(--s1); border-radius: 2px; overflow: hidden; }
+.dg-fill { height: 100%; border-radius: 2px; transition: width .15s; width: 0%; }
+.dg-val { font-size: .4rem; width: 22px; text-align: right; flex-shrink: 0; }
+.dg-log { font-size: .4rem; color: var(--dim); line-height: 1.8; max-height: 72px; overflow: hidden; }
+
+/* ────────────────────────────
+   VISUALIZER — Tanpura Wheel
+──────────────────────────── */
+.tanpura-wheel {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 200px;
+  margin: .4rem auto;
+}
+
+/* MIDI status */
+.midi-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
+  flex-shrink: 0;
+  transition: background .3s, box-shadow .3s;
+}
+.midi-dot.connected {
+  background: var(--sage);
+  box-shadow: 0 0 6px var(--sage);
+}
+
+/* Gamak indicators */
+.gamak-legend {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+  font-size: .38rem;
+  color: var(--dim);
+  margin-top: .3rem;
+}
+.gamak-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
+input[type=range] {
+  height: 3px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+select {
+  background: var(--s1);
+  border: 1px solid var(--bd);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .52rem;
+  padding: .15rem .3rem;
+  border-radius: 2px;
+}
+
+/* Scroll bars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="hdr-title">
+    <div class="hdr-name">Ali Akbar Khan</div>
+    <div class="hdr-sub">Sarod · Raga Sequencer · Microtonal · Gamak · Alap–Jhor–Gat</div>
+  </div>
+  <div class="time-arc-wrap">
+    <canvas id="timeArcCanvas" width="48" height="48" style="opacity:.8"></canvas>
+    <div style="font-size:.42rem;color:var(--dim)" id="timeLabel">—</div>
+  </div>
+  <div class="hdr-raga-info">
+    <div class="hdr-raga-name" id="ragaNameDisplay">Yaman</div>
+    <div class="hdr-raga-time" id="ragaTimeDisplay">SANDHYA PRAKASH · Dusk</div>
+  </div>
+</header>
+
+<!-- Raga selector strip -->
+<div class="raga-strip" id="ragaStrip"></div>
+
+<!-- Main layout -->
+<div class="layout">
+
+  <!-- Left panel -->
+  <div class="left-panel">
+
+    <!-- Raga DNA -->
+    <div class="panel">
+      <div class="panel-title">Raga DNA</div>
+      <div class="shruti-grid" id="shrutiGrid"></div>
+      <div class="gamak-legend">
+        <span><span class="gamak-dot" style="background:var(--gold)"></span>Vadi (dominant)</span>
+        <span><span class="gamak-dot" style="background:var(--sage)"></span>Samvadi</span>
+        <span><span class="gamak-dot" style="background:var(--copper)"></span>Aroha only</span>
+        <span><span class="gamak-dot" style="background:var(--dusk)"></span>Avaroha only</span>
+      </div>
+    </div>
+
+    <!-- Aroha / Avaroha -->
+    <div class="panel">
+      <div class="panel-title">Aroha / Avaroha</div>
+      <div id="arohaRow" class="aroa-row"></div>
+      <div id="avarohaRow" class="aroa-row" style="margin-top:.3rem"></div>
+    </div>
+
+    <!-- Microtonal offsets -->
+    <div class="panel">
+      <div class="panel-title">微分音 Shruti Cents</div>
+      <div id="centRows"></div>
+      <div style="font-size:.4rem;color:var(--dim);margin-top:.3rem;line-height:1.6">
+        MTS-ESPはOddsoundが有効なとき自動適用。<br>
+        Pitch Bend (±200¢) でDAWへ送信。
+      </div>
+    </div>
+
+    <!-- Gamak settings -->
+    <div class="panel">
+      <div class="panel-title">奏法 Gamak / Meend</div>
+      <div class="dg-row">
+        <span class="dg-lbl">Gamak</span>
+        <input type="range" id="gamakAmt" min="0" max="100" value="55" style="flex:1" oninput="document.getElementById('gamakAmtV').textContent=this.value">
+        <span class="dg-val" id="gamakAmtV" style="color:var(--gold)">55</span>
+      </div>
+      <div class="dg-row">
+        <span class="dg-lbl">Meend</span>
+        <input type="range" id="meendAmt" min="0" max="100" value="40" style="flex:1" oninput="document.getElementById('meendAmtV').textContent=this.value">
+        <span class="dg-val" id="meendAmtV" style="color:var(--copper)">40</span>
+      </div>
+      <div class="dg-row">
+        <span class="dg-lbl">Andolan</span>
+        <input type="range" id="andolanAmt" min="0" max="100" value="30" style="flex:1" oninput="document.getElementById('andolanAmtV').textContent=this.value">
+        <span class="dg-val" id="andolanAmtV" style="color:var(--dusk)">30</span>
+      </div>
+      <div class="dg-row">
+        <span class="dg-lbl">Khatka</span>
+        <input type="range" id="khatkAmt" min="0" max="100" value="25" style="flex:1" oninput="document.getElementById('khatkAmtV').textContent=this.value">
+        <span class="dg-val" id="khatkAmtV" style="color:var(--dawn)">25</span>
+      </div>
+    </div>
+
+    <!-- Tanpura / Root -->
+    <div class="panel">
+      <div class="panel-title">Tanpura / Sa</div>
+      <div class="dg-row">
+        <span class="dg-lbl">Sa (Root)</span>
+        <select id="rootSel" onchange="onRootChange()" style="flex:1">
+          <option value="60">C4</option><option value="61">C#4</option>
+          <option value="62">D4</option><option value="63">D#4</option>
+          <option value="64">E4</option><option value="65">F4</option>
+          <option value="66">F#4</option><option value="67" selected>G4</option>
+          <option value="68">G#4</option><option value="69">A4</option>
+          <option value="70">A#4</option><option value="71">B4</option>
+        </select>
+      </div>
+      <div class="dg-row" style="margin-top:.3rem">
+        <span class="dg-lbl">BPM</span>
+        <input type="number" id="bpmIn" value="80" min="20" max="300" style="width:52px;font-size:.55rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.1rem .25rem;border-radius:2px">
+        <button class="btn" onclick="tapTempo()" style="font-size:.44rem;padding:.12rem .35rem">TAP</button>
+      </div>
+      <canvas id="tanpuraWheel" class="tanpura-wheel" width="160" height="160"></canvas>
+    </div>
+
+    <!-- MIDI -->
+    <div class="panel">
+      <div class="panel-title">MIDI Out</div>
+      <div class="dg-row">
+        <div class="midi-dot" id="midiDot"></div>
+        <span id="midiStatus" style="font-size:.48rem;color:var(--dim)">Not connected</span>
+      </div>
+      <button class="btn" onclick="initMIDI()" style="width:100%;margin:.3rem 0;font-size:.5rem">⟳ Refresh</button>
+      <div class="dg-row">
+        <span class="dg-lbl">Out Device</span>
+        <select id="midiDevSel" onchange="selectMidiOut(this.value)" style="flex:1;font-size:.46rem"></select>
+      </div>
+
+      <!-- Ableton Slave Sync -->
+      <div style="margin:.45rem 0 .2rem;padding-top:.35rem;border-top:1px solid var(--bd)">
+        <div style="font-size:.4rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:.5" id="clockDot"></span>
+          Ableton Sync
+        </div>
+        <div class="dg-row">
+          <span class="dg-lbl">Clock In</span>
+          <select id="midiClockSel" onchange="selectClockIn(this.value)" style="flex:1;font-size:.46rem">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div class="dg-row" style="margin-top:.25rem">
+          <button id="btnSlave" class="btn" onclick="toggleSlave()" style="flex:1;font-size:.46rem">
+            Slave: OFF
+          </button>
+          <div style="margin-left:.4rem;display:flex;flex-direction:column;align-items:flex-end;gap:1px">
+            <span style="font-size:.38rem;color:var(--dim)">BPM</span>
+            <span id="slaveBpm" style="font-size:.52rem;color:var(--gold);min-width:36px;text-align:right">—</span>
+          </div>
+        </div>
+        <!-- Clock quality indicator -->
+        <div style="margin-top:.3rem;display:flex;align-items:center;gap:.3rem">
+          <span style="font-size:.38rem;color:var(--dim)">Jitter</span>
+          <div style="flex:1;height:3px;background:var(--s1);border-radius:2px;overflow:hidden">
+            <div id="jitterBar" style="height:100%;width:0%;background:var(--sage);border-radius:2px;transition:width .2s"></div>
+          </div>
+          <span style="font-size:.38rem;color:var(--dim)" id="jitterVal">—</span>
+        </div>
+        <div style="font-size:.38rem;color:rgba(92,96,128,.6);margin-top:.2rem;line-height:1.6">
+          Ableton: MIDI → Preferences → MIDI<br>
+          Sync ON for IAC Driver Bus 1
+        </div>
+      </div>
+
+      <div class="dg-row" style="margin-top:.3rem">
+        <span class="dg-lbl">Sarod Ch</span>
+        <select id="melCh" style="flex:1;font-size:.5rem">
+          <option value="1" selected>Ch 1</option><option value="2">Ch 2</option><option value="3">Ch 3</option><option value="4">Ch 4</option>
+          <option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option>
+          <option value="9">Ch 9</option><option value="10">Ch 10</option><option value="11">Ch 11</option><option value="12">Ch 12</option>
+          <option value="13">Ch 13</option><option value="14">Ch 14</option><option value="15">Ch 15</option><option value="16">Ch 16</option>
+        </select>
+      </div>
+      <div class="dg-row">
+        <span class="dg-lbl">Response Ch</span>
+        <select id="resCh" style="flex:1;font-size:.5rem">
+          <option value="1">Ch 1</option><option value="2" selected>Ch 2</option><option value="3">Ch 3</option><option value="4">Ch 4</option>
+          <option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option>
+          <option value="9">Ch 9</option><option value="10">Ch 10</option><option value="11">Ch 11</option><option value="12">Ch 12</option>
+          <option value="13">Ch 13</option><option value="14">Ch 14</option><option value="15">Ch 15</option><option value="16">Ch 16</option>
+        </select>
+      </div>
+      <div class="dg-row">
+        <span class="dg-lbl">Tanpura Ch</span>
+        <select id="droneCh" style="flex:1;font-size:.5rem">
+          <option value="1">Ch 1</option><option value="2">Ch 2</option><option value="3" selected>Ch 3</option><option value="4">Ch 4</option>
+          <option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option>
+          <option value="9">Ch 9</option><option value="10">Ch 10</option><option value="11">Ch 11</option><option value="12">Ch 12</option>
+          <option value="13">Ch 13</option><option value="14">Ch 14</option><option value="15">Ch 15</option><option value="16">Ch 16</option>
+        </select>
+      </div>
+      <!-- Tabla channel & Bol MIDI notes -->
+      <div class="dg-row">
+        <span class="dg-lbl">Tabla Ch</span>
+        <select id="tablaCh" style="flex:1;font-size:.5rem">
+          <option value="1">Ch 1</option><option value="2">Ch 2</option><option value="3">Ch 3</option><option value="4" selected>Ch 4</option>
+          <option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option>
+          <option value="9">Ch 9</option><option value="10">Ch 10</option><option value="11">Ch 11</option><option value="12">Ch 12</option>
+          <option value="13">Ch 13</option><option value="14">Ch 14</option><option value="15">Ch 15</option><option value="16">Ch 16</option>
+        </select>
+      </div>
+      <div style="font-size:.38rem;color:var(--dim);margin:.25rem 0 .1rem;padding-top:.2rem;border-top:1px solid var(--bd)">Tabla Bol → MIDI note</div>
+      <div class="dg-row">
+        <span class="dg-lbl" style="color:var(--dawn)">Dha/Dhin</span>
+        <input type="number" id="bolDha" value="36" min="0" max="127" style="width:36px;font-size:.52rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.1rem .25rem;border-radius:2px">
+        <span class="dg-lbl" style="margin-left:.4rem;color:var(--gold)">Tin/Na</span>
+        <input type="number" id="bolTin" value="38" min="0" max="127" style="width:36px;font-size:.52rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.1rem .25rem;border-radius:2px">
+        <span class="dg-lbl" style="margin-left:.4rem;color:var(--sage)">Ge/Ke</span>
+        <input type="number" id="bolGe" value="41" min="0" max="127" style="width:36px;font-size:.52rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.1rem .25rem;border-radius:2px">
+      </div>
+      <div class="dg-row">
+        <span class="dg-lbl">Oct offset</span>
+        <select id="melOct" style="font-size:.5rem">
+          <option value="1">+1</option><option value="0" selected>0</option><option value="-1">-1</option>
+        </select>
+        <label style="font-size:.44rem;color:var(--dim);margin-left:.4rem">Pitch Bend</label>
+        <select id="pbRange" style="font-size:.5rem;margin-left:.3rem">
+          <option value="200" selected>±200¢</option>
+          <option value="100">±100¢</option>
+        </select>
+      </div>
+      <button class="btn gold" onclick="exportMIDI()" style="width:100%;margin-top:.4rem;font-size:.5rem">↓ Export MIDI</button>
+      <button class="btn" onclick="exportCurrentRagaScl()" style="width:100%;margin-top:.25rem;font-size:.5rem;color:var(--sage)">↓ Export SCL (current Raga)</button>
+      <button class="btn" onclick="exportAllRagasScl()" style="width:100%;margin-top:.2rem;font-size:.48rem;color:var(--dim)">↓ Export All Ragas SCL</button>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- Main area -->
+  <div class="main-area">
+
+    <!-- Transport -->
+    <div class="transport">
+      <button class="btn gold active" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+      <button class="btn" onclick="stopAll()">■ Stop</button>
+      <button class="btn" onclick="generateAll()">⟳ Generate</button>
+    <button class="btn" id="btnAutoArc" onclick="toggleAutoArc()" style="color:var(--gold);border-color:rgba(200,168,80,.5);background:rgba(200,168,80,.07)">ARC: ON</button>
+      <button class="btn" onclick="generateAll('alap')" style="color:var(--dawn)">Ālāp</button>
+      <button class="btn" onclick="generateAll('jhor')" style="color:var(--morning)">Jhor</button>
+      <button class="btn" onclick="generateAll('gat')" style="color:var(--sage)">Gat</button>
+      <!-- Undo / Redo -->
+      <button class="btn" id="btnUndo" onclick="undo()" title="Undo (⌘Z)" style="opacity:.4">↩ Undo</button>
+      <button class="btn" id="btnRedo" onclick="redo()" title="Redo (⌘⇧Z)" style="opacity:.4">↪ Redo</button>
+      <!-- Save / Load -->
+      <button class="btn" onclick="saveStateJSON()" title="Save state as JSON" style="color:var(--gold)">↓ Save</button>
+      <label class="btn" style="cursor:pointer;color:var(--sage)" title="Load state from JSON">
+        ↑ Load<input type="file" accept=".json" onchange="loadStateJSON(event)" style="display:none">
+      </label>
+      <div class="param-row">
+        <span class="param-label" style="color:var(--gold)">Mel</span>
+        <select id="melStepsSel" onchange="onVoiceStepsChange('mel',this.value)" style="font-size:.52rem;min-width:42px">
+          <option value="5">5</option><option value="7">7</option>
+          <option value="11">11</option><option value="13">13</option>
+          <option value="16" selected>16</option>
+          <option value="17">17</option><option value="19">19</option>
+          <option value="23">23</option><option value="29">29</option>
+          <option value="31">31</option>
+        </select>
+      </div>
+      <div class="param-row">
+        <span class="param-label" style="color:var(--sage)">Res</span>
+        <select id="resStepsSel" onchange="onVoiceStepsChange('res',this.value)" style="font-size:.52rem;min-width:42px">
+          <option value="5">5</option><option value="7">7</option>
+          <option value="11">11</option><option value="13" selected>13</option>
+          <option value="16">16</option>
+          <option value="17">17</option><option value="19">19</option>
+          <option value="23">23</option><option value="29">29</option>
+        </select>
+      </div>
+      <div class="param-row">
+        <span class="param-label" style="color:var(--tanpura)">Dro</span>
+        <select id="droneStepsSel" onchange="onVoiceStepsChange('drone',this.value)" style="font-size:.52rem;min-width:42px">
+          <option value="3">3</option><option value="4">4</option>
+          <option value="5">5</option><option value="7" selected>7</option>
+          <option value="8">8</option><option value="11">11</option>
+          <option value="16">16</option>
+        </select>
+      </div>
+      <!-- LCM cycle display -->
+      <div style="font-size:.4rem;color:var(--dim);display:flex;align-items:center;gap:.25rem">
+        <span>LCM:</span>
+        <span id="lcmDisplay" style="color:var(--gold)">—</span>
+        <span>steps</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Density</span>
+        <input type="range" id="densitySlider" min="10" max="95" value="60" style="width:70px" oninput="document.getElementById('densityV').textContent=this.value+'%'">
+        <span class="param-val" id="densityV">60%</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Rubato</span>
+        <input type="range" id="rubatoSlider" min="0" max="80" value="25" style="width:70px" oninput="document.getElementById('rubatoV').textContent=this.value+'%'">
+        <span class="param-val" id="rubatoV">25%</span>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:.44rem;color:var(--dim)" id="sectionLabel">Ālāp</span>
+        <span style="font-size:.44rem;color:var(--gold)" id="beatDisplay">—</span>
+      </div>
+    </div>
+
+    <!-- Section bar: Alap → Jhor → Gat -->
+    <div class="section-bar">
+      <div class="section-seg active" id="sec-alap" onclick="jumpToSection('alap')">
+        Ālāp<span class="seg-desc">free · no rhythm</span>
+      </div>
+      <div class="section-seg" id="sec-jhor" onclick="jumpToSection('jhor')">
+        Jhor<span class="seg-desc">pulse emerges</span>
+      </div>
+      <div class="section-seg" id="sec-jhala" onclick="jumpToSection('jhala')">
+        Jhālā<span class="seg-desc">rapid density</span>
+      </div>
+      <div class="section-seg" id="sec-gat" onclick="jumpToSection('gat')">
+        Gat<span class="seg-desc">tala · tabla</span>
+      </div>
+    </div>
+
+    <!-- Phrase grids -->
+    <div class="phrase-area">
+      <!-- Melody voice -->
+      <div class="voice-block">
+        <div class="voice-header">
+          <span class="voice-label" style="color:var(--gold)">Sarod — Melody</span>
+          <canvas id="melodyCurve" width="120" height="24" style="border-radius:2px;background:rgba(0,0,0,.3)"></canvas>
+          <span class="voice-info" id="melInfo">16 steps</span>
+        </div>
+        <div class="step-grid" id="melGrid"></div>
+      </div>
+
+      <!-- Response voice -->
+      <div class="voice-block">
+        <div class="voice-header">
+          <span class="voice-label" style="color:var(--sage)">Uttara — Response</span>
+          <canvas id="responseCurve" width="120" height="24" style="border-radius:2px;background:rgba(0,0,0,.3)"></canvas>
+          <span class="voice-info" id="resInfo">16 steps</span>
+        </div>
+        <div class="step-grid" id="resGrid"></div>
+      </div>
+
+      <!-- Drone / tanpura voice -->
+      <div class="voice-block">
+        <div class="voice-header">
+          <span class="voice-label" style="color:var(--tanpura)">Tanpura — Drone</span>
+          <span class="voice-info" id="droneInfo">Sa · Pa cycle</span>
+        </div>
+        <div class="step-grid" id="droneGrid"></div>
+      </div>
+
+      <!-- Tabla voice -->
+      <div class="voice-block" id="tablaBlock">
+        <div class="voice-header">
+          <span class="voice-label" style="color:var(--dawn)">Tabla — <span id="talaNameDisplay">Tintal</span></span>
+          <div style="display:flex;align-items:center;gap:.4rem;margin-left:.4rem">
+            <select id="talaSel" onchange="onTalaChange()" style="font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--dawn);padding:.1rem .25rem;border-radius:2px">
+              <option value="tintal">Tintal (16)</option>
+              <option value="ektal">Ektal (12)</option>
+              <option value="rupak">Rupak (7)</option>
+              <option value="jhaptal">Jhaptal (10)</option>
+              <option value="keherwa">Keherwa (8)</option>
+            </select>
+            <select id="tablaStepsSel" onchange="onVoiceStepsChange('tabla',this.value)" style="font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--dawn);padding:.1rem .25rem;border-radius:2px">
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="16" selected>16</option>
+            </select>
+          </div>
+          <canvas id="tablaCurve" width="120" height="24" style="border-radius:2px;background:rgba(0,0,0,.3)"></canvas>
+          <span class="voice-info" id="tablaInfo">16 steps</span>
+        </div>
+        <div class="step-grid" id="tablaGrid"></div>
+        <!-- Bol legend -->
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.3rem;font-size:.38rem;color:var(--dim)">
+          <span style="color:var(--dawn)">● Dha</span>
+          <span style="color:var(--copper)">● Dhin</span>
+          <span style="color:var(--gold)">● Tin/Na</span>
+          <span style="color:var(--sage)">● Ge/Ke</span>
+          <span style="color:rgba(92,96,128,.5)">● Rest</span>
+          <span style="margin-left:auto;color:rgba(92,96,128,.4)" id="samDisplay">Sam: 1</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-area -->
+
+</div><!-- /layout -->
+
+<!-- Engine Dock -->
+<div class="engine-dock" id="engineDock">
+  <div class="dock-tabbar">
+    <button class="dock-tab active" data-panel="reflex" style="--tc:var(--re-c)">
+      <span class="dock-tdot" style="background:var(--re-c)"></span>反射性
+    </button>
+    <button class="dock-tab" data-panel="shadow" style="--tc:var(--sh-c)">
+      <span class="dock-tdot" style="background:var(--sh-c)"></span>Raga Arc
+    </button>
+    <button class="dock-tab" data-panel="tabla" style="--tc:var(--dawn)">
+      <span class="dock-tdot" style="background:var(--dawn)"></span>Tabla
+    </button>
+    <button class="dock-tab" data-panel="pollen" style="--tc:var(--cp-c)">
+      <span class="dock-tdot" style="background:var(--cp-c)"></span>受粉↔感染
+    </button>
+    <button class="dock-tab" data-panel="tdm" style="--tc:var(--tdm-c)">
+      <span class="dock-tdot" style="background:var(--tdm-c)"></span>TDM
+    </button>
+    <button class="dock-tab" data-panel="raga-edit" style="--tc:var(--gold)">
+      <span class="dock-tdot" style="background:var(--gold)"></span>Raga Editor
+    </button>
+    <!-- Mini status -->
+    <div class="dock-minibar">
+      <span class="mini-lbl">T</span><div class="mini-bar"><div class="mini-fill" id="miniT" style="background:var(--re-c)"></div></div>
+      <span class="mini-lbl">B</span><div class="mini-bar"><div class="mini-fill" id="miniB" style="background:var(--re-b)"></div></div>
+      <span class="mini-lbl">D</span><div class="mini-bar"><div class="mini-fill" id="miniD" style="background:var(--tdm-c)"></div></div>
+      <span class="mini-lbl">S</span><div class="mini-bar"><div class="mini-fill" id="miniS" style="background:var(--sh-c)"></div></div>
+      <span style="font-size:.4rem;color:var(--dim);padding-left:.3rem" id="miniWill">—</span>
+      <button onclick="toggleDock()" id="dockColBtn" style="background:transparent;border:none;color:var(--dim);font-size:.5rem;cursor:pointer;padding:0 .4rem">▲</button>
+    </div>
+  </div>
+
+  <div class="dock-panels" id="dockPanels">
+
+    <!-- ① Reflexivity Engine -->
+    <div class="dock-panel active" id="dp-reflex">
+      <div class="dpanel-grid dpg-4">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--re-c)">観測器</div>
+          <div class="dg-row"><span class="dg-lbl">緊張</span><div class="dg-track"><div class="dg-fill" id="reTF" style="background:var(--re-c)"></div></div><span class="dg-val" id="reTV" style="color:var(--re-c)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">退屈</span><div class="dg-track"><div class="dg-fill" id="reBF" style="background:var(--re-b)"></div></div><span class="dg-val" id="reBV" style="color:var(--re-b)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">勢い</span><div class="dg-track"><div class="dg-fill" id="reMF" style="background:#9b59b6"></div></div><span class="dg-val" id="reMV" style="color:#9b59b6">0</span></div>
+          <div style="font-size:.4rem;color:var(--dim);margin-top:.25rem">Will: <span id="reWill" style="color:var(--re-c);font-style:italic">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--re-c)">感度 / 自律度</div>
+          <div class="dg-row"><span class="dg-lbl">感度</span><input type="range" id="reSens" min="1" max="100" value="55" style="flex:1" oninput="document.getElementById('reSensV').textContent=this.value"><span class="dg-val" id="reSensV" style="color:var(--re-c)">55</span></div>
+          <div class="dg-row"><span class="dg-lbl">自律度</span><input type="range" id="reAuto" min="0" max="100" value="40" style="flex:1" oninput="document.getElementById('reAutoV').textContent=this.value"><span class="dg-val" id="reAutoV" style="color:#9b59b6">40</span></div>
+          <canvas id="reCanvas" height="44" style="width:100%;display:block;border-radius:2px;background:rgba(0,0,0,.3);margin-top:.3rem"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--re-c)">Override</div>
+          <div style="display:flex;flex-direction:column;gap:.28rem">
+            <button id="reBtnFreeze" onclick="reOverride('freeze')" style="border:1px solid rgba(255,107,53,.35);color:var(--re-c);background:transparent;font-family:inherit;font-size:.46rem;padding:.25rem;border-radius:2px;cursor:pointer">❄ Freeze</button>
+            <button onclick="reOverride('crisis')" style="border:1px solid rgba(255,61,127,.35);color:var(--re-b);background:transparent;font-family:inherit;font-size:.46rem;padding:.25rem;border-radius:2px;cursor:pointer">⚡ Crisis</button>
+            <button onclick="reOverride('release')" style="border:1px solid rgba(96,136,112,.4);color:var(--sage);background:transparent;font-family:inherit;font-size:.46rem;padding:.25rem;border-radius:2px;cursor:pointer">∿ Release</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--re-c)">ログ</div>
+          <div id="reLog" class="dg-log"><span style="color:rgba(255,107,53,.4)">— 待機中 —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② Shadow Score — Raga Arc -->
+    <div class="dock-panel" id="dp-shadow">
+      <div class="dpanel-grid dpg-3">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--sh-c)">Raga 演奏弧</div>
+          <div style="display:flex;gap:2px;height:18px;margin:.3rem 0;border-radius:2px;overflow:hidden">
+            <div id="ss0" onclick="ssJumpTo(0)" style="flex:2;background:rgba(79,195,247,.1);color:#4fc3f7;font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Ālāp</div>
+            <div id="ss1" onclick="ssJumpTo(1)" style="flex:2;background:rgba(192,136,80,.1);color:var(--morning);font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Jhor</div>
+            <div id="ss2" onclick="ssJumpTo(2)" style="flex:1;background:rgba(200,168,80,.12);color:var(--gold);font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Jhālā</div>
+            <div id="ss3" onclick="ssJumpTo(3)" style="flex:2;background:rgba(96,136,112,.1);color:var(--sage);font-size:.4rem;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cormorant Garamond',serif;font-style:italic">Gat</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.3rem;margin-bottom:.25rem">
+            <span style="font-size:.38rem;color:var(--dim)">現在:</span>
+            <span id="ssLabel" style="font-size:.48rem;color:var(--sh-c);font-style:italic;font-family:'Cormorant Garamond',serif">Ālāp</span>
+            <span style="margin-left:auto;font-size:.36rem;color:rgba(79,195,247,.4)" id="ssStep">step 0</span>
+          </div>
+          <canvas id="ssCanvas" height="44" style="width:100%;display:block;border-radius:2px;background:rgba(0,0,0,.3)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--sh-c)">引力場</div>
+          <div class="dg-row"><span class="dg-lbl">Pull</span><div class="dg-track"><div class="dg-fill" id="ssPullF" style="background:var(--sh-c)"></div></div><span class="dg-val" id="ssPullV" style="color:var(--sh-c)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Drift</span><div class="dg-track"><div class="dg-fill" id="ssDriftF" style="background:#b39ddb"></div></div><span class="dg-val" id="ssDriftV" style="color:#b39ddb">0</span></div>
+          <div class="dg-row" style="margin-top:.3rem"><span class="dg-lbl">強度</span><input type="range" id="ssStr" min="0" max="100" value="50" style="flex:1" oninput="document.getElementById('ssStrV').textContent=this.value"><span class="dg-val" id="ssStrV" style="color:var(--sh-c)">50</span></div>
+          <div class="dg-row"><span class="dg-lbl">自動進行</span><input type="range" id="ssAdv" min="0" max="100" value="65" style="flex:1" oninput="document.getElementById('ssAdvV').textContent=this.value"><span class="dg-val" id="ssAdvV" style="color:#b39ddb">65</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--sh-c)">Control</div>
+          <div style="display:flex;flex-direction:column;gap:.25rem">
+            <button onclick="ssOverride('pull')" style="border:1px solid rgba(79,195,247,.35);color:var(--sh-c);background:transparent;font-family:inherit;font-size:.44rem;padding:.22rem;border-radius:2px;cursor:pointer">⬤ Pull</button>
+            <button onclick="ssOverride('resist')" style="border:1px solid rgba(179,157,219,.35);color:#b39ddb;background:transparent;font-family:inherit;font-size:.44rem;padding:.22rem;border-radius:2px;cursor:pointer">↗ Resist</button>
+            <button onclick="ssOverride('skip')" style="border:1px solid rgba(200,168,80,.35);color:var(--gold);background:transparent;font-family:inherit;font-size:.44rem;padding:.22rem;border-radius:2px;cursor:pointer">⟶ Skip</button>
+          </div>
+          <div id="ssLog" style="font-size:.38rem;color:rgba(79,195,247,.7);margin-top:.3rem;line-height:1.8">— 待機中 —</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla panel (injected above) -->
+
+    <!-- ③ CP + 双方向感染 -->
+    <div class="dock-panel" id="dp-pollen">
+      <div class="dpanel-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--cp-c)">DNA注入量</div>
+          <div class="dg-row"><span class="dg-lbl" style="color:var(--gold)">純正Raga</span><input type="range" id="cpPure" min="0" max="100" value="100" style="flex:1" oninput="cpUpdateDNA()"><span class="dg-val" id="cpPureV" style="color:var(--gold)">100</span></div>
+          <div class="dg-row"><span class="dg-lbl" style="color:var(--sage)">Gismonti</span><input type="range" id="cpGis" min="0" max="100" value="0" style="flex:1" oninput="cpUpdateDNA()"><span class="dg-val" id="cpGisV" style="color:var(--sage)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl" style="color:#967ed0">Jarrett</span><input type="range" id="cpJar" min="0" max="100" value="0" style="flex:1" oninput="cpUpdateDNA()"><span class="dg-val" id="cpJarV" style="color:#967ed0">0</span></div>
+          <div class="dg-row"><span class="dg-lbl" style="color:var(--copper)">Hisaishi</span><input type="range" id="cpHis" min="0" max="100" value="0" style="flex:1" oninput="cpUpdateDNA()"><span class="dg-val" id="cpHisV" style="color:var(--copper)">0</span></div>
+          <div class="dg-row" style="margin-top:.3rem"><span class="dg-lbl">変異速度</span><input type="range" id="cpMut" min="0" max="100" value="20" style="flex:1" oninput="document.getElementById('cpMutV').textContent=this.value"><span class="dg-val" id="cpMutV" style="color:var(--cp-c)">20</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--cp-c)">双方向感染 ↔</div>
+          <div style="font-size:.38rem;color:var(--dim);margin-bottom:.3rem;line-height:1.7">演奏が進むにつれて<br>AliとGismontiが<br>互いのDNAを交換する</div>
+          <div class="dg-row"><span class="dg-lbl">感染速度</span><input type="range" id="infectRate" min="0" max="100" value="15" style="flex:1" oninput="document.getElementById('infectRateV').textContent=this.value"><span class="dg-val" id="infectRateV" style="color:var(--cp-c)">15</span></div>
+          <div class="dg-row"><span class="dg-lbl">感染強度</span><input type="range" id="infectStr" min="0" max="100" value="40" style="flex:1" oninput="document.getElementById('infectStrV').textContent=this.value"><span class="dg-val" id="infectStrV" style="color:var(--dawn)">40</span></div>
+          <div style="margin-top:.4rem">
+            <div style="font-size:.38rem;color:var(--dim);margin-bottom:.15rem">Ali→Gismonti</div>
+            <div style="height:4px;background:var(--s1);border-radius:2px;overflow:hidden;margin-bottom:.2rem"><div id="infectAtoGBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--sage));border-radius:2px;transition:width .5s"></div></div>
+            <div style="font-size:.38rem;color:var(--dim);margin-bottom:.15rem">Gismonti→Ali</div>
+            <div style="height:4px;background:var(--s1);border-radius:2px;overflow:hidden"><div id="infectGtoABar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--sage),var(--gold));border-radius:2px;transition:width .5s"></div></div>
+          </div>
+          <button onclick="cpResetInfection()" style="margin-top:.4rem;border:1px solid rgba(200,168,80,.25);color:var(--gold);background:transparent;font-family:inherit;font-size:.42rem;padding:.18rem;border-radius:2px;cursor:pointer;width:100%">⟳ Reset Infection</button>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--cp-c)">DNA螺旋 + 感染履歴</div>
+          <canvas id="cpCanvas" height="44" style="width:100%;display:block;background:rgba(0,0,0,.3);border-radius:2px"></canvas>
+          <canvas id="infectCanvas" height="36" style="width:100%;display:block;background:rgba(0,0,0,.25);border-radius:2px;margin-top:3px"></canvas>
+          <div id="cpTraits" style="font-size:.38rem;line-height:1.9;margin-top:.3rem;color:var(--dim)">— 純粋Raga —</div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--cp-c)">Quick inject</div>
+          <div style="display:flex;flex-direction:column;gap:.22rem;margin-bottom:.3rem">
+            <button onclick="cpInject('gismonti')" style="border:1px solid rgba(96,136,112,.35);color:var(--sage);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer">⚡ Gismonti 40%</button>
+            <button onclick="cpInject('jarrett')" style="border:1px solid rgba(150,126,208,.35);color:#967ed0;background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer">∿ Jarrett 40%</button>
+            <button onclick="cpInject('hisaishi')" style="border:1px solid rgba(176,96,64,.35);color:var(--copper);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer">♬ Hisaishi 40%</button>
+            <button onclick="cpInject('reset')" style="border:1px solid rgba(200,168,80,.3);color:var(--gold);background:transparent;font-family:inherit;font-size:.42rem;padding:.2rem;border-radius:2px;cursor:pointer">⟳ Pure Raga</button>
+          </div>
+          <div style="font-size:.38rem;color:var(--dim);margin-bottom:.2rem;border-top:1px solid var(--bd);padding-top:.3rem">微分音感染</div>
+          <div class="dg-row"><span class="dg-lbl" style="font-size:.38rem">Raga→外部</span><input type="range" id="microInfect" min="0" max="100" value="0" style="flex:1" oninput="document.getElementById('microInfectV').textContent=this.value"><span class="dg-val" id="microInfectV" style="color:var(--tdm-c);font-size:.38rem">0</span></div>
+          <div style="font-size:.36rem;color:rgba(92,96,128,.5);line-height:1.6">RagaのShruti cent偏差が<br>他シーケンサーに浸透</div>
+          <div class="dg-row" style="margin-top:.3rem"><span class="dg-lbl">Frevo感染</span><input type="range" id="tablaFrevoInfect" min="0" max="100" value="0" style="flex:1" oninput="document.getElementById('tablaFrevoV').textContent=this.value"><span class="dg-val" id="tablaFrevoV" style="color:var(--sage)">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ TDM -->
+    <div class="dock-panel" id="dp-tdm">
+      <div class="dpanel-grid dpg-3" style="grid-template-columns:2fr 1fr">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--tdm-c)">Temporal Dissonance Map — Shruti × Time</div>
+          <canvas id="tdmCanvas" height="68" style="width:100%;display:block;background:rgba(0,0,0,.35);border-radius:2px"></canvas>
+          <div style="display:flex;gap:.4rem;font-size:.36rem;color:var(--dim);margin-top:.2rem">
+            <span>● 協和</span><span style="color:#ce93d8">● 緊張</span><span style="color:var(--re-b)">● 臨界</span>
+            <span style="margin-left:auto;color:rgba(128,222,234,.5)" id="tdmNote">—</span>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--tdm-c)">現在値</div>
+          <div style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.4rem">
+            <div><div style="font-size:.34rem;color:var(--dim)">音程次元</div><div style="font-size:.5rem" id="tdmP">—</div></div>
+            <div><div style="font-size:.34rem;color:var(--dim)">時間次元</div><div style="font-size:.5rem" id="tdmT">—</div></div>
+            <div><div style="font-size:.34rem;color:var(--dim)">複合不協和</div><div style="font-size:.5rem" id="tdmTot">—</div></div>
+          </div>
+          <div class="dg-row"><span class="dg-lbl">時間減衰</span><input type="range" id="tdmDecay" min="1" max="100" value="55" style="flex:1" oninput="document.getElementById('tdmDecayV').textContent=this.value"><span class="dg-val" id="tdmDecayV" style="color:var(--tdm-c)">55</span></div>
+          <div class="dg-row"><span class="dg-lbl">感度</span><input type="range" id="tdmSens" min="1" max="100" value="65" style="flex:1" oninput="document.getElementById('tdmSensV').textContent=this.value"><span class="dg-val" id="tdmSensV" style="color:#ce93d8">65</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ Raga Editor -->
+    <div class="dock-panel" id="dp-raga-edit">
+      <div class="dpanel-grid dpg-2">
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--gold)">カスタムRaga構築</div>
+          <div style="font-size:.4rem;color:var(--dim);margin-bottom:.35rem">各スワラのオン/オフとcent偏差を直接編集</div>
+          <div id="editShrutiGrid" style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-bottom:.4rem"></div>
+          <div class="dg-row">
+            <span class="dg-lbl">Vadi</span>
+            <select id="editVadi" style="flex:1;font-size:.5rem"></select>
+          </div>
+          <div class="dg-row">
+            <span class="dg-lbl">Samvadi</span>
+            <select id="editSamvadi" style="flex:1;font-size:.5rem"></select>
+          </div>
+          <div class="dg-row" style="margin-top:.3rem">
+            <button class="btn gold" onclick="applyCustomRaga()" style="flex:1;font-size:.48rem">Apply Custom</button>
+            <button class="btn" onclick="saveCustomRaga()" style="flex:1;font-size:.48rem;margin-left:.3rem">Save</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="color:var(--gold)">Preset Ragas</div>
+          <div id="presetList" style="display:flex;flex-direction:column;gap:.2rem;max-height:150px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dock-panels -->
+</div><!-- /engine-dock -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+//  RAGA DATABASE — 15 ragas with microtonal data
+//  Degrees in semitones from Sa (root)
+//  cents[]: deviation from 12-TET in cents per degree
+//  vadi: dominant swara index, samvadi: second dominant
+//  time: performance time classification
+// ═══════════════════════════════════════════════════════
+
+const NOTE_NAMES = ['Sa','re','Re','ga','Ga','Ma','ma','Pa','dha','Dha','ni','Ni'];
+// Sargam labels (S R G M P D N)
+const SARGAM_FULL = ['Sa','Komal Re','Shuddha Re','Komal Ga','Shuddha Ga','Shuddha Ma','Tivra Ma','Pa','Komal Dha','Shuddha Dha','Komal Ni','Shuddha Ni'];
+
+const RAGAS = {
+  yaman: {
+    name: 'Yaman', nameDevanagari: 'यमन',
+    time: 'SANDHYA PRAKASH', timeDesc: 'Dusk · 6-9 PM',
+    degrees: [0,2,4,6,7,9,11],       // S R G M(t) P D N
+    cents:   [0,+4,+8,-2,0,+4,+6],   // microtonal deviations
+    aroha:   [0,2,4,6,7,9,11,12],
+    avaroha: [12,11,9,7,6,4,2,0],
+    vadi: 6, samvadi: 11,             // Ma (tivra), Ni
+    color: '#7060c0', mood: 'Serene grandeur, bhakti',
+    omit: [],
+  },
+  bhairav: {
+    name: 'Bhairav', nameDevanagari: 'भैरव',
+    time: 'PRATAH', timeDesc: 'Morning · 6-9 AM',
+    degrees: [0,1,4,5,7,8,11],
+    cents:   [0,-14,+8,0,0,-14,+6],
+    aroha:   [0,1,4,5,7,8,11,12],
+    avaroha: [12,11,8,7,5,4,1,0],
+    vadi: 5, samvadi: 8,             // Ma, Dha
+    color: '#c08030', mood: 'Profound seriousness, morning devotion',
+    omit: [],
+  },
+  bhairavi: {
+    name: 'Bhairavi', nameDevanagari: 'भैरवी',
+    time: 'MORNING END', timeDesc: 'Late morning',
+    degrees: [0,1,3,5,7,8,10],
+    cents:   [0,-14,-8,0,0,-14,-8],
+    aroha:   [0,1,3,5,7,8,10,12],
+    avaroha: [12,10,8,7,5,3,1,0],
+    vadi: 5, samvadi: 8,
+    color: '#806040', mood: 'Pathos, longing, farewell',
+    omit: [],
+  },
+  darbari: {
+    name: 'Darbari Kanada', nameDevanagari: 'दरबारी कानड़ा',
+    time: 'RATRI SECOND', timeDesc: 'Late night · after midnight',
+    degrees: [0,2,3,5,7,8,10],
+    cents:   [0,0,-22,0,0,-14,-22],   // characteristic komal ga andolan
+    aroha:   [0,2,3,5,7,3,5,8,10,12],
+    avaroha: [12,10,8,7,5,3,2,0],
+    vadi: 3, samvadi: 7,             // Ga, Pa
+    color: '#304070', mood: 'Majesty, nocturnal gravity',
+    omit: [], andolan: [3,10],        // andolan on Ga and Ni
+  },
+  malkauns: {
+    name: 'Malkauns', nameDevanagari: 'मालकौंस',
+    time: 'RATRI FIRST', timeDesc: 'Night · 9 PM–midnight',
+    degrees: [0,3,5,8,10],           // pentatonic: S g M d n
+    cents:   [0,-16,0,-14,-16],
+    aroha:   [0,3,5,8,10,12],
+    avaroha: [12,10,8,5,3,0],
+    vadi: 5, samvadi: 8,
+    color: '#201840', mood: 'Deep meditation, midnight stillness',
+    omit: [2,4,6,7,9,11],
+  },
+  marwa: {
+    name: 'Marwa', nameDevanagari: 'मारवा',
+    time: 'SANDHYA', timeDesc: 'Evening · 4-7 PM',
+    degrees: [0,1,4,6,9,11],         // no Pa
+    cents:   [0,-16,+8,-4,+4,+6],
+    aroha:   [0,1,4,6,9,11,12],
+    avaroha: [12,11,9,6,4,1,0],
+    vadi: 1, samvadi: 6,
+    color: '#6050a0', mood: 'Restless anticipation, twilight longing',
+    omit: [7],
+  },
+  puriya: {
+    name: 'Puriya', nameDevanagari: 'पूरिया',
+    time: 'SANDHYA', timeDesc: 'Evening · 4-7 PM',
+    degrees: [0,1,4,6,7,9,11],
+    cents:   [0,-14,+6,-2,0,+4,+6],
+    aroha:   [0,1,4,6,7,9,11,12],
+    avaroha: [12,11,9,7,6,4,1,0],
+    vadi: 6, samvadi: 11,
+    color: '#5040a0', mood: 'Pathos mixed with grandeur',
+    omit: [],
+  },
+  todi: {
+    name: 'Todi', nameDevanagari: 'तोड़ी',
+    time: 'PRATAH SECOND', timeDesc: 'Late morning · 8-11 AM',
+    degrees: [0,1,3,6,7,8,11],
+    cents:   [0,-16,-8,-4,0,-14,+6],
+    aroha:   [0,1,3,6,7,8,11,12],
+    avaroha: [12,11,8,7,6,3,1,0],
+    vadi: 6, samvadi: 8,
+    color: '#604080', mood: 'Pathos, devotion, morning beauty',
+    omit: [],
+  },
+  bageshree: {
+    name: 'Bageshree', nameDevanagari: 'बागेश्री',
+    time: 'RATRI FIRST', timeDesc: 'Night · 9 PM–midnight',
+    degrees: [0,2,3,5,7,8,10],
+    cents:   [0,0,-8,0,0,-12,-8],
+    aroha:   [0,3,5,8,10,12],        // omits Re and Ga in aroha
+    avaroha: [12,10,8,7,5,3,2,0],
+    vadi: 3, samvadi: 7,
+    color: '#203050', mood: 'Pathos, longing, late-night romance',
+    omit: [],
+  },
+  bilaskhani: {
+    name: 'Bilaskhani Todi', nameDevanagari: 'बिलासखानी तोड़ी',
+    time: 'RATRI SANDHYA', timeDesc: 'Night to early morning',
+    degrees: [0,1,3,5,7,8,10],
+    cents:   [0,-16,-8,0,0,-14,-14],
+    aroha:   [0,1,3,5,7,8,10,12],
+    avaroha: [12,10,8,7,5,3,1,0],
+    vadi: 3, samvadi: 7,
+    color: '#302050', mood: 'Grief, pathos, mysticism',
+    omit: [],
+  },
+  kafi: {
+    name: 'Kafi', nameDevanagari: 'काफी',
+    time: 'MADHYAHNA', timeDesc: 'Midday · 12-4 PM',
+    degrees: [0,2,3,5,7,9,10],
+    cents:   [0,0,-8,0,0,+2,-8],
+    aroha:   [0,2,3,5,7,9,10,12],
+    avaroha: [12,10,9,7,5,3,2,0],
+    vadi: 5, samvadi: 9,
+    color: '#406040', mood: 'Folk-like, pastoral, romantic',
+    omit: [],
+  },
+  kedar: {
+    name: 'Kedar', nameDevanagari: 'केदार',
+    time: 'RATRI FIRST', timeDesc: 'Night · 9 PM–midnight',
+    degrees: [0,4,5,6,7,9,11],       // both Ma
+    cents:   [0,+8,0,-4,0,+4,+6],
+    aroha:   [0,5,6,7,5,9,11,12],
+    avaroha: [12,11,9,7,6,5,4,0],
+    vadi: 5, samvadi: 9,
+    color: '#305050', mood: 'Devotion, longing for the divine',
+    omit: [2,3],
+  },
+  kalyani: {
+    name: 'Kalyani', nameDevanagari: 'कल्याणी',
+    time: 'SANDHYA PRAKASH', timeDesc: 'Dusk · 6-9 PM',
+    degrees: [0,2,4,6,7,9,11],
+    cents:   [0,+4,+6,-4,0,+4,+8],
+    aroha:   [0,2,4,6,7,9,11,12],
+    avaroha: [12,11,9,7,6,4,2,0],
+    vadi: 6, samvadi: 11,
+    color: '#5060a0', mood: 'Auspicious, peaceful joy',
+    omit: [],
+  },
+  chandrakauns: {
+    name: 'Chandrakauns', nameDevanagari: 'चंद्रकौंस',
+    time: 'RATRI SECOND', timeDesc: 'Deep night',
+    degrees: [0,3,5,8,11],           // pentatonic, no Pa
+    cents:   [0,-14,0,-12,+6],
+    aroha:   [0,3,5,8,11,12],
+    avaroha: [12,11,8,5,3,0],
+    vadi: 3, samvadi: 8,
+    color: '#1a1535', mood: 'Ethereal, moonlit mystery',
+    omit: [2,4,6,7,9,10],
+  },
+  shree: {
+    name: 'Shree', nameDevanagari: 'श्री',
+    time: 'SANDHYA', timeDesc: 'Evening · 4-7 PM',
+    degrees: [0,1,4,5,6,8,11],
+    cents:   [0,-16,+8,0,-2,-14,+6],
+    aroha:   [0,1,4,6,8,11,12],
+    avaroha: [12,11,8,6,5,4,1,0],
+    vadi: 1, samvadi: 6,
+    color: '#604030', mood: 'Austere grandeur, twilight awe',
+    omit: [],
+  },
+};
+
+// Current state
+let currentRagaKey = 'yaman';
+let rootMidi = 67; // G4
+let playing = false;
+let playTimer = null;
+let barCount = 0;
+
+// Cent offsets per degree (user-adjustable, initialized from raga)
+let centOffsets = new Array(12).fill(0);
+
+// Steps
+let melSteps  = [];
+let resSteps  = [];
+let droneSteps = [];
+
+// Per-voice step counts (independent polyrhythm)
+let melLen   = 16;
+let resLen   = 13;
+let droneLen = 7;
+
+// Per-voice step positions
+let melIdx   = 0;
+let resIdx   = 0;
+let droneIdx = 0;
+
+// Section
+let currentSection = 'alap'; // alap | jhor | jhala | gat
+const SECTIONS = {
+  alap:  { name:'Ālāp',  densityRange:[0.3,0.55], tempoMult:0.5,  gamakMult:1.4, meendMult:1.6 },
+  jhor:  { name:'Jhor',  densityRange:[0.5,0.70], tempoMult:0.75, gamakMult:1.1, meendMult:1.2 },
+  jhala: { name:'Jhālā', densityRange:[0.7,0.90], tempoMult:1.2,  gamakMult:0.8, meendMult:0.7 },
+  gat:   { name:'Gat',   densityRange:[0.6,0.80], tempoMult:1.0,  gamakMult:1.0, meendMult:1.0 },
+};
+
+// MIDI
+let midiOut = null, midiAccess = null;
+
+// ── Helpers ──
+function getRaga() { return RAGAS[currentRagaKey]; }
+function getRoot() { return parseInt(document.getElementById('rootSel').value)||67; }
+function getBpm()  { return parseInt(document.getElementById('bpmIn').value)||80; }
+
+function getScaleMidi(ragaKey, rootNote, octaves) {
+  const raga = RAGAS[ragaKey] || RAGAS.yaman;
+  const pool = [];
+  for(let o = -1; o <= (octaves||2); o++) {
+    raga.degrees.forEach((d,i) => {
+      const m = rootNote + d + o * 12;
+      if(m >= 24 && m <= 108) pool.push({ midi: m, degIdx: i, deg: d });
+    });
+  }
+  return pool.sort((a,b) => a.midi - b.midi);
+}
+
+// Pitch bend value for cent offset (±200¢ range = 16383 steps)
+function centToPitchBend(cents, rangeHalfCents) {
+  const range = parseInt(document.getElementById('pbRange')?.value||200);
+  const ratio = cents / range;
+  const val = Math.round(8192 + ratio * 8191);
+  return Math.max(0, Math.min(16383, val));
+}
+
+// ── Accurate timer — AudioContextベース（バックグラウンドでも動作）
+// rAFはバックグラウンドで止まるため使わない
+// AudioContext.currentTimeは常に進み続ける
+let audioCtx = null;
+function getAudioCtx() {
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// Web Worker timer — バックグラウンド・他ページでもthrottleされない
+const _workerCode = `
+  const timers = {};
+  self.onmessage = function(e) {
+    const { type, id, delay } = e.data;
+    if (type === 'set') {
+      timers[id] = setTimeout(() => { delete timers[id]; self.postMessage({ id }); }, delay);
+    } else if (type === 'clear') {
+      clearTimeout(timers[id]); delete timers[id];
+    }
+  };
+`;
+let _timerWorker = null;
+const _timerCallbacks = {};
+let _timerNextId = 1;
+function getTimerWorker() {
+  if(_timerWorker) return _timerWorker;
+  try {
+    const blob = new Blob([_workerCode], { type: 'application/javascript' });
+    _timerWorker = new Worker(URL.createObjectURL(blob));
+    _timerWorker.onmessage = (e) => {
+      const cb = _timerCallbacks[e.data.id];
+      if(cb) { delete _timerCallbacks[e.data.id]; cb(); }
+    };
+  } catch(err) { _timerWorker = null; }
+  return _timerWorker;
+}
+
+function accurateTimeout(fn, ms) {
+  const ctx = getAudioCtx();
+  if(ctx.state === 'suspended') ctx.resume();
+  const worker = getTimerWorker();
+  if(worker) {
+    const id = _timerNextId++;
+    const deadline = ctx.currentTime + ms/1000;
+    _timerCallbacks[id] = () => {
+      const rem = (deadline - ctx.currentTime) * 1000;
+      if(rem > 2) {
+        const id2 = _timerNextId++;
+        _timerCallbacks[id2] = fn;
+        worker.postMessage({ type:'set', id:id2, delay:Math.max(0,rem-1) });
+      } else { fn(); }
+    };
+    worker.postMessage({ type:'set', id, delay:Math.max(0,ms-5) });
+    return { cancelled:false, cancel:()=>{ worker.postMessage({type:'clear',id}); delete _timerCallbacks[id]; } };
+  }
+  // Fallback
+  const deadline = ctx.currentTime + ms/1000;
+  let timerId = null; const tid = { cancelled:false };
+  function check(){if(tid.cancelled)return;const rem=(deadline-ctx.currentTime)*1000;if(rem<=1)fn();else{timerId=setTimeout(check,rem<25?1:Math.max(1,rem-20));}}
+  timerId=setTimeout(check,Math.max(1,ms-20));
+  tid.cancel=()=>{tid.cancelled=true;if(timerId)clearTimeout(timerId);};
+  return tid;
+}
+
+// ── Generate steps ──
+// Build ordered note list from pool matching the given degree sequence
+// Must be top-level (not nested) because 'use strict' disallows inner function declarations
+function notesForDegrees(pool, rootNote, degs) {
+  return degs.map(d => {
+    const abs = d % 12;
+    const match = pool.filter(p => ((p.midi - rootNote) % 12 + 12) % 12 === abs);
+    if(match.length) return match[Math.floor(match.length / 2)];
+    return null;
+  }).filter(Boolean);
+}
+
+function generateAll(mode) {
+  const sec    = SECTIONS[currentSection];
+  const raga   = getRaga();
+  const density= parseInt(document.getElementById('densitySlider').value)/100;
+  const gamakAmt   = parseInt(document.getElementById('gamakAmt').value)/100;
+  const meendAmt   = parseInt(document.getElementById('meendAmt').value)/100;
+  const andolanAmt = parseInt(document.getElementById('andolanAmt').value)/100;
+  const khatkAmt   = parseInt(document.getElementById('khatkAmt').value)/100;
+
+  const pool = getScaleMidi(currentRagaKey, getRoot(), 2);
+  if(!pool.length) return;
+
+  // ── Target density: simple, no double-multiplication ──
+  const targetD = density * (sec.densityRange[0]*0.5 + sec.densityRange[1]*0.5);
+
+  const arohaSeq  = notesForDegrees(pool, getRoot(), raga.aroha);
+  const avarohaSeq= notesForDegrees(pool, getRoot(), raga.avaroha);
+
+  // Stitch: aroha up, then avaroha down, proportioned to melLen
+  const fullSeq = [];
+  const upLen = Math.ceil(melLen * 0.55);
+  const dnLen = melLen - upLen;
+
+  // Ascending half — traverse arohaSeq multiple times if needed
+  for(let i = 0; i < upLen; i++) {
+    const idx = i % arohaSeq.length;
+    fullSeq.push({ ...arohaSeq[idx], phase: 'aroha' });
+  }
+  // Descending half — traverse avarohaSeq
+  for(let i = 0; i < dnLen; i++) {
+    const idx = i % avarohaSeq.length;
+    fullSeq.push({ ...avarohaSeq[idx], phase: 'avaroha' });
+  }
+
+  const melArr = fullSeq.map((note, i) => {
+    const t = i / melLen;
+    // Density shaped by section: sparse at start and end of Alap
+    const localD = currentSection === 'alap'
+      ? targetD * (0.3 + 0.7 * Math.sin(Math.PI * t))  // fade in/out
+      : targetD;
+    const active = Math.random() < localD;
+
+    // Ornament — weighted by section
+    let ornament = null;
+    const rand = Math.random();
+    const gm = gamakAmt * sec.gamakMult;
+    const mm = meendAmt * sec.meendMult;
+    if     (rand < gm  * 0.25) ornament = 'gamak';
+    else if(rand < gm  * 0.25 + mm * 0.20) ornament = 'meend';
+    else if(rand < gm  * 0.25 + mm * 0.20 + andolanAmt*0.15
+            && raga.andolan?.includes(note.deg)) ornament = 'andolan';
+    else if(rand < gm  * 0.25 + mm * 0.20 + andolanAmt*0.15 + khatkAmt*0.10
+            && currentSection !== 'alap') ornament = 'khatka';
+
+    const vel = currentSection === 'alap'
+      ? 0.30 + Math.random()*0.35 + (note.deg === raga.degrees[raga.vadi] ? 0.1 : 0)
+      : 0.40 + Math.random()*0.45 + (i % 4 === 0 ? 0.08 : 0);
+
+    return {
+      midi: note.midi, degIdx: note.degIdx, deg: note.deg,
+      active, vel: Math.min(1, vel),
+      ornament, cents: centOffsets[note.deg] || 0,
+      isVadi: note.deg === raga.degrees[raga.vadi],
+      phase: note.phase,
+    };
+  });
+
+  // ── RESPONSE: musical answer — uses vadi/samvadi emphasis ──
+  // Response voice traces avaroha then aroha (inverse) at lower density
+  const resSeq = [...avarohaSeq, ...arohaSeq];
+  const resArr = [];
+  for(let i = 0; i < resLen; i++) {
+    const note = resSeq[i % resSeq.length];
+    // Response is sparser, emphasises vadi and samvadi
+    const isKeyNote = (note.deg === raga.degrees[raga.vadi] || note.deg === raga.degrees[raga.samvadi]);
+    const localD = targetD * 0.65 * (isKeyNote ? 1.4 : 0.8);
+    const active = Math.random() < localD && (i % 3 !== 1); // slight rhythmic skip
+    const vel = 0.28 + Math.random()*0.38 + (isKeyNote ? 0.08 : 0);
+    resArr.push({
+      midi: note.midi, degIdx: note.degIdx, deg: note.deg,
+      active, vel: Math.min(1, vel),
+      ornament: null, cents: centOffsets[note.deg] || 0,
+      isVadi: isKeyNote,
+    });
+  }
+
+  // ── DRONE: tanpura-style Sa–Pa–Sa–Sa pattern ──
+  const dArr = [];
+  const droneRoot = getRoot() - 12;
+  const dronePa   = droneRoot + 7;
+  const droneSa2  = getRoot();
+  // Classic tanpura: Pa Sa Sa Sa (or Ma Sa Sa Sa for Bhairav etc)
+  const hasPa = raga.degrees.includes(7);
+  const dronePitch = hasPa ? dronePa : droneRoot + 5; // use Ma if no Pa
+  const dronePattern = [dronePitch, droneSa2, droneRoot, droneSa2]; // 4-beat tanpura
+
+  for(let i = 0; i < droneLen; i++) {
+    const pitch = dronePattern[i % 4];
+    const active = true; // drone always on
+    const vel = 0.18 + (i % 4 === 0 ? 0.08 : 0); // slight accent on first
+    dArr.push({ midi: pitch, deg: (pitch - getRoot() + 144) % 12, degIdx: 0,
+                active, vel, ornament: null, cents: 0, isDrone: true });
+  }
+
+  melSteps   = melArr;
+  resSteps   = resArr;
+  droneSteps = dArr;
+
+  buildGrid('mel');
+  buildGrid('res');
+  buildGrid('drone');
+  initCentRows();
+  updateRagaDisplay();
+}
+
+function tick() {
+  if(SLAVE.active && SLAVE.running){playing=true;return;}
+  if(!playing) return;
+  const bpm    = getBpm();
+  const sec    = SECTIONS[currentSection];
+  // stepMs: base quarter note, adjusted by section tempo
+  // Alap should be slow but not broken — minimum 120ms per step
+  const baseMs = Math.max(120, 60000 / bpm / 4);
+  const stepMs = Math.max(80, baseMs / sec.tempoMult);
+  const rubato = parseInt(document.getElementById('rubatoSlider').value) / 100;
+  const jitter = (Math.random() - 0.5) * rubato * stepMs * 0.35;
+
+  // Highlight playing step per voice
+  document.querySelectorAll('#melGrid .step').forEach((el,i)   => el.classList.toggle('playing', i === melIdx));
+  document.querySelectorAll('#resGrid .step').forEach((el,i)   => el.classList.toggle('playing', i === resIdx));
+  document.querySelectorAll('#droneGrid .step').forEach((el,i) => el.classList.toggle('playing', i === droneIdx));
+
+  const melCh    = (parseInt(document.getElementById('melCh').value)   || 1) - 1;
+  const resCh2   = (parseInt(document.getElementById('resCh').value)   || 2) - 1;
+  const droneCh2 = (parseInt(document.getElementById('droneCh').value) || 3) - 1;
+  const oct      = parseInt(document.getElementById('melOct').value)   || 0;
+
+  // Duration: Alap notes longer, Jhala shorter
+  const durRatio = currentSection === 'alap'  ? 1.8
+                 : currentSection === 'jhor'  ? 1.2
+                 : currentSection === 'jhala' ? 0.65
+                 : 0.9;
+  const durMs = Math.min(stepMs * durRatio, stepMs * 2.2);
+
+  [
+    { steps: melSteps,   ch: melCh,    octOff: oct,  idx: melIdx },
+    { steps: resSteps,   ch: resCh2,   octOff: 0,    idx: resIdx },
+    { steps: droneSteps, ch: droneCh2, octOff: 0,    idx: droneIdx },
+  ].forEach(({ steps, ch, octOff, idx }) => {
+    if(!steps.length) return;
+    const s = steps[idx % steps.length];
+    if(!s || !s.active || !midiOut) return;
+
+    const m = Math.max(0, Math.min(127, s.midi + octOff * 12));
+    const v = Math.round(s.vel * 100 + 27);
+
+    // Microtonal pitch bend
+    const cents = centOffsets[s.deg] || 0;
+    if(cents !== 0 && !s.isDrone) {
+      const pb  = centToPitchBend(cents, 200);
+      midiOut.send([0xE0|ch, pb & 0x7F, (pb >> 7) & 0x7F]);
+    } else {
+      midiOut.send([0xE0|ch, 0, 64]);
+    }
+
+    midiOut.send([0x90|ch, m, v]);
+    setTimeout(() => { if(midiOut) midiOut.send([0x80|ch, m, 0]); }, durMs);
+
+    // Ornaments
+    if(s.ornament === 'gamak') {
+      setTimeout(() => { if(midiOut) midiOut.send([0xE0|ch, 0, 70]); }, durMs * 0.3);
+      setTimeout(() => { if(midiOut) midiOut.send([0xE0|ch, 0, 58]); }, durMs * 0.6);
+      setTimeout(() => { if(midiOut) midiOut.send([0xE0|ch, 0, 64]); }, durMs * 0.9);
+    } else if(s.ornament === 'meend') {
+      for(let k = 0; k < 8; k++) {
+        const bc  = cents + (k / 8) * 25;
+        const pb2 = centToPitchBend(bc, 200);
+        setTimeout(() => { if(midiOut) midiOut.send([0xE0|ch, pb2 & 0x7F, (pb2 >> 7) & 0x7F]); }, durMs * k / 8);
+      }
+    } else if(s.ornament === 'andolan') {
+      // Andolan: gentle oscillation around the note
+      for(let k = 0; k < 6; k++) {
+        const osc = Math.sin(k / 6 * Math.PI * 2) * 12;
+        const pb3 = centToPitchBend(cents + osc, 200);
+        setTimeout(() => { if(midiOut) midiOut.send([0xE0|ch, pb3 & 0x7F, (pb3 >> 7) & 0x7F]); }, durMs * k / 6);
+      }
+    }
+
+    tdmAddNote(m, melIdx);
+  });
+
+  // Beat display
+  document.getElementById('beatDisplay').textContent = `${barCount+1} · m${melIdx+1}/r${resIdx+1}/d${droneIdx+1}`;
+
+  // Advance indices
+  melIdx++;   if(melIdx   >= melLen)   { melIdx = 0; barCount++; }
+  resIdx++;   if(resIdx   >= resLen)    resIdx = 0;
+  droneIdx++; if(droneIdx >= droneLen)  droneIdx = 0;
+
+  // Tabla
+  sendTablaStep();
+  tablaIdx++; if(tablaIdx >= tablaLen) tablaIdx = 0;
+
+  // Engine ticks
+  reTick();
+  ssTick();
+  cpTick();
+  cpInfectTick();
+  tdmTick();
+
+  playTimer = bgSafeTimeout(tick, stepMs + jitter);
+}
+
+// ── Play / Stop ──
+function togglePlay() {
+  if(playing) stopAll(); else startPlay();
+}
+function startPlay() {
+  const ctx = getAudioCtx();
+  if(ctx.state === 'suspended') ctx.resume();
+  startAudioKeepAlive();
+  playing = true;
+  melIdx = 0; resIdx = 0; droneIdx = 0; barCount = 0;
+  document.getElementById('btnPlay').textContent = '■ Stop';
+  if(SLAVE.active && SLAVE.running) {
+    // Ableton already rolling — slave handles steps via 0xF8
+    if(playTimer) { playTimer.cancelled = true; playTimer = null; }
+  } else {
+    // Internal timer: either free mode, or slave waiting for Ableton start
+    tick();
+  }
+}
+function stopAll() {
+  playing = false;
+  if(playTimer) { playTimer.cancelled = true; playTimer = null; }
+  document.getElementById('btnPlay').textContent = '▶ Play';
+  document.getElementById('stepDisplay').textContent = '—';
+  melIdx = 0; resIdx = 0; droneIdx = 0;
+  if(midiOut) for(let ch=0;ch<16;ch++) midiOut.send([0xB0|ch,123,0]);
+  document.querySelectorAll('.step.playing').forEach(el => el.classList.remove('playing'));
+}
+
+
+
+// ── Section control ──
+function jumpToSection(sec) {
+  currentSection = sec;
+  ['alap','jhor','jhala','gat'].forEach(s => {
+    document.getElementById('sec-'+s)?.classList.toggle('active', s===sec);
+  });
+  document.getElementById('sectionLabel').textContent = SECTIONS[sec].name;
+  generateAll(sec);
+  generateTabla(); // セクション変化でBol密度を更新
+}
+
+function onVoiceStepsChange(voice, val) {
+  const n = parseInt(val);
+  if(voice === 'mel')   { melLen   = n; melSteps   = []; melIdx   = 0; }
+  if(voice === 'res')   { resLen   = n; resSteps   = []; resIdx   = 0; }
+  if(voice === 'drone') { droneLen = n; droneSteps = []; droneIdx = 0; }
+  if(voice === 'tabla') { tablaLen = n; tablaSteps = []; tablaIdx = 0; }
+  updateLcmDisplay();
+  generateAll();
+}
+
+function updateLcmDisplay() {
+  const lcm = lcmOf(lcmOf(melLen, resLen), droneLen);
+  const el = document.getElementById('lcmDisplay');
+  if(el) el.textContent = lcm;
+}
+
+// ── Tap tempo ──
+let tapTimes = [];
+function tapTempo() {
+  const now = Date.now();
+  tapTimes.push(now);
+  if(tapTimes.length > 4) tapTimes.shift();
+  if(tapTimes.length >= 2) {
+    const gaps = tapTimes.slice(1).map((t,i) => t-tapTimes[i]);
+    const avg = gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    const bpm = Math.round(60000/avg);
+    if(bpm>20 && bpm<300) document.getElementById('bpmIn').value = bpm;
+  }
+}
+
+// ── LCM helper ──
+function gcdOf(a,b){ return b===0?a:gcdOf(b,a%b); }
+function lcmOf(a,b){ return a/gcdOf(a,b)*b; }
+
+// ═══════════════════════════════════════════════════════
+//  ABLETON SLAVE SYNC — MIDI Clock Input
+//  24 PPQN: 24 clock ticks = 1 beat
+//  Jitter smoothing via exponential moving average
+// ═══════════════════════════════════════════════════════
+
+const SLAVE = {
+  active:       false,    // slave mode on/off
+  clockInPort:  null,     // MIDI input port
+  clockTimes:   [],       // timestamps of recent 0xF8 messages
+  ppqn:         24,       // pulses per quarter note
+  pulsesPerStep: 6,       // 24ppqn / 4 subdivisions = 6 pulses per 16th step
+  pulseCount:   0,        // pulses since last step
+  bpmSmoothed:  120,      // EMA-smoothed BPM
+  bpmAlpha:     0.15,     // EMA smoothing factor (lower = smoother)
+  jitter:       0,        // ms jitter estimate
+  running:      false,    // Start/Stop state from Ableton
+  lastPulseTime: 0,
+  stepScheduled: false,
+};
+
+function toggleSlave() {
+  SLAVE.active = !SLAVE.active;
+  const btn = document.getElementById('btnSlave');
+  const dot = document.getElementById('clockDot');
+  if(SLAVE.active) {
+    btn.textContent = 'Slave: ON';
+    btn.style.borderColor = 'rgba(96,136,112,.7)';
+    btn.style.color = 'var(--sage)';
+    dot.style.background = 'var(--sage)';
+    dot.style.opacity = '1';
+    dot.style.boxShadow = '0 0 6px var(--sage)';
+    // Slave ON: stop internal timer, wait for MIDI clock
+    if(playTimer) { playTimer.cancelled = true; playTimer = null; }
+  } else {
+    btn.textContent = 'Slave: OFF';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    dot.style.background = 'var(--gold)';
+    dot.style.opacity = '.5';
+    dot.style.boxShadow = '';
+    SLAVE.pulseCount = 0;
+    document.getElementById('slaveBpm').textContent = '—';
+    // Re-engage internal timer if playing
+    if(playing) tick();
+  }
+}
+
+function selectClockIn(id) {
+  // Detach from previous port
+  if(SLAVE.clockInPort) {
+    SLAVE.clockInPort.onmidimessage = null;
+    SLAVE.clockInPort = null;
+  }
+  if(!id || !midiAccess) return;
+  SLAVE.clockInPort = midiAccess.inputs.get(id);
+  if(SLAVE.clockInPort) {
+    SLAVE.clockInPort.onmidimessage = onClockMessage;
+  }
+}
+
+function onClockMessage(e) {
+  const data = e.data;
+  const status = data[0];
+
+  // ── Start (0xFA) ──
+  if(status === 0xFA) {
+    SLAVE.running = true;
+    SLAVE.pulseCount = 0;
+    SLAVE.clockTimes = [];
+    // Stop internal timer if running
+    if(playTimer) { playTimer.cancelled = true; playTimer = null; }
+    playing = true;
+    melIdx = 0; resIdx = 0; droneIdx = 0; barCount = 0;
+    startAudioKeepAlive();
+    const ctx = getAudioCtx(); if(ctx.state==='suspended') ctx.resume();
+    document.getElementById('btnPlay').textContent = '■ Stop';
+    return;
+  }
+
+  // ── Continue (0xFB) ──
+  if(status === 0xFB) {
+    SLAVE.running = true;
+    if(playTimer) { playTimer.cancelled = true; playTimer = null; }
+    if(!playing) {
+      playing = true;
+      startAudioKeepAlive();
+      const ctx = getAudioCtx(); if(ctx.state==='suspended') ctx.resume();
+      document.getElementById('btnPlay').textContent = '■ Stop';
+    }
+    return;
+  }
+
+  // ── Stop (0xFC) ──
+  if(status === 0xFC) {
+    SLAVE.running = false;
+    playing = false;
+    if(playTimer) { playTimer.cancelled = true; playTimer = null; }
+    document.getElementById('btnPlay').textContent = '▶ Play';
+    if(midiOut) for(let ch=0;ch<16;ch++) midiOut.send([0xB0|ch,123,0]);
+    document.querySelectorAll('.step.playing').forEach(el => el.classList.remove('playing'));
+    return;
+  }
+
+  // ── Clock tick (0xF8) ──
+  if(status !== 0xF8) return;
+  if(!SLAVE.active || !SLAVE.running) return;
+
+  const now = e.timeStamp || performance.now();
+
+  // BPM calculation with EMA smoothing
+  if(SLAVE.lastPulseTime > 0) {
+    const interval = now - SLAVE.lastPulseTime; // ms per pulse
+    const instantBpm = 60000 / (interval * SLAVE.ppqn);
+    if(instantBpm > 20 && instantBpm < 300) {
+      SLAVE.bpmSmoothed = SLAVE.bpmSmoothed * (1 - SLAVE.bpmAlpha) + instantBpm * SLAVE.bpmAlpha;
+
+      // Jitter: deviation from smoothed interval
+      const expectedInterval = 60000 / (SLAVE.bpmSmoothed * SLAVE.ppqn);
+      SLAVE.jitter = SLAVE.jitter * 0.9 + Math.abs(interval - expectedInterval) * 0.1;
+    }
+  }
+  SLAVE.lastPulseTime = now;
+
+  // Pulse counter → step trigger
+  SLAVE.pulseCount++;
+  if(SLAVE.pulseCount >= SLAVE.pulsesPerStep) {
+    SLAVE.pulseCount = 0;
+    if(playing) slaveStep();
+  }
+
+  // UI update (every 24 pulses = 1 beat)
+  if(SLAVE.pulseCount === 0 || SLAVE.pulseCount === 1) {
+    const bpmDisplay = Math.round(SLAVE.bpmSmoothed * 10) / 10;
+    document.getElementById('slaveBpm').textContent = bpmDisplay.toFixed(1);
+    document.getElementById('bpmIn').value = Math.round(SLAVE.bpmSmoothed);
+
+    // Jitter bar (0-5ms = green, 5-15ms = yellow, >15ms = red)
+    const jPct = Math.min(100, SLAVE.jitter * 4);
+    const jBar = document.getElementById('jitterBar');
+    const jVal = document.getElementById('jitterVal');
+    if(jBar) {
+      jBar.style.width = jPct + '%';
+      jBar.style.background = SLAVE.jitter < 3 ? 'var(--sage)' : SLAVE.jitter < 10 ? 'var(--morning)' : 'var(--dawn)';
+    }
+    if(jVal) jVal.textContent = SLAVE.jitter.toFixed(1) + 'ms';
+
+    // Clock dot pulse
+    const dot = document.getElementById('clockDot');
+    if(dot) {
+      dot.style.opacity = '1';
+      dot.style.boxShadow = '0 0 8px var(--sage)';
+      setTimeout(() => { dot.style.opacity = '.6'; dot.style.boxShadow = '0 0 4px var(--sage)'; }, 80);
+    }
+  }
+}
+
+// Slave-driven step execution (no internal timer)
+function slaveStep() {
+  if(!playing || !melSteps.length) return;
+
+  const melCh   = (parseInt(document.getElementById('melCh').value)||1)-1;
+  const resCh2  = (parseInt(document.getElementById('resCh').value)||2)-1;
+  const droneCh2= (parseInt(document.getElementById('droneCh').value)||3)-1;
+  const oct     = parseInt(document.getElementById('melOct').value)||0;
+  const stepMs  = 60000 / SLAVE.bpmSmoothed / 4;
+
+  // Highlight
+  document.querySelectorAll('#melGrid .step').forEach((el,i)   => el.classList.toggle('playing', i===melIdx));
+  document.querySelectorAll('#resGrid .step').forEach((el,i)   => el.classList.toggle('playing', i===resIdx));
+  document.querySelectorAll('#droneGrid .step').forEach((el,i) => el.classList.toggle('playing', i===droneIdx));
+
+  [
+    { steps: melSteps,   ch: melCh,    octOff: oct },
+    { steps: resSteps,   ch: resCh2,   octOff: 0 },
+    { steps: droneSteps, ch: droneCh2, octOff: 0,   idx: droneIdx },
+  ].forEach(({ steps, ch, octOff }, vi) => {
+    if(!steps.length) return;
+    const idx = vi===0 ? melIdx : vi===1 ? resIdx : droneIdx;
+    const s = steps[idx % steps.length];
+    if(!s || !s.active || !midiOut) return;
+
+    const m = Math.max(0, Math.min(127, s.midi + octOff*12));
+    const v = Math.round(s.vel * 100 + 27);
+    const durMs = stepMs * 0.85;
+
+    const cents = centOffsets[s.deg] || 0;
+    if(cents !== 0 && !s.isDrone) {
+      const pb = centToPitchBend(cents, 200);
+      midiOut.send([0xE0|ch, pb&0x7F, (pb>>7)&0x7F]);
+    } else {
+      midiOut.send([0xE0|ch, 0, 64]);
+    }
+    midiOut.send([0x90|ch, m, v]);
+    setTimeout(() => { if(midiOut) midiOut.send([0x80|ch, m, 0]); }, durMs);
+
+    if(s.ornament === 'gamak') {
+      setTimeout(()=>{if(midiOut)midiOut.send([0xE0|ch,0,70]);},durMs*.3);
+      setTimeout(()=>{if(midiOut)midiOut.send([0xE0|ch,0,58]);},durMs*.6);
+      setTimeout(()=>{if(midiOut)midiOut.send([0xE0|ch,0,64]);},durMs*.9);
+    } else if(s.ornament === 'meend') {
+      for(let k=0;k<8;k++){const bc=cents+(k/8)*25,pb2=centToPitchBend(bc,200);setTimeout(()=>{if(midiOut)midiOut.send([0xE0|ch,pb2&0x7F,(pb2>>7)&0x7F]);},durMs*k/8);}
+    }
+    tdmAddNote(m, melIdx);
+  });
+
+  document.getElementById('beatDisplay').textContent = `${barCount+1} · m${melIdx+1}/r${resIdx+1}/d${droneIdx+1}`;
+  melIdx++;   if(melIdx   >= melLen)  { melIdx=0;  barCount++; }
+  resIdx++;   if(resIdx   >= resLen)   resIdx=0;
+  droneIdx++; if(droneIdx >= droneLen) droneIdx=0;
+
+  sendTablaStep();
+  tablaIdx++; if(tablaIdx >= tablaLen) tablaIdx = 0;
+
+  reTick(); ssTick(); cpTick(); cpInfectTick(); tdmTick();
+}
+
+// ── Populate MIDI input ports ──
+function populateInputPorts() {
+  const sel = document.getElementById('midiClockSel'); if(!sel||!midiAccess) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— select —</option>';
+  midiAccess.inputs.forEach((port,id) => {
+    const o = document.createElement('option');
+    o.value=id; o.textContent=port.name; sel.appendChild(o);
+  });
+  if(prev) sel.value = prev;
+  // Auto-select IAC
+  [...sel.options].forEach(o => {
+    if(o.textContent.includes('IAC') && !sel.value) { sel.value=o.value; selectClockIn(sel.value); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  PAGE VISIBILITY — タブ離れてもMIDIが流れ続ける
+//  AudioContextはバックグラウンドでsuspendされることがある
+//  Web Audio keepAlive + visibility change handler
+// ═══════════════════════════════════════════════════════
+
+// Silent oscillator to keep AudioContext alive in background
+let _keepAliveNode = null;
+function startAudioKeepAlive() {
+  const ctx = getAudioCtx();
+  if(_keepAliveNode) return;
+  _keepAliveNode = ctx.createOscillator();
+  const gain = ctx.createGain();
+  gain.gain.value = 0; // silent
+  _keepAliveNode.connect(gain);
+  gain.connect(ctx.destination);
+  _keepAliveNode.start();
+}
+
+document.addEventListener('visibilitychange', () => {
+  const ctx = getAudioCtx();
+  // AudioContextがsuspendされていたら再開（iOSなどで起きることがある）
+  if(ctx.state === 'suspended') ctx.resume();
+  if(!document.hidden) {
+    // タブに戻ったとき幽霊ノートをクリア
+    if(midiOut) for(let c=0;c<16;c++) midiOut.send([0xB0|c,123,0]);
+  }
+});
+
+let _bgMode = false; // kept for compatibility
+
+// bgSafeTimeout: accurateTimeoutがバックグラウンド対応になったので同じ
+function bgSafeTimeout(fn, ms) {
+  return accurateTimeout(fn, ms);
+}
+
+// ── MIDI ──
+function initMIDI() {
+  if(!navigator.requestMIDIAccess) { setMidiStatus(false, 'Not supported'); return; }
+  navigator.requestMIDIAccess().then(ma => {
+    midiAccess = ma;
+    ma.onstatechange = () => { populatePorts(); populateInputPorts(); };
+    populatePorts();
+    populateInputPorts();
+  }).catch(() => setMidiStatus(false, 'Permission denied'));
+}
+
+function populatePorts() {
+  const sel = document.getElementById('midiDevSel'); if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— select —</option>';
+  midiAccess.outputs.forEach((port,id) => {
+    const o = document.createElement('option');
+    o.value=id; o.textContent=port.name; sel.appendChild(o);
+  });
+  if(prev) sel.value = prev;
+  [...sel.options].forEach(o => { if(o.textContent.includes('IAC')) { sel.value=o.value; selectMidiOut(sel.value); } });
+}
+
+function selectMidiOut(id) {
+  if(!id) { midiOut=null; setMidiStatus(false,'—'); return; }
+  midiOut = midiAccess?.outputs.get(id);
+  if(midiOut) setMidiStatus(true, midiOut.name);
+}
+
+function setMidiStatus(ok, name) {
+  const dot = document.getElementById('midiDot');
+  const stat = document.getElementById('midiStatus');
+  if(dot) { dot.classList.toggle('connected', ok); }
+  if(stat) { stat.textContent = ok ? `✓ ${name}` : name; stat.style.color = ok ? 'var(--sage)' : 'var(--dim)'; }
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCL EXPORT — Scala Microtonal Scale File
+//  degrees[i] × 100¢ + cents[i] = absolute cents from Sa
+// ═══════════════════════════════════════════════════════
+
+function ragaToScl(ragaKey) {
+  const raga = RAGAS[ragaKey]; if(!raga) return null;
+  // Build full 12-note octave with microtonal adjustments
+  // Only include degrees in the raga (+ octave = 1200¢)
+  const lines = [];
+  lines.push(`! ${raga.name.replace(/\s/g,'_')}.scl`);
+  lines.push('!');
+  lines.push(`${raga.name} — ${raga.timeDesc} — ${raga.mood}`);
+  // degrees without Sa (0) and without octave repetition, plus octave
+  const scaleDegrees = raga.degrees.filter(d => d > 0);
+  lines.push(String(scaleDegrees.length + 1)); // +1 for octave
+  lines.push('!');
+  scaleDegrees.forEach((deg, i) => {
+    const centVal = deg * 100 + (raga.cents[i + 1] || 0); // i+1 because cents[0]=Sa=0
+    lines.push(centVal.toFixed(3));
+  });
+  lines.push('1200.000');
+  return lines.join('\n');
+}
+
+function exportCurrentRagaScl() {
+  const scl = ragaToScl(currentRagaKey);
+  if(!scl) return;
+  const raga = RAGAS[currentRagaKey];
+  const blob = new Blob([scl], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${raga.name.replace(/\s/g,'_')}.scl`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportAllRagasScl() {
+  // ZIP不要: 全ラーガを1つのテキストファイルにまとめてエクスポート
+  const lines = [];
+  lines.push('! all_ragas_collection.scl');
+  lines.push('! Ali Akbar Khan Sequencer — All Ragas Microtonal Data');
+  lines.push('! Generated: ' + new Date().toISOString());
+  lines.push('!');
+  lines.push('! ═══ NOTE: This file contains multiple scales ═══');
+  lines.push('! Each section is a separate .scl file — split manually');
+  lines.push('!');
+  Object.entries(RAGAS).forEach(([key, raga]) => {
+    const scl = ragaToScl(key);
+    if(scl) {
+      lines.push('');
+      lines.push('! ─────────────────────────────────────────');
+      lines.push(scl);
+    }
+  });
+  const blob = new Blob([lines.join('\n')], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ali_akbar_all_ragas.scl.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function exportMIDI() {
+  const bpm = getBpm();
+  const ticksPerBeat = 480;
+  const stepTicks = ticksPerBeat / 4;
+  const µsPerBeat = Math.round(60000000 / bpm);
+
+  function writeVar(val) {
+    const buf = [];
+    buf.push(val & 0x7F);
+    val >>= 7;
+    while(val > 0) { buf.unshift((val & 0x7F) | 0x80); val >>= 7; }
+    return buf;
+  }
+  function int32(v) { return [(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF]; }
+  function int16(v) { return [(v>>8)&0xFF,v&0xFF]; }
+
+  const melCh = (parseInt(document.getElementById('melCh').value)||1)-1;
+  const oct = parseInt(document.getElementById('melOct').value)||0;
+
+  const events = [];
+  const addNote = (t, midi, vel, durTicks, ch) => {
+    events.push([t, [0x90|ch, midi, vel]]);
+    events.push([t+durTicks, [0x80|ch, midi, 0]]);
+  };
+
+  // Pitch bend for each note
+  melSteps.forEach((s,i) => {
+    if(!s.active) return;
+    const t = i*stepTicks;
+    const m = Math.max(0,Math.min(127, s.midi+oct*12));
+    const cents = centOffsets[s.deg]||0;
+    if(cents) {
+      const pb = centToPitchBend(cents,200);
+      events.push([t, [0xE0|melCh, pb&0x7F, (pb>>7)&0x7F]]);
+    }
+    addNote(t, m, Math.round(s.vel*100+27), Math.round(stepTicks*0.85), melCh);
+  });
+
+  events.sort((a,b)=>a[0]-b[0]);
+  let lastT=0;
+  const trackData = [];
+  // Tempo
+  trackData.push(...[0,0xFF,0x51,0x03,...int32(µsPerBeat).slice(1)]);
+  events.forEach(([t,msg]) => {
+    trackData.push(...writeVar(t-lastT), ...msg);
+    lastT=t;
+  });
+  trackData.push(0,0xFF,0x2F,0);
+
+  const header = [0x4D,0x54,0x68,0x64, 0,0,0,6, 0,0, 0,1, ...int16(ticksPerBeat)];
+  const trackLen = int32(trackData.length);
+  const track = [0x4D,0x54,0x72,0x6B, ...trackLen, ...trackData];
+  const bytes = new Uint8Array([...header,...track]);
+  const blob = new Blob([bytes],{type:'audio/midi'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`${getRaga().name.replace(/\s/g,'_')}_raga.mid`; a.click();
+}
+
+// ── Preset list in Raga Editor ──
+function buildPresetList() {
+  const el = document.getElementById('presetList'); if(!el) return;
+  el.innerHTML = '';
+  Object.entries(RAGAS).forEach(([key,raga]) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.style.cssText = `font-size:.44rem;padding:.18rem .4rem;text-align:left;border-color:${key===currentRagaKey?raga.color:'var(--bd)'};color:${key===currentRagaKey?raga.color:'var(--dim)'}`;
+    btn.innerHTML = `<span style="font-family:'Cormorant Garamond',serif;font-style:italic">${raga.name}</span> <span style="opacity:.5;font-size:.36rem">${raga.mood.slice(0,28)}</span>`;
+    btn.onclick = () => selectRaga(key);
+    el.appendChild(btn);
+  });
+}
+
+function applyCustomRaga() { generateAll(); }
+function saveCustomRaga()  { reLog('カスタムRaga保存（実装予定）'); }
+
+// ═══════════════════════════════════════════════════════
+//  ① REFLEXIVITY ENGINE — Raga語法版
+//  緊張: スケール外音(vivadi)が鳴った回数
+//  退屈: 同一パターンの反復
+//  勢い: ピッチ変化の速度
+// ═══════════════════════════════════════════════════════
+const RE = {
+  tension:0, boredom:0, momentum:0,
+  will:'observe', override:null, overrideTimer:0,
+  freezeActive:false, freezeStepsLeft:0, pressure:0,
+  aftershockActive:false, aftershockCycles:0, aftershockIntensity:0,
+  pitchHistory:[], tensionHistory:[], cycle:0,
+  patternHash:[], tickCount:0,
+};
+
+function reComputeTension() {
+  const raga=getRaga();
+  const active=melSteps.filter(s=>s.active);
+  if(!active.length){RE.tension*=0.92;return;}
+  const root=getRoot();
+  const scalePCs=raga.degrees.map(d=>(root+d)%12);
+  let outCount=0;
+  active.slice(Math.max(0,melIdx-8),melIdx+1).forEach(s=>{
+    if(!scalePCs.includes(s.midi%12)) outCount++;
+  });
+  RE.tension=RE.tension*0.85+(outCount/(Math.min(8,active.length)))*0.15;
+}
+
+function reComputeBoredom() {
+  const hash=melSteps.map(s=>s.active?s.midi:0).join(',');
+  RE.patternHash.push(hash); if(RE.patternHash.length>5) RE.patternHash.shift();
+  const reps=RE.patternHash.slice(-4).filter(h=>h===hash).length;
+  RE.boredom=RE.boredom*0.7+Math.min(1,(reps-1)/3)*0.3;
+}
+
+function reComputeMomentum() {
+  const cur=melSteps[melIdx]?.midi;
+  if(cur&&RE.pitchHistory.length>0) RE.momentum=RE.momentum*0.8+Math.min(1,Math.abs(cur-RE.pitchHistory[RE.pitchHistory.length-1])/24)*0.2;
+  if(cur){RE.pitchHistory.push(cur);if(RE.pitchHistory.length>32)RE.pitchHistory.shift();}
+}
+
+function reUpdateWill() {
+  const sens=parseInt(document.getElementById('reSens')?.value||55)/100;
+  if(RE.freezeActive){
+    RE.freezeStepsLeft--;
+    RE.pressure=Math.min(1,RE.pressure+(RE.tension*.6+RE.boredom*.4)*.04);
+    if(RE.pressure>=.85||RE.freezeStepsLeft<=0){reTriggerRelease();return;}
+    RE.will='frozen';return;
+  }
+  if(RE.aftershockActive){RE.aftershockCycles--;if(RE.aftershockCycles<=0){RE.aftershockActive=false;RE.will='observe';}else RE.will='aftershock';return;}
+  if(RE.override){if(RE.overrideTimer-->0){RE.will=RE.override;return;}else RE.override=null;}
+  if(RE.tension>.9*sens) RE.will='escape';
+  else if(RE.boredom>.7*sens) RE.will='crisis';
+  else if(RE.tension>.75*sens) RE.will='resolve';
+  else RE.will='observe';
+}
+
+function reActuate() {
+  if(RE.freezeActive) return;
+  const auto=parseInt(document.getElementById('reAuto')?.value||40)/100;
+  if(RE.will==='crisis'&&Math.random()<auto){
+    generateAll();
+    reLog('⚡ Crisis: フレーズ再生成');
+    RE.boredom*=0.4; RE.cycle++;
+  } else if(RE.will==='resolve'&&Math.random()<auto*.5){
+    // Pull notes toward vadi
+    const raga=getRaga(); const root=getRoot();
+    const vadi=root+raga.degrees[raga.vadi];
+    melSteps.forEach(s=>{if(s.active&&Math.random()<.25){const d=Math.abs(s.midi-vadi);if(d>2)s.midi+=s.midi<vadi?1:-1;}});
+    buildGrid('mel');
+    reLog('∿ Resolve: →Vadi '+NOTE_NAMES[raga.degrees[raga.vadi]]);
+    RE.cycle++;
+  } else if(RE.will==='aftershock'&&Math.random()<auto*RE.aftershockIntensity*.4){
+    const pool=getScaleMidi(currentRagaKey,getRoot(),2);
+    const idx=Math.floor(Math.random()*melSteps.length);
+    if(pool.length) melSteps[idx].midi=pool[Math.floor(Math.random()*pool.length)].midi;
+    buildGrid('mel');
+  }
+}
+
+function reTriggerRelease() {
+  RE.freezeActive=false; const p=RE.pressure; RE.pressure=0;
+  const auto=parseInt(document.getElementById('reAuto')?.value||40)/100;
+  const n=Math.round(1+p*auto*4);
+  for(let i=0;i<n;i++) if(i%2===0) generateAll();
+  reLog(`💥 解放 (${(p*100).toFixed(0)}%)`);
+  RE.aftershockActive=true; RE.aftershockCycles=Math.round(2+p*5); RE.aftershockIntensity=p;
+  RE.will='aftershock'; RE.cycle++;
+  const btn=document.getElementById('reBtnFreeze'); if(btn){btn.style.borderColor='rgba(255,107,53,.35)';btn.style.color='var(--re-c)';btn.textContent='❄ Freeze';}
+}
+
+function reOverride(type) {
+  if(type==='freeze'){
+    if(RE.freezeActive){reTriggerRelease();return;}
+    RE.freezeActive=true;RE.freezeStepsLeft=24;RE.pressure=0;RE.will='frozen';
+    const btn=document.getElementById('reBtnFreeze');if(btn){btn.style.borderColor='rgba(255,107,53,.7)';btn.style.color='#ffa040';}
+    reLog('❄ Freeze開始');
+  } else if(type==='crisis'){RE.override='crisis';RE.overrideTimer=6;reActuate();}
+  else{RE.override='resolve';RE.overrideTimer=12;reActuate();}
+}
+
+function reLog(msg){const log=document.getElementById('reLog');if(!log)return;const s=document.createElement('span');s.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;s.style.cssText='color:rgba(255,107,53,.85);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>4)log.removeChild(log.lastChild);}
+
+function reDrawCanvas(){const cv=document.getElementById('reCanvas');if(!cv)return;const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=44;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,44);RE.tensionHistory.push(RE.tension);if(RE.tensionHistory.length>W)RE.tensionHistory.shift();const h=RE.tensionHistory;if(h.length>2){ctx.beginPath();h.forEach((v,i)=>{const x=(i/h.length)*W,y=44-v*40-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.strokeStyle='rgba(255,107,53,.8)';ctx.lineWidth=1.5;ctx.stroke();ctx.lineTo(W,44);ctx.lineTo(0,44);ctx.closePath();const g=ctx.createLinearGradient(0,0,0,44);g.addColorStop(0,'rgba(255,107,53,.22)');g.addColorStop(1,'rgba(255,107,53,.01)');ctx.fillStyle=g;ctx.fill();}if(RE.freezeActive){ctx.fillStyle=`rgba(255,107,53,${RE.pressure*.15})`;ctx.fillRect(0,0,W,44);}}
+
+function reUpdateUI(){
+  const g=(id,v)=>{const el=document.getElementById(id);if(el)el.style.width=(v*100).toFixed(0)+'%';};
+  g('reTF',RE.tension);g('reBF',RE.boredom);g('reMF',RE.momentum);
+  const tv=document.getElementById('reTV'),bv=document.getElementById('reBV'),mv=document.getElementById('reMV');
+  if(tv)tv.textContent=(RE.tension*100).toFixed(0);if(bv)bv.textContent=(RE.boredom*100).toFixed(0);if(mv)mv.textContent=(RE.momentum*100).toFixed(0);
+  const wl={observe:'観測中',crisis:'⚡危機',resolve:`∿→${NOTE_NAMES[getRaga().degrees[getRaga().vadi]]}(Vadi)`,frozen:`❄${(RE.pressure*100).toFixed(0)}%`,escape:'↑逃走',aftershock:`💥余韻${RE.aftershockCycles}`};
+  const w=document.getElementById('reWill');if(w)w.textContent=wl[RE.will]||RE.will;
+  const fb=document.getElementById('reBtnFreeze');if(fb&&RE.freezeActive){const p=RE.pressure;fb.textContent=`❄ ${(p*100).toFixed(0)}%`;fb.style.borderColor=p<.5?'rgba(255,107,53,.5)':p<.8?'rgba(255,107,53,.8)':'rgba(255,61,127,.9)';}
+  const mt=document.getElementById('miniT'),mb=document.getElementById('miniB'),mw=document.getElementById('miniWill');
+  if(mt)mt.style.width=(RE.tension*100).toFixed(0)+'%';if(mb)mb.style.width=(RE.boredom*100).toFixed(0)+'%';
+  if(mw){const icons={observe:'○',crisis:'⚡',resolve:'∿',frozen:'❄',escape:'↑',aftershock:'💥'};mw.textContent=icons[RE.will]||'○';}
+}
+
+function reReset(){RE.tension=0;RE.boredom=0;RE.momentum=0;RE.will='observe';RE.override=null;RE.overrideTimer=0;RE.freezeActive=false;RE.freezeStepsLeft=0;RE.pressure=0;RE.aftershockActive=false;RE.aftershockCycles=0;RE.pitchHistory=[];RE.tensionHistory=[];RE.cycle=0;RE.patternHash=[];RE.tickCount=0;}
+
+let _reTickCount=0;
+function reTick(){
+  if(!playing)return; _reTickCount++;
+  reComputeTension();reComputeMomentum();
+  if(_reTickCount%8===0){reComputeBoredom();reUpdateWill();reActuate();}
+  if(_reTickCount%12===0){reUpdateUI();reDrawCanvas();}
+}
+
+// ═══════════════════════════════════════════════════════
+//  ② SHADOW SCORE — Alap→Jhor→Jhala→Gat引力場
+// ═══════════════════════════════════════════════════════
+const RAGA_ARC = [
+  {id:0,name:'Ālāp',  color:'rgba(79,195,247',  densityTarget:.40,velMult:.45,dur:20,section:'alap'},
+  {id:1,name:'Jhor',  color:'rgba(192,136,80',  densityTarget:.62,velMult:.65,dur:20,section:'jhor'},
+  {id:2,name:'Jhālā', color:'rgba(200,168,80',  densityTarget:.82,velMult:.85,dur:12,section:'jhala'},
+  {id:3,name:'Gat',   color:'rgba(96,136,112',  densityTarget:.70,velMult:.75,dur:20,section:'gat'},
+];
+let autoArc = true;
+const SS = {section:0,stepInSec:0,pull:0,drift:0,override:null,overrideTimer:0,driftHistory:[],loopCount:0};
+
+function ssComputeDrift(){
+  const sec=RAGA_ARC[SS.section];
+  const activeDensity=melSteps.filter(s=>s.active).length/melSteps.length;
+  SS.drift=Math.abs(activeDensity-sec.densityTarget);
+  SS.pull=SS.pull*.8+Math.min(1,SS.drift*(parseInt(document.getElementById('ssStr')?.value||50)/100))*.2;
+}
+
+function ssApplyGravity(){
+  if(SS.override==='resist') return;
+  const auto=parseInt(document.getElementById('reAuto')?.value||40)/100;
+  if(SS.pull<0.15||Math.random()>SS.pull*auto*1.2) return;
+  const sec=RAGA_ARC[SS.section];
+  const curDen=melSteps.filter(s=>s.active).length/melSteps.length;
+  const idx=Math.floor(Math.random()*melSteps.length);
+  if(curDen<sec.densityTarget) melSteps[idx].active=true;
+  else if(curDen>sec.densityTarget+0.1) melSteps[idx].active=false;
+  melSteps[idx].vel=melSteps[idx].vel*.85+sec.velMult*.15;
+  buildGrid('mel');
+  ssLog(`⬤ Pull(${sec.name}): density→${(sec.densityTarget*100).toFixed(0)}%`);
+}
+
+function ssAdvanceSection(){if(!autoArc)return;
+  const auto=parseInt(document.getElementById('ssAdv')?.value||65)/100;
+  if(Math.random()>auto) return;
+  SS.stepInSec++;
+  if(SS.stepInSec>=RAGA_ARC[SS.section].dur){
+    SS.section=(SS.section+1)%RAGA_ARC.length;
+    if(SS.section===0) SS.loopCount++;
+    SS.stepInSec=0;
+    const newSec=RAGA_ARC[SS.section];
+    jumpToSection(newSec.section);
+    ssUpdateUI();
+    ssLog(`→ ${newSec.name}`);
+  }
+}
+
+function ssJumpTo(i){SS.section=i;SS.stepInSec=0;jumpToSection(RAGA_ARC[i].section);ssUpdateUI();ssLog(`👤 Jump: ${RAGA_ARC[i].name}`);}
+function ssOverride(t){SS.override=t;SS.overrideTimer=t==='skip'?1:12;if(t==='skip'){ssJumpTo((SS.section+1)%RAGA_ARC.length);SS.override=null;}}
+function ssReset(){SS.section=0;SS.stepInSec=0;SS.pull=0;SS.drift=0;SS.override=null;SS.driftHistory=[];SS.loopCount=0;}
+
+function ssUpdateUI(){
+  RAGA_ARC.forEach((s,i)=>{const el=document.getElementById('ss'+i);if(el)el.style.outline=i===SS.section?'2px solid rgba(79,195,247,.7)':'';});
+  const l=document.getElementById('ssLabel');if(l)l.textContent=RAGA_ARC[SS.section].name;
+  const sp=document.getElementById('ssStep');if(sp)sp.textContent=`step ${SS.stepInSec}/${RAGA_ARC[SS.section].dur}`;
+  const pf=document.getElementById('ssPullF'),df=document.getElementById('ssDriftF');
+  if(pf)pf.style.width=(SS.pull*100).toFixed(0)+'%';if(df)df.style.width=(SS.drift*100).toFixed(0)+'%';
+  const pv=document.getElementById('ssPullV'),dv=document.getElementById('ssDriftV');
+  if(pv)pv.textContent=(SS.pull*100).toFixed(0);if(dv)dv.textContent=(SS.drift*100).toFixed(0);
+  const ms=document.getElementById('miniS');if(ms)ms.style.width=(SS.pull*100).toFixed(0)+'%';
+}
+
+function ssDrawCanvas(){const cv=document.getElementById('ssCanvas');if(!cv)return;const W=cv.parentElement?.offsetWidth||180;cv.width=W;cv.height=44;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,44);const sec=RAGA_ARC[SS.section];const g=ctx.createLinearGradient(0,0,W,0);g.addColorStop(0,`${sec.color},.08)`);g.addColorStop(1,`${sec.color},.02)`);ctx.fillStyle=g;ctx.fillRect(0,0,W,44);SS.driftHistory.push(SS.drift);if(SS.driftHistory.length>W)SS.driftHistory.shift();if(SS.driftHistory.length>2){ctx.beginPath();SS.driftHistory.forEach((v,i)=>{const x=(i/SS.driftHistory.length)*W,y=44-v*40-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.strokeStyle=`${sec.color},.6)`;ctx.lineWidth=1.5;ctx.stroke();}const prog=SS.stepInSec/RAGA_ARC[SS.section].dur;ctx.fillStyle=`${sec.color},.18)`;ctx.fillRect(0,39,W*prog,5);ctx.fillStyle=`${sec.color},.7)`;ctx.font='italic 10px "Cormorant Garamond"';ctx.fillText(sec.name,5,36);}
+
+function ssLog(msg){const log=document.getElementById('ssLog');if(!log)return;log.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;}
+
+let _ssTickCount=0;
+function ssTick(){if(!playing)return;_ssTickCount++;ssComputeDrift();if(_ssTickCount%10===0){ssApplyGravity();if(melIdx===0)ssAdvanceSection();}if(_ssTickCount%12===0){ssUpdateUI();ssDrawCanvas();if(SS.override&&SS.overrideTimer-->0){}else SS.override=null;}}
+
+// ═══════════════════════════════════════════════════════
+//  ③ CROSS-POLLINATION — 他作曲家DNA注入
+// ═══════════════════════════════════════════════════════
+const CP = { dna:{ raga:1.0, gismonti:0.0, jarrett:0.0, hisaishi:0.0 } };
+const CP_DNA = {
+  raga:     { silenceP:.25, velVar:.3, densityBias:.65, rubatoP:.3, stepBias:'raga' },
+  gismonti: { silenceP:.12, velVar:.25, densityBias:.85, rubatoP:.15, stepBias:'frevo' },
+  jarrett:  { silenceP:.38, velVar:.42, densityBias:.52, rubatoP:.65, stepBias:'free' },
+  hisaishi: { silenceP:.24, velVar:.2, densityBias:.62, rubatoP:.3, stepBias:'lyrical' },
+};
+
+function cpMixedGenome(){
+  const r=CP.dna.raga,g=CP.dna.gismonti,j=CP.dna.jarrett,h=CP.dna.hisaishi;
+  const tot=r+g+j+h||1;
+  const mix=k=>(r*CP_DNA.raga[k]+g*CP_DNA.gismonti[k]+j*CP_DNA.jarrett[k]+h*CP_DNA.hisaishi[k])/tot;
+  return{silenceP:mix('silenceP'),velVar:mix('velVar'),densityBias:mix('densityBias'),rubatoP:mix('rubatoP'),
+    hasGismonti:g>0.3,hasJarrett:j>0.3,hasHisaishi:h>0.3,wR:r/tot,wG:g/tot,wJ:j/tot,wH:h/tot};
+}
+
+function cpActuate(){
+  const mut=parseInt(document.getElementById('cpMut')?.value||20)/100;
+  if(Math.random()>mut) return;
+  const genome=cpMixedGenome();
+  const pool=getScaleMidi(currentRagaKey,getRoot(),2);
+  melSteps.forEach(s=>{
+    if(Math.random()>0.2) return;
+    if(Math.random()<genome.silenceP*.3){s.active=false;return;}
+    if(!s.active&&Math.random()<genome.densityBias*.3) s.active=true;
+    if(s.active){
+      s.vel=Math.max(.1,Math.min(1,s.vel*.8+(0.4+(Math.random()-.5)*genome.velVar*2)*.2));
+      if(genome.hasGismonti&&Math.random()<CP.dna.gismonti*.35){s.ornament='gamak';}
+      if(genome.hasJarrett&&Math.random()<CP.dna.jarrett*.3){s.active=Math.random()>.4;}
+      if(genome.hasHisaishi&&pool.length&&Math.random()<CP.dna.hisaishi*.25){
+        const lydDeg=6; const lydMidi=getRoot()+lydDeg;
+        const c=pool.reduce((b,p)=>Math.abs((p.midi%12)-(lydMidi%12))<Math.abs((b.midi%12)-(lydMidi%12))?p:b,pool[0]);
+        if(Math.abs(s.midi-c.midi)<=4) s.midi+=s.midi<c.midi?1:-1;
+      }
+    }
+  });
+  buildGrid('mel');
+  cpUpdateTraits(genome);
+}
+
+function cpUpdateDNA(){
+  const r=parseInt(document.getElementById('cpPure')?.value||100)/100;
+  const g=parseInt(document.getElementById('cpGis')?.value||0)/100;
+  const j=parseInt(document.getElementById('cpJar')?.value||0)/100;
+  const h=parseInt(document.getElementById('cpHis')?.value||0)/100;
+  CP.dna.raga=r;CP.dna.gismonti=g;CP.dna.jarrett=j;CP.dna.hisaishi=h;
+  document.getElementById('cpPureV').textContent=Math.round(r*100);
+  document.getElementById('cpGisV').textContent=Math.round(g*100);
+  document.getElementById('cpJarV').textContent=Math.round(j*100);
+  document.getElementById('cpHisV').textContent=Math.round(h*100);
+  cpUpdateTraits(cpMixedGenome());
+}
+
+function cpUpdateTraits(g){
+  const t=[];
+  if(g.wR>0.5) t.push(`<span style="color:var(--gold)">♩ Raga purity (${(g.wR*100).toFixed(0)}%)</span>`);
+  if(g.hasGismonti) t.push(`<span style="color:var(--sage)">⚡ Gamak density</span>`);
+  if(g.hasJarrett) t.push(`<span style="color:#967ed0">∿ Jarrett silence</span>`);
+  if(g.hasHisaishi) t.push(`<span style="color:var(--copper)">♬ Lydian gravity</span>`);
+  if(!t.length) t.push(`<span style="color:rgba(200,168,80,.4)">— 純粋Raga —</span>`);
+  const el=document.getElementById('cpTraits');if(el)el.innerHTML=t.join('<br>');
+}
+
+function cpInject(target){
+  if(target==='gismonti'){document.getElementById('cpGis').value=40;document.getElementById('cpPure').value=60;}
+  else if(target==='jarrett'){document.getElementById('cpJar').value=40;document.getElementById('cpPure').value=60;}
+  else if(target==='hisaishi'){document.getElementById('cpHis').value=40;document.getElementById('cpPure').value=60;}
+  else{document.getElementById('cpPure').value=100;document.getElementById('cpGis').value=0;document.getElementById('cpJar').value=0;document.getElementById('cpHis').value=0;}
+  cpUpdateDNA();
+}
+
+function cpDrawCanvas(){const cv=document.getElementById('cpCanvas');if(!cv)return;const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=44;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,44);const t=Date.now()/1000;[{w:CP.dna.raga,c:'rgba(200,168,80'},{w:CP.dna.gismonti,c:'rgba(96,136,112'},{w:CP.dna.jarrett,c:'rgba(150,126,208'},{w:CP.dna.hisaishi,c:'rgba(176,96,64'}].forEach((s,si)=>{if(s.w<.02)return;ctx.beginPath();for(let x=0;x<W;x+=2){const a=(x/W)*Math.PI*4+t*.8+si*Math.PI*.5,y=22+Math.sin(a)*14*s.w;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.strokeStyle=`${s.c},${s.w*.8})`;ctx.lineWidth=1.5;ctx.stroke();});}
+
+let _cpTickCount=0;
+function cpTick(){if(!playing)return;_cpTickCount++;if(_cpTickCount%8===0)cpActuate();if(_cpTickCount%16===0)cpDrawCanvas();}
+
+// ═══════════════════════════════════════════════════════
+//  ④ TDM — Temporal Dissonance Map
+// ═══════════════════════════════════════════════════════
+const TDM={noteMemory:[],maxMem:28,map:Array(12).fill(null).map(()=>new Float32Array(16).fill(0)),pitchDis:0,timeDis:0,total:0,noteCount:0};
+const TDM_DIS=[0,.9,.7,.2,.1,.15,.85,.05,.1,.2,.5,.8];
+function tdmTC(s){if(s===0)return 1;if(s<=3)return.85-s*.05;if(s<=8)return.6-(s-4)*.07;return Math.max(.05,.32-(s-9)*.03);}
+function tdmAddNote(midi,step){TDM.noteCount++;TDM.noteMemory.push({midi,t:step});if(TDM.noteMemory.length>TDM.maxMem)TDM.noteMemory.shift();}
+function tdmCompute(){const decay=parseInt(document.getElementById('tdmDecay')?.value||55)/100;const sens=parseInt(document.getElementById('tdmSens')?.value||65)/100;for(let iv=0;iv<12;iv++)for(let td=0;td<16;td++)TDM.map[iv][td]*=(1-decay*.05);const r=TDM.noteMemory.slice(-12);let pS=0,tS=0,pairs=0;for(let i=0;i<r.length;i++)for(let j=i+1;j<r.length;j++){const iv=Math.abs(r[i].midi-r[j].midi)%12,td=Math.min(15,Math.abs(r[i].t-r[j].t));const ps=TDM_DIS[iv]||0,ts=tdmTC(td),comb=ps*ts*sens;TDM.map[iv][td]=Math.min(1,TDM.map[iv][td]+comb*.3);pS+=ps;tS+=ts;pairs++;}if(pairs>0){TDM.pitchDis=TDM.pitchDis*.8+(pS/pairs)*.2;TDM.timeDis=TDM.timeDis*.8+(tS/pairs)*.2;TDM.total=Math.sqrt(TDM.pitchDis*TDM.timeDis)*sens;}}
+function tdmDraw(){const cv=document.getElementById('tdmCanvas');if(!cv)return;const W=cv.parentElement?.offsetWidth||220;cv.width=W;cv.height=68;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,68);const cW=W/12,cH=68/16;for(let iv=0;iv<12;iv++)for(let td=0;td<16;td++){const v=TDM.map[iv][td];if(v<.02)continue;ctx.fillStyle=`rgba(${Math.round(v*240)},${Math.round(128*(1-v))},${Math.round(234*(1-v*.5))},${.3+v*.65})`;ctx.fillRect(iv*cW,td*cH,cW-1,cH-1);if(v>.6){ctx.fillStyle=`rgba(206,147,216,${v*.3})`;ctx.fillRect(iv*cW,td*cH,cW-1,cH-1);}}ctx.strokeStyle='rgba(128,222,234,.07)';ctx.lineWidth=.5;for(let iv=0;iv<=12;iv++){ctx.beginPath();ctx.moveTo(iv*cW,0);ctx.lineTo(iv*cW,68);ctx.stroke();}for(let td=0;td<=16;td++){ctx.beginPath();ctx.moveTo(0,td*cH);ctx.lineTo(W,td*cH);ctx.stroke();}const raga=getRaga();ctx.fillStyle='rgba(200,168,80,.4)';ctx.font='7px "JetBrains Mono"';raga.degrees.forEach((d,i)=>{ctx.fillText(NOTE_NAMES[d],d*cW+1,67);});const cp=Math.round(TDM.pitchDis*11),ct=Math.min(15,Math.round(TDM.timeDis*15));ctx.strokeStyle='rgba(200,168,80,.9)';ctx.lineWidth=1.5;ctx.strokeRect(cp*cW,ct*cH,cW-1,cH-1);}
+function tdmUI(){const p=document.getElementById('tdmP'),t=document.getElementById('tdmT'),tot=document.getElementById('tdmTot'),note=document.getElementById('tdmNote');if(p){p.textContent=(TDM.pitchDis*100).toFixed(0)+'%';p.style.color=TDM.pitchDis>.6?'#ce93d8':'var(--tdm-c)';}if(t){t.textContent=(TDM.timeDis*100).toFixed(0)+'%';t.style.color=TDM.timeDis>.6?'var(--re-b)':'var(--tdm-c)';}if(tot){tot.textContent=(TDM.total*100).toFixed(0)+'%';tot.style.color=TDM.total>.7?'var(--re-b)':TDM.total>.4?'#ce93d8':'var(--tdm-c)';}if(note)note.textContent=TDM.total>.75?'⚡臨界':TDM.total>.5?'↗高緊張':TDM.total>.25?'∿中緊張':'○安定';const ms=document.getElementById('miniD');if(ms)ms.style.width=(TDM.total*100).toFixed(0)+'%';}
+
+let _tdmTickCount=0;
+function tdmTick(){if(!playing)return;_tdmTickCount++;if(_tdmTickCount%5===0)tdmCompute();if(_tdmTickCount%10===0){tdmUI();tdmDraw();}}
+
+// ═══════════════════════════════════════════════════════
+//  ENGINE DOCK — tab switching
+// ═══════════════════════════════════════════════════════
+(function(){
+  document.querySelectorAll('.dock-tab[data-panel]').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      const p=tab.dataset.panel;
+      if(tab.classList.contains('active')){toggleDock();return;}
+      document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.dock-panel').forEach(p2=>p2.classList.remove('active'));
+      const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');
+      const panels=document.getElementById('dockPanels');
+      if(panels){panels.classList.remove('collapsed');document.getElementById('dockColBtn').textContent='▲';}
+    });
+  });
+})();
+let _dockOpen=true;
+function toggleDock(){_dockOpen=!_dockOpen;const p=document.getElementById('dockPanels'),b=document.getElementById('dockColBtn');if(p)p.classList.toggle('collapsed',!_dockOpen);if(b)b.textContent=_dockOpen?'▲':'▼';}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  TABLA ENGINE — Tala + Bol生成システム
+// ═══════════════════════════════════════════════════════
+
+// Tala定義: [名前, 拍数, ビバーグ(区切り), Sam(1-indexed強拍位置)]
+const TALAS = {
+  tintal:  { name:'Tintal',  beats:16, vibhag:[4,4,4,4],   sam:[1,5,13],    khali:[9] },
+  ektal:   { name:'Ektal',   beats:12, vibhag:[2,2,2,2,2,2],sam:[1,5],      khali:[3,7,9,11] },
+  rupak:   { name:'Rupak',   beats:7,  vibhag:[3,2,2],      sam:[1],         khali:[] },
+  jhaptal: { name:'Jhaptal', beats:10, vibhag:[2,3,2,3],    sam:[1,3],       khali:[6,8] },
+  keherwa: { name:'Keherwa', beats:8,  vibhag:[4,4],        sam:[1,5],       khali:[5] },
+};
+
+// Bol (打音) 定義
+// type: 'dha'=低音+高音, 'dhin'=共鳴, 'tin'=高音, 'na'=タンバーン高音, 'ge'=低音, 'ke'=低音軽, 'rest'=休符
+const BOLS = {
+  Dha:  { type:'dha',  vel:1.0,  midi:'bolDha',  color:'var(--dawn)' },
+  Dhin: { type:'dhin', vel:0.85, midi:'bolDha',  color:'var(--copper)' },
+  Tin:  { type:'tin',  vel:0.75, midi:'bolTin',  color:'var(--gold)' },
+  Na:   { type:'na',   vel:0.65, midi:'bolTin',  color:'var(--gold)' },
+  Ge:   { type:'ge',   vel:0.55, midi:'bolGe',   color:'var(--sage)' },
+  Ke:   { type:'ke',   vel:0.40, midi:'bolGe',   color:'var(--sage)' },
+  Ta:   { type:'ta',   vel:0.70, midi:'bolTin',  color:'var(--morning)' },
+  '—':  { type:'rest', vel:0,    midi:null,      color:'rgba(92,96,128,.3)' },
+};
+
+// セクション別Bolパターン重み
+const SECTION_BOL_WEIGHTS = {
+  alap:  { Dha:0, Dhin:0, Tin:0, Na:0, Ge:0.1, Ke:0.1, Ta:0, '—':0.8 },  // ほぼ無音
+  jhor:  { Dha:0.1, Dhin:0.1, Tin:0, Na:0, Ge:0.3, Ke:0.3, Ta:0, '—':0.2 },
+  jhala: { Dha:0.2, Dhin:0.15, Tin:0.15, Na:0.1, Ge:0.1, Ke:0.1, Ta:0.1, '—':0.1 },
+  gat:   { Dha:0.25, Dhin:0.2, Tin:0.15, Na:0.1, Ge:0.1, Ke:0.1, Ta:0.05, '—':0.05 },
+};
+
+// Gismontiのリズムパターン（感染元）
+const GISMONTI_RHYTHMS = [
+  [1,0,1,1,0,1,0,1, 1,0,1,0,1,1,0,1],  // Frevo 16
+  [1,0,1,0,1,1,0,0, 1,0,1,1,0,0,1,0],
+  [1,1,0,1,0,1,1,0, 1,1,0,0,1,0,1,0],
+];
+
+let tablaSteps = [];
+let tablaLen   = 16;
+let tablaIdx   = 0;
+let currentTala = 'tintal';
+
+// 感染バッファ（Gismonti→Tabla）
+let tablaFrevoBuffer = new Array(16).fill(0); // 0-1: 各位置の感染度
+
+function onTalaChange() {
+  currentTala = document.getElementById('talaSel').value;
+  const tala = TALAS[currentTala];
+  document.getElementById('talaNameDisplay').textContent = tala.name;
+  tablaLen = tala.beats;
+  document.getElementById('tablaStepsSel').value = tala.beats;
+  updateTalaDisplay();
+  generateTabla();
+}
+
+function updateTalaDisplay() {
+  const tala = TALAS[currentTala];
+  const el = document.getElementById('talaStructDisplay');
+  if(!el) return;
+  // vibhagの区切りを | で表現
+  let str = '';
+  let pos = 1;
+  tala.vibhag.forEach((len, vi) => {
+    const isSam = tala.sam.includes(pos);
+    const isKhali = tala.khali.includes(pos);
+    str += `<span style="color:${isSam?'var(--gold)':isKhali?'rgba(92,96,128,.5)':'var(--dawn)'}">${isSam?'X':isKhali?'○':pos}</span>`;
+    for(let k=1;k<len;k++) {
+      str += `<span style="color:var(--dim);opacity:.7"> ${pos+k}</span>`;
+    }
+    if(vi < tala.vibhag.length-1) str += '<span style="color:rgba(200,168,80,.4)"> | </span>';
+    pos += len;
+  });
+  el.innerHTML = str;
+}
+
+function generateTabla() {
+  const tala = TALAS[currentTala];
+  const density = parseInt(document.getElementById('tablaDens')?.value||70)/100;
+  const variation = parseInt(document.getElementById('tablaVar')?.value||30)/100;
+  const sec = currentSection;
+  const weights = SECTION_BOL_WEIGHTS[sec] || SECTION_BOL_WEIGHTS.gat;
+  const frevoInfect = parseInt(document.getElementById('tablaFrevoInfect')?.value||0)/100;
+
+  tablaLen = tala.beats;
+  tablaSteps = [];
+
+  // ベースパターンをTalaから生成
+  for(let i=0; i<tablaLen; i++) {
+    const beat = i + 1;
+    const isSam   = tala.sam.includes(beat);
+    const isKhali = tala.khali.includes(beat);
+    const isFirst = i === 0;
+
+    // 各位置でBolを選択
+    let bol;
+    if(isFirst) {
+      bol = 'Dha'; // Samは常にDha
+    } else if(isSam) {
+      bol = Math.random() < 0.7 ? 'Dha' : 'Tin';
+    } else if(isKhali) {
+      // Khali（空拍）はTin/Na/低音系
+      bol = Math.random() < 0.5 ? 'Tin' : Math.random() < 0.5 ? 'Na' : 'Ke';
+    } else {
+      // 通常拍: sectional weightで選ぶ
+      const r = Math.random();
+      let cum = 0;
+      bol = '—';
+      for(const [b, w] of Object.entries(weights)) {
+        cum += w;
+        if(r < cum) { bol = b; break; }
+      }
+      // densityで間引き
+      if(Math.random() > density && bol !== '—') bol = '—';
+    }
+
+    // Frevo感染: Gismontiリズムの1/0パターンで上書き
+    if(frevoInfect > 0) {
+      const frevoPat = GISMONTI_RHYTHMS[0];
+      const frevoPos = i % frevoPat.length;
+      const infectAmt = frevoInfect * tablaFrevoBuffer[frevoPos];
+      if(Math.random() < infectAmt) {
+        bol = frevoPat[frevoPos] ? 'Ge' : '—';
+      }
+    }
+
+    // Variation: ランダムにBolを差し替え
+    if(variation > 0 && bol !== '—' && Math.random() < variation * 0.3) {
+      const alts = ['Dhin','Ta','Ge','Ke'];
+      bol = alts[Math.floor(Math.random()*alts.length)];
+    }
+
+    const bolDef = BOLS[bol] || BOLS['—'];
+    const velBase = parseInt(document.getElementById('tablaVel')?.value||65)/100;
+    tablaSteps.push({
+      bol, active: bol !== '—',
+      vel: bolDef.vel * velBase * (0.85 + Math.random()*0.3),
+      midi: bolDef.midi ? parseInt(document.getElementById(bolDef.midi)?.value||36) : null,
+      isSam: isFirst || isSam,
+      isKhali,
+      color: bolDef.color,
+    });
+  }
+
+  buildTablaGrid();
+  updateBolDisplay();
+}
+
+function buildTablaGrid() {
+  const el = document.getElementById('tablaGrid'); if(!el) return;
+  el.innerHTML = '';
+  const tala = TALAS[currentTala];
+
+  tablaSteps.forEach((s, i) => {
+    const beat = i + 1;
+    const isSam   = tala.sam.includes(beat) || i === 0;
+    const isKhali = tala.khali.includes(beat);
+
+    const div = document.createElement('div');
+    div.className = 'step' + (i===0||tala.vibhag.reduce((acc,v,vi)=>{
+      let sum=0; for(let k=0;k<=vi;k++) sum+=tala.vibhag[k]; return acc||sum===beat; },false) ? ' bar4':'');
+    div.id = `tablaStep${i}`;
+
+    const h = s.active ? 4 + Math.round(s.vel * 28) : 3;
+    const c = s.active ? s.color : 'rgba(255,255,255,.03)';
+    const samMark = isSam ? '<span style="position:absolute;top:1px;left:2px;font-size:.26rem;color:var(--gold);opacity:.7">X</span>' : '';
+    const khaliMark = isKhali ? '<span style="position:absolute;top:1px;left:2px;font-size:.26rem;color:rgba(92,96,128,.5)">○</span>' : '';
+
+    div.innerHTML = `
+      ${samMark}${khaliMark}
+      <span class="step-note${s.active?' active-note':''}" style="font-size:.62rem;font-family:'Cormorant Garamond',serif;color:${s.active?s.color:'var(--dim)'}">${s.bol}</span>
+      <div class="step-bar" style="height:${h}px;background:${c}"></div>
+      <span class="step-num">${beat}</span>`;
+
+    div.style.position = 'relative';
+    div.addEventListener('click', () => {
+      pushUndo();
+      s.active = !s.active;
+      if(s.active && s.bol === '—') {
+        s.bol = 'Ge'; s.color = BOLS.Ge.color;
+        s.midi = parseInt(document.getElementById('bolGe')?.value||41);
+      }
+      buildTablaGrid();
+      updateBolDisplay();
+    });
+    div.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      // 右クリックでBolをローテーション
+      const bolList = ['Dha','Dhin','Tin','Na','Ge','Ke','Ta','—'];
+      const idx2 = bolList.indexOf(s.bol);
+      s.bol = bolList[(idx2+1) % bolList.length];
+      const bolDef = BOLS[s.bol] || BOLS['—'];
+      s.active = s.bol !== '—';
+      s.color = bolDef.color;
+      s.midi = bolDef.midi ? parseInt(document.getElementById(bolDef.midi)?.value||36) : null;
+      buildTablaGrid();
+      updateBolDisplay();
+    });
+    el.appendChild(div);
+  });
+
+  const info = document.getElementById('tablaInfo');
+  if(info) info.textContent = `${tablaSteps.length} steps · ${tablaSteps.filter(s=>s.active).length} bols`;
+
+  // Draw tabla curve
+  drawTablaCurve();
+
+  // Sam display
+  const tala2 = TALAS[currentTala];
+  const samEl = document.getElementById('samDisplay');
+  if(samEl) samEl.textContent = `Sam: ${tala2.sam.join(',')} | Khali: ${tala2.khali.join(',') || '—'}`;
+}
+
+function drawTablaCurve() {
+  const cv = document.getElementById('tablaCurve'); if(!cv) return;
+  if(!cv.getContext) return;
+  const W=cv.width, H=cv.height;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const active = tablaSteps.filter(s=>s.active);
+  if(active.length < 2) return;
+  ctx.beginPath();
+  active.forEach((s,i) => {
+    const x=(i/(active.length-1))*W, y=H-(s.vel*(H-4))-2;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(208,112,80,.7)'; ctx.lineWidth=1.5; ctx.stroke();
+}
+
+function updateBolDisplay() {
+  const el = document.getElementById('bolDisplay'); if(!el) return;
+  const bolStr = tablaSteps.map(s=>s.bol==='—'?'·':s.bol).join(' ');
+  el.textContent = bolStr.length > 60 ? bolStr.slice(0,60)+'…' : bolStr;
+}
+
+// Tabla MIDI送信 (tick内から呼ぶ)
+function sendTablaStep() {
+  if(!tablaSteps.length || !midiOut) return;
+  const s = tablaSteps[tablaIdx % tablaLen];
+  if(!s || !s.active || !s.midi) return;
+
+  const ch = (parseInt(document.getElementById('tablaCh')?.value||3)-1);
+  const stepMs = 60000 / getBpm() / 4;
+
+  // セクション別Volume
+  const secMix = parseInt(document.getElementById('tablaSecMix')?.value||70)/100;
+  const secVol = currentSection==='alap' ? 0.15*secMix : currentSection==='jhor' ? 0.4*secMix : currentSection==='jhala' ? 0.9*secMix : secMix;
+  if(secVol < 0.05) return;
+
+  const v = Math.round(s.vel * secVol * 100 + 27);
+  midiOut.send([0x90|ch, s.midi, Math.min(127,v)]);
+  setTimeout(() => { if(midiOut) midiOut.send([0x80|ch, s.midi, 0]); }, stepMs * 0.5);
+
+  // Highlight
+  document.querySelectorAll('#tablaGrid .step').forEach((el,i) => el.classList.toggle('playing', i===tablaIdx));
+}
+
+function cpApplyTablaInfection() {
+  // Gismontiのリズムバッファを更新
+  const infectAmt = parseInt(document.getElementById('tablaFrevoInfect')?.value||0)/100;
+  const pat = GISMONTI_RHYTHMS[Math.floor(Date.now()/5000) % GISMONTI_RHYTHMS.length];
+  tablaFrevoBuffer = tablaFrevoBuffer.map((v,i) => v*0.9 + pat[i%pat.length]*infectAmt*0.1);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CROSS-POLLINATION 深化 — Ali↔Gismonti双方向感染
+// ═══════════════════════════════════════════════════════
+
+const INFECT = {
+  aliToGis: 0,    // 0-1: Ali→Gismonti感染度
+  gisToAli: 0,    // 0-1: Gismonti→Ali感染度
+  history:  [],   // [{t, aliToGis, gisToAli}] 時系列
+  cycleCount: 0,
+};
+
+// Gismonti語法の特徴値（感染元）
+const GISMONTI_DNA = {
+  densityBias: 0.85,
+  intervalBias: [2, 3, 5],   // 好む音程（ST）
+  rhythmDensity: 0.85,
+  silenceP: 0.12,
+  leapP: 0.35,                // 跳躍確率
+};
+
+// Ali Akbar DNA（感染元）
+function getAliDNA() {
+  const raga = getRaga();
+  const root = getRoot();
+  return {
+    vadiDeg:    raga.degrees[raga.vadi],
+    centBias:   raga.cents,
+    microDrift: centOffsets,
+    andolan:    raga.andolan || [],
+    densityBias: currentSection==='alap' ? 0.4 : currentSection==='gat' ? 0.75 : 0.6,
+  };
+}
+
+function cpInfectTick() {
+  if(!playing) return;
+  const rate   = parseInt(document.getElementById('infectRate')?.value||15) / 10000;
+  const str    = parseInt(document.getElementById('infectStr')?.value||40) / 100;
+  const gisAmt = parseInt(document.getElementById('cpGis')?.value||0) / 100;
+
+  // 感染度をゆっくり蓄積（Gismontiが混入しているほど速く感染）
+  INFECT.aliToGis = Math.min(1, INFECT.aliToGis + rate * gisAmt);
+  INFECT.gisToAli = Math.min(1, INFECT.gisToAli + rate * (1-gisAmt) * 0.5);
+
+  // 一定周期で実際の感染を適用
+  INFECT.cycleCount++;
+  if(INFECT.cycleCount % 32 !== 0) return;
+
+  const aliDNA = getAliDNA();
+  const infectStr2 = str * Math.min(INFECT.aliToGis, INFECT.gisToAli);
+
+  // Ali→Gismonti: Raga microtonalをmelStepsのcent偏差として浸透
+  if(INFECT.aliToGis > 0.1 && infectStr2 > 0.05) {
+    const microStr = parseInt(document.getElementById('microInfect')?.value||0)/100;
+    melSteps.forEach(s => {
+      if(!s.active) return;
+      const ragaDegIdx = getRaga().degrees.indexOf(s.deg % 12);
+      if(ragaDegIdx >= 0) {
+        const targetCent = centOffsets[s.deg % 12] || 0;
+        // 感染がないとき: 0, 感染が強まると: targetCentに近づく
+        s.cents = (s.cents||0) * (1 - infectStr2*0.1) + targetCent * infectStr2 * 0.1 * microStr;
+      }
+    });
+  }
+
+  // Gismonti→Ali: Frevoのリズム密度をmelStepsに注入
+  if(INFECT.gisToAli > 0.1 && infectStr2 > 0.05) {
+    const pat = GISMONTI_RHYTHMS[Math.floor(INFECT.cycleCount/32) % GISMONTI_RHYTHMS.length];
+    melSteps.forEach((s, i) => {
+      const patPos = i % pat.length;
+      if(Math.random() < infectStr2 * 0.15) {
+        s.active = pat[patPos] === 1;
+      }
+    });
+    buildGrid('mel');
+  }
+
+  // 履歴を記録
+  INFECT.history.push({ t: INFECT.cycleCount, a2g: INFECT.aliToGis, g2a: INFECT.gisToAli });
+  if(INFECT.history.length > 80) INFECT.history.shift();
+
+  // UIを更新
+  updateInfectUI();
+}
+
+function cpResetInfection() {
+  INFECT.aliToGis = 0;
+  INFECT.gisToAli = 0;
+  INFECT.history = [];
+  INFECT.cycleCount = 0;
+  tablaFrevoBuffer = new Array(16).fill(0);
+  updateInfectUI();
+}
+
+function updateInfectUI() {
+  const ab = document.getElementById('infectAtoGBar');
+  const gb = document.getElementById('infectGtoABar');
+  if(ab) ab.style.width = (INFECT.aliToGis*100).toFixed(0)+'%';
+  if(gb) gb.style.width = (INFECT.gisToAli*100).toFixed(0)+'%';
+  drawInfectCanvas();
+}
+
+function drawInfectCanvas() {
+  const cv = document.getElementById('infectCanvas'); if(!cv||!INFECT.history.length) return;
+  const W = cv.parentElement?.offsetWidth||160; cv.width=W; cv.height=36;
+  const ctx = cv.getContext('2d'); ctx.clearRect(0,0,W,36);
+  const h = INFECT.history;
+  if(h.length < 2) return;
+  // Ali→Gis (gold)
+  ctx.beginPath();
+  h.forEach((d,i)=>{ const x=(i/h.length)*W,y=36-d.a2g*32-2; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle='rgba(200,168,80,.7)'; ctx.lineWidth=1.5; ctx.stroke();
+  // Gis→Ali (sage)
+  ctx.beginPath();
+  h.forEach((d,i)=>{ const x=(i/h.length)*W,y=36-d.g2a*32-2; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle='rgba(96,136,112,.7)'; ctx.lineWidth=1.5; ctx.stroke();
+}
+
+// ── captureState/applyStateはTabla・感染状態を含む完全版に統合済み ──
+// ═══════════════════════════════════════════════════════
+
+const UNDO_MAX = 30;
+let _undoStack = [];
+let _redoStack = [];
+
+function captureState() {
+  // ── ヘルパー: id→value (数値) ──
+  const iv = id => { const el=document.getElementById(id); return el ? parseInt(el.value)||0 : 0; };
+  const sv = id => { const el=document.getElementById(id); return el ? el.value : ''; };
+
+  return {
+    // コア
+    ragaKey:        currentRagaKey,
+    rootMidi:       getRoot(),
+    centOffsets:    [...centOffsets],
+    melSteps:       JSON.parse(JSON.stringify(melSteps)),
+    resSteps:       JSON.parse(JSON.stringify(resSteps)),
+    droneSteps:     JSON.parse(JSON.stringify(droneSteps)),
+    melLen, resLen, droneLen,
+    currentSection,
+    // トランスポート
+    bpm:            getBpm(),
+    density:        iv('densitySlider'),
+    rubato:         iv('rubatoSlider'),
+    // 奏法
+    gamakAmt:       iv('gamakAmt'),
+    meendAmt:       iv('meendAmt'),
+    andolanAmt:     iv('andolanAmt'),
+    khatkAmt:       iv('khatkAmt'),
+    // MIDI Channels
+    melCh:          sv('melCh'),
+    resCh:          sv('resCh'),
+    droneCh:        sv('droneCh'),
+    tablaCh:        sv('tablaCh'),
+    melOct:         sv('melOct'),
+    // CP DNA
+    cpPure:         iv('cpPure'),
+    cpGis:          iv('cpGis'),
+    cpJar:          iv('cpJar'),
+    cpHis:          iv('cpHis'),
+    cpMut:          iv('cpMut'),
+    // RE params
+    reAuto:         iv('reAuto'),
+    reTens:         iv('reTens'),
+    // SS params
+    ssStr:          iv('ssStr'),
+    ssAdv:          iv('ssAdv'),
+    // TDM params
+    tdmDecay:       iv('tdmDecay'),
+    tdmSens:        iv('tdmSens'),
+    // Cross-infection
+    infectRate:     iv('infectRate'),
+    infectStr:      iv('infectStr'),
+    microInfect:    iv('microInfect'),
+    // ARC master
+    arcMasterOn,
+    autoArc,
+    // Tabla (拡張で上書きされる — ここではプレースホルダー)
+    tablaSteps:     JSON.parse(JSON.stringify(tablaSteps)),
+    tablaLen,
+    currentTala,
+    tablaDens:      iv('tablaDens'),
+    tablaVar:       iv('tablaVar'),
+    tablaVel:       iv('tablaVel'),
+    tablaFrevoInfect: iv('tablaFrevoInfect'),
+    tablaSecMix:    iv('tablaSecMix'),
+    infectAliToGis: INFECT.aliToGis,
+    infectGisToAli: INFECT.gisToAli,
+  };
+}
+
+function pushUndo() {
+  _undoStack.push(captureState());
+  if(_undoStack.length > UNDO_MAX) _undoStack.shift();
+  _redoStack = []; // 新しい操作でredoをクリア
+  updateUndoButtons();
+}
+
+function applyState(state, skipPush) {
+  // ── ヘルパー: id→setvalue, 任意でラベル更新 ──
+  const set = (id, val, labelId, suffix) => {
+    if(val === undefined || val === null) return;
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.value = val;
+    if(labelId) {
+      const lbl = document.getElementById(labelId);
+      if(lbl) lbl.textContent = (suffix !== undefined) ? val + suffix : val;
+    }
+  };
+
+  // コア
+  currentRagaKey  = state.ragaKey;
+  centOffsets     = [...state.centOffsets];
+  melSteps        = JSON.parse(JSON.stringify(state.melSteps));
+  resSteps        = JSON.parse(JSON.stringify(state.resSteps));
+  droneSteps      = JSON.parse(JSON.stringify(state.droneSteps));
+  melLen          = state.melLen   || melSteps.length;
+  resLen          = state.resLen   || resSteps.length;
+  droneLen        = state.droneLen || droneSteps.length;
+  currentSection  = state.currentSection || 'alap';
+
+  // トランスポート
+  set('rootSel',       state.rootMidi);
+  set('bpmIn',         state.bpm || 80);
+  set('densitySlider', state.density||60, 'densityV', '%');
+  set('rubatoSlider',  state.rubato||25,  'rubatoV',  '%');
+
+  // 奏法スライダー
+  ['gamakAmt','meendAmt','andolanAmt','khatkAmt'].forEach(id => {
+    if(state[id] !== undefined) set(id, state[id], id+'V');
+  });
+
+  // MIDI Channels
+  set('melCh',   state.melCh);
+  set('resCh',   state.resCh);
+  set('droneCh', state.droneCh);
+  set('tablaCh', state.tablaCh);
+  set('melOct',  state.melOct);
+
+  // CP DNA
+  if(state.cpPure !== undefined) {
+    set('cpPure', state.cpPure);
+    set('cpGis',  state.cpGis  || 0);
+    set('cpJar',  state.cpJar  || 0);
+    set('cpHis',  state.cpHis  || 0);
+    set('cpMut',  state.cpMut);
+    cpUpdateDNA();
+  }
+
+  // RE / SS / TDM params
+  set('reAuto',       state.reAuto);
+  set('reTens',       state.reTens);
+  set('ssStr',        state.ssStr);
+  set('ssAdv',        state.ssAdv);
+  set('tdmDecay',     state.tdmDecay);
+  set('tdmSens',      state.tdmSens);
+  set('infectRate',   state.infectRate);
+  set('infectStr',    state.infectStr);
+  set('microInfect',  state.microInfect);
+
+  // ARC master
+  if(state.arcMasterOn !== undefined && state.arcMasterOn !== arcMasterOn) {
+    arcMasterOn = state.arcMasterOn;
+    autoArc = state.autoArc !== undefined ? state.autoArc : arcMasterOn;
+    // ボタンUIを強制更新
+    const btn = document.getElementById('btnAutoArc');
+    if(btn) {
+      if(arcMasterOn){
+        btn.textContent='ARC: ON'; btn.style.color='var(--gold)';
+        btn.style.borderColor='rgba(200,168,80,.5)'; btn.style.background='rgba(200,168,80,.07)';
+      } else {
+        btn.textContent='ARC: OFF'; btn.style.color='var(--dim)';
+        btn.style.borderColor='rgba(92,96,128,.3)'; btn.style.background='transparent';
+      }
+    }
+  }
+
+  // Tabla
+  if(state.tablaSteps) {
+    tablaSteps  = JSON.parse(JSON.stringify(state.tablaSteps));
+    tablaLen    = state.tablaLen || tablaSteps.length || 16;
+    currentTala = state.currentTala || 'tintal';
+    set('talaSel',          currentTala);
+    set('tablaStepsSel',    tablaLen);
+    set('tablaDens',        state.tablaDens);
+    set('tablaVar',         state.tablaVar);
+    set('tablaVel',         state.tablaVel);
+    set('tablaFrevoInfect', state.tablaFrevoInfect);
+    set('tablaSecMix',      state.tablaSecMix);
+    buildTablaGrid();
+    updateTalaDisplay();
+    const tnd = document.getElementById('talaNameDisplay');
+    if(tnd) tnd.textContent = TALAS[currentTala]?.name || 'Tintal';
+  }
+
+  // Infection state
+  if(state.infectAliToGis !== undefined) {
+    INFECT.aliToGis = state.infectAliToGis;
+    INFECT.gisToAli = state.infectGisToAli || 0;
+    updateInfectUI();
+  }
+
+  // Step selectors
+  set('melStepsSel',   melLen);
+  set('resStepsSel',   resLen);
+  set('droneStepsSel', droneLen);
+
+  // Section buttons
+  ['alap','jhor','jhala','gat'].forEach(s => {
+    document.getElementById('sec-'+s)?.classList.toggle('active', s===currentSection);
+  });
+  document.getElementById('sectionLabel').textContent = SECTIONS[currentSection]?.name || 'Ālāp';
+
+  // Raga strip
+  document.querySelectorAll('.raga-chip').forEach(c => {
+    const active = c.dataset.key === currentRagaKey;
+    c.classList.toggle('active', active);
+    const r = RAGAS[c.dataset.key];
+    if(r) { c.style.borderColor = active ? r.color : ''; c.style.color = active ? r.color : ''; }
+  });
+
+  // Re-render
+  buildGrid('mel');
+  buildGrid('res');
+  buildGrid('drone');
+  initCentRows();
+  updateRagaDisplay();
+  updateLcmDisplay();
+  updateUndoButtons();
+}
+
+function undo() {
+  if(!_undoStack.length) return;
+  _redoStack.push(captureState());
+  const state = _undoStack.pop();
+  applyState(state, true);
+}
+
+function redo() {
+  if(!_redoStack.length) return;
+  _undoStack.push(captureState());
+  const state = _redoStack.pop();
+  applyState(state, true);
+}
+
+function updateUndoButtons() {
+  const uBtn = document.getElementById('btnUndo');
+  const rBtn = document.getElementById('btnRedo');
+  if(uBtn) uBtn.style.opacity = _undoStack.length ? '1' : '.3';
+  if(rBtn) rBtn.style.opacity = _redoStack.length ? '1' : '.3';
+}
+
+// キーボードショートカット
+document.addEventListener('keydown', e => {
+  if((e.metaKey||e.ctrlKey) && e.code==='KeyZ') {
+    e.preventDefault();
+    if(e.shiftKey) redo(); else undo();
+  }
+  if((e.metaKey||e.ctrlKey) && e.code==='KeyY') {
+    e.preventDefault(); redo();
+  }
+  if(e.code==='Space' && e.target.tagName!=='INPUT' && e.target.tagName!=='SELECT') {
+    e.preventDefault(); togglePlay();
+  }
+  if(e.code==='KeyG' && e.target.tagName!=='INPUT') {
+    e.preventDefault(); generateAll();
+  }
+  if(e.code==='Digit1' && e.target.tagName!=='INPUT') jumpToSection('alap');
+  if(e.code==='Digit2' && e.target.tagName!=='INPUT') jumpToSection('jhor');
+  if(e.code==='Digit3' && e.target.tagName!=='INPUT') jumpToSection('jhala');
+  if(e.code==='Digit4' && e.target.tagName!=='INPUT') jumpToSection('gat');
+});
+
+// ═══════════════════════════════════════════════════════
+//  SAVE / LOAD STATE — JSON
+// ═══════════════════════════════════════════════════════
+
+function saveStateJSON() {
+  const state = captureState();
+  state._version = '1.0';
+  state._tool = 'AliAkbarKhan-RagaSequencer';
+  state._savedAt = new Date().toISOString();
+  // centOffsets per-degree label付きで保存
+  state.centOffsetLabeled = Object.fromEntries(
+    Object.entries(centOffsets).filter(([,v])=>v!==0).map(([k,v])=>[NOTE_NAMES[k]||k, v])
+  );
+
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  const raga = RAGAS[currentRagaKey];
+  const ts = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+  a.href = URL.createObjectURL(blob);
+  a.download = `raga_${raga.name.replace(/\s/g,'_')}_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function loadStateJSON(event) {
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const state = JSON.parse(e.target.result);
+      if(!state.melSteps || !state.ragaKey) {
+        alert('このJSONはAli Akbar Khan Sequencerのセーブデータではありません');
+        return;
+      }
+      pushUndo(); // 現在の状態をundoスタックに
+      applyState(state, true);
+    } catch(err) {
+      alert('JSONの読み込みに失敗しました: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // 同じファイルを再ロードできるようにリセット
+}
+
+// ── generateAllをundo対応に ──
+const _origGenerateAll = generateAll;
+generateAll = function(mode) {
+  pushUndo();
+  _origGenerateAll(mode);
+  generateTabla();
+};
+
+// ── selectRaga ──
+function selectRaga(key) {
+  pushUndo();
+  currentRagaKey = key;
+  document.querySelectorAll('.raga-chip').forEach(c => {
+    const active = c.dataset.key === key;
+    c.classList.toggle('active', active);
+    const r = RAGAS[c.dataset.key];
+    if(r) { c.style.borderColor = active ? r.color : ''; c.style.color = active ? r.color : ''; }
+  });
+  updateRagaDisplay();
+  generateAll();
+}
+
+// ── onRootChange ──
+function onRootChange() {
+  pushUndo();
+  const root = getRoot();
+  const raga = getRaga();
+  const pool = getScaleMidi(currentRagaKey, root, 2);
+  const oct = parseInt(document.getElementById('melOct')?.value || 0);
+  [melSteps, resSteps].forEach(steps => {
+    steps.forEach(s => {
+      if(!s.midi) return;
+      const pc = ((s.midi - root) % 12 + 12) % 12;
+      const match = pool.find(p => ((p.midi - root) % 12 + 12) % 12 === pc);
+      if(match) s.midi = match.midi;
+    });
+  });
+  buildGrid('mel'); buildGrid('res');
+  initCentRows();
+}
+
+// ── buildGrid ──
+function buildGrid(voice) {
+  const el = document.getElementById(voice+'Grid'); if(!el) return;
+  const steps = voice==='mel' ? melSteps : voice==='res' ? resSteps : droneSteps;
+  const colors = { mel:'var(--gold2)', res:'var(--copper)', drone:'var(--dim)' };
+  const color = colors[voice] || 'var(--gold2)';
+  el.innerHTML = '';
+  steps.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'step' + (i%4===0?' bar4':'') + (s.isVadi?' vadi':'');
+    d.id = `${voice}Step${i}`;
+    const h = s.active ? 4 + Math.round(s.vel*32) : 3;
+    const c = s.active ? (s.isVadi ? 'var(--gold2)' : color) : 'rgba(255,255,255,.03)';
+    const NOTE_NAMES_LOCAL = ['Sa','re','Re','ga','Ga','Ma','ma','Pa','dha','Dha','ni','Ni'];
+    const noteLabel = NOTE_NAMES_LOCAL[s.deg % 12] || '—';
+    const ornSymbol = s.ornament==='gamak'?'~':s.ornament==='meend'?'↗':s.ornament==='andolan'?'≈':s.ornament==='khatka'?'k':'';
+    d.innerHTML = `${ornSymbol?`<span class="step-orn">${ornSymbol}</span>`:''}
+      <span class="step-note${s.active?' on':''}">${noteLabel}</span>
+      <div class="step-bar" style="height:${h}px;background:${c}"></div>
+      <span class="step-num">${i+1}</span>`;
+    d.addEventListener('click', () => { pushUndo(); s.active = !s.active; buildGrid(voice); });
+    d.addEventListener('contextmenu', e => { e.preventDefault(); s.vel = Math.max(0.1, s.vel-0.1); buildGrid(voice); });
+    el.appendChild(d);
+  });
+  const info = document.getElementById(voice+'Info');
+  if(info) info.textContent = `${steps.length} steps · ${steps.filter(s=>s.active).length} active`;
+}
+
+// ── Missing UI functions (stubs for removed elements) ──
+function buildRagaStrip() {
+  const el = document.getElementById('ragaStrip') || document.getElementById('presetList'); if(!el) return;
+  el.innerHTML = '';
+  Object.entries(RAGAS).forEach(([key, raga]) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn' + (key===currentRagaKey?' active':'');
+    btn.dataset.key = key;
+    btn.style.cssText = `font-size:.44rem;padding:.18rem .4rem;text-align:left;border-color:${key===currentRagaKey?raga.color:'var(--bd)'};color:${key===currentRagaKey?raga.color:'var(--dim)'}`;
+    btn.innerHTML = `<span style="font-family:'Cormorant Garamond',serif;font-style:italic">${raga.name}</span>`;
+    btn.onclick = () => selectRaga(key);
+    el.appendChild(btn);
+  });
+}
+function updateRagaDisplay() {
+  const raga = getRaga();
+  buildShrutiGrid();
+  initCentRows();
+  const nd = document.getElementById('ragaName'); if(nd) nd.textContent = raga.name;
+  const md = document.getElementById('ragaMood'); if(md) md.textContent = raga.mood;
+}
+function buildShrutiGrid() {
+  const el = document.getElementById('shrutiGrid'); if(!el) return;
+  const raga = getRaga();
+  el.innerHTML = '';
+  for(let d=0;d<12;d++){
+    const c=document.createElement('div'); c.className='s-cell';
+    const inScale=raga.degrees.includes(d);
+    if(!inScale){c.style.opacity='.2';}
+    else if(d===raga.degrees[raga.vadi])c.classList.add('vadi');
+    else if(d===raga.degrees[raga.samvadi])c.classList.add('samvadi');
+    else c.classList.add('active');
+    const NOTE_N=['Sa','re','Re','ga','Ga','Ma','ma','Pa','dha','Dha','ni','Ni'];
+    c.textContent=NOTE_N[d];
+    el.appendChild(c);
+  }
+}
+function initCentRows() {
+  const raga = getRaga(); const el = document.getElementById('centRows'); if(!el) return;
+  el.innerHTML = '';
+  raga.degrees.forEach((d,i) => {
+    centOffsets[d] = raga.cents[i]||0;
+    const row = document.createElement('div'); row.className='pr';
+    const NOTE_N=['Sa','re','Re','ga','Ga','Ma','ma','Pa','dha','Dha','ni','Ni'];
+    row.innerHTML=`<label style="color:var(--ivory);width:24px">${NOTE_N[d]}</label><input type="range" min="-50" max="50" value="${raga.cents[i]||0}" style="flex:1;accent-color:var(--gold)" oninput="centOffsets[${d}]=parseInt(this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value+'¢'"><span class="dg-val" style="color:var(--gold)">${(raga.cents[i]||0)>0?'+':''}${raga.cents[i]||0}¢</span>`;
+    el.appendChild(row);
+  });
+}
+function drawTimeArc() {}
+function drawTanpuraWheel() {}
+
+
+// ═══════════════════════════════════════════════════════
+//  ARC MASTER TOGGLE — 全自動展開エンジン 一括ON/OFF
+//  制御対象: RE(緊張体), SS(セクション進行), CP(DNA感染),
+//            TDM(時間的不協和), Tabla感染, autoArc(Shadow Score自動進行)
+// ═══════════════════════════════════════════════════════
+let arcMasterOn = true;
+
+function toggleAutoArc(){
+  arcMasterOn = !arcMasterOn;
+  autoArc = arcMasterOn; // Shadow Score自動進行も連動
+  const btn = document.getElementById('btnAutoArc');
+  if(!btn) return;
+  if(arcMasterOn){
+    btn.textContent = 'ARC: ON';
+    btn.style.color = 'var(--gold)';
+    btn.style.borderColor = 'rgba(200,168,80,.5)';
+    btn.style.background = 'rgba(200,168,80,.07)';
+    btn.style.boxShadow = '0 0 8px rgba(200,168,80,.15)';
+  } else {
+    btn.textContent = 'ARC: OFF';
+    btn.style.color = 'var(--dim)';
+    btn.style.borderColor = 'rgba(92,96,128,.3)';
+    btn.style.background = 'transparent';
+    btn.style.boxShadow = '';
+  }
+}
+
+// 各エンジンのtickをARC masterで gate する
+const _origReTick = reTick;
+reTick = function(){ if(!arcMasterOn) return; _origReTick(); };
+
+const _origSsTick = ssTick;
+ssTick = function(){ if(!arcMasterOn) return; _origSsTick(); };
+
+const _origCpTick = cpTick;
+cpTick = function(){ if(!arcMasterOn) return; _origCpTick(); };
+
+const _origTdmTick = tdmTick;
+tdmTick = function(){ if(!arcMasterOn) return; _origTdmTick(); };
+
+const _origCpInfectTick = cpInfectTick;
+cpInfectTick = function(){ if(!arcMasterOn) return; _origCpInfectTick(); };
+function init() {
+  buildRagaStrip();
+  updateRagaDisplay();
+  generateAll();
+  generateTabla();
+  updateTalaDisplay();
+  updateLcmDisplay();
+  initMIDI();
+
+  // ARC ボタン初期状態
+  const arcBtn = document.getElementById('btnAutoArc');
+  if(arcBtn && arcMasterOn){
+    arcBtn.textContent = 'ARC: ON';
+    arcBtn.style.color = 'var(--gold)';
+    arcBtn.style.borderColor = 'rgba(200,168,80,.5)';
+    arcBtn.style.background = 'rgba(200,168,80,.07)';
+    arcBtn.style.boxShadow = '0 0 8px rgba(200,168,80,.15)';
+  }
+
+  // Live param bindings
+  document.getElementById('densitySlider')?.addEventListener('input', ()=>generateAll());
+  ['gamakAmt','meendAmt','andolanAmt','khatkAmt'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('input', ()=>generateAll());
+  });
+}
+
+init();
+</script>
+</body>
+</html>

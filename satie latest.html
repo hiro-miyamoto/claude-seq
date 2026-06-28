@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Erik Satie — Gymnopédie Sequencer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #f5f2ec;
+  --s0:    #edeae2;
+  --s1:    #e4e0d6;
+  --bd:    #d0cabf;
+  --text:  #2a2520;
+  --dim:   #8a8278;
+  --fog:   #b8b0a4;
+  --mel:   #4a6080;
+  --mel2:  #6a88a8;
+  --acc:   #807060;
+  --ennui: #a05040;
+  --meuble:#909888;
+  --gold:  #9a7a40;
+  --paper: #f0ece4;
+  --ink:   #1a1510;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.6;}
+
+header{padding:1.1rem 1.6rem .8rem;border-bottom:1px solid var(--bd);display:flex;align-items:flex-end;gap:1.5rem;position:relative;z-index:10;background:var(--paper);}
+.hdr-name{font-family:'Libre Baskerville',serif;font-size:2rem;font-weight:400;font-style:italic;color:var(--ink);line-height:1;}
+.hdr-sub{font-size:.44rem;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-top:.25rem;}
+.hdr-title{flex:1;}
+
+.ennui-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.22rem;}
+.ennui-label{font-size:.38rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.ennui-outer{width:110px;height:3px;background:var(--s1);border-radius:2px;overflow:hidden;}
+.ennui-fill{height:100%;background:linear-gradient(90deg,var(--mel2),var(--ennui));transition:width .8s ease;width:0%;}
+.ennui-val{font-size:.4rem;color:var(--ennui);font-family:'Libre Baskerville',serif;font-style:italic;}
+
+.rep-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.18rem;}
+.rep-label{font-size:.38rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.rep-count{font-family:'Libre Baskerville',serif;font-size:1.05rem;font-style:italic;color:var(--dim);}
+
+.layout{display:grid;grid-template-columns:215px 1fr;min-height:calc(100vh - 148px);position:relative;z-index:1;}
+.left-panel{border-right:1px solid var(--bd);padding:.65rem;display:flex;flex-direction:column;gap:.45rem;overflow-y:auto;background:var(--paper);}
+.panel{background:var(--s0);border:1px solid var(--bd);border-radius:2px;padding:.5rem .6rem;}
+.panel-title{font-family:'Libre Baskerville',serif;font-style:italic;font-size:.82rem;color:var(--dim);margin-bottom:.4rem;display:flex;align-items:center;gap:.3rem;}
+.panel-title::before{content:'';width:10px;height:1px;background:var(--acc);flex-shrink:0;}
+.pr{display:flex;align-items:center;gap:.3rem;margin-bottom:.18rem;}
+.pr label{font-size:.38rem;color:var(--dim);width:58px;flex-shrink:0;}
+.pr-val{font-size:.38rem;width:22px;text-align:right;flex-shrink:0;color:var(--acc);}
+input[type=range]{height:2px;accent-color:var(--mel);cursor:pointer;flex:1;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.46rem;padding:.1rem .18rem;border-radius:1px;}
+.btn{padding:.16rem .5rem;border:1px solid var(--bd);border-radius:1px;background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.46rem;cursor:pointer;transition:all .12s;}
+.btn:hover{border-color:var(--mel);color:var(--mel);}
+.btn.mel{border-color:rgba(74,96,128,.4);color:var(--mel);background:rgba(74,96,128,.06);}
+.btn.ennui-btn{border-color:rgba(160,80,64,.35);color:var(--ennui);}
+.midi-dot{width:6px;height:6px;border-radius:50%;background:var(--fog);flex-shrink:0;transition:all .3s;}
+.midi-dot.connected{background:var(--meuble);box-shadow:0 0 5px var(--meuble);}
+
+.main-area{display:flex;flex-direction:column;background:var(--bg);}
+.transport{padding:.45rem .9rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.55rem;background:var(--paper);flex-wrap:wrap;}
+
+.phrase-area{flex:1;padding:.75rem .9rem;overflow-y:auto;}
+.voice-block{margin-bottom:1rem;}
+.voice-header{display:flex;align-items:center;gap:.45rem;margin-bottom:.28rem;}
+.voice-label{font-family:'Libre Baskerville',serif;font-size:.82rem;font-style:italic;color:var(--dim);}
+.voice-info{font-size:.36rem;color:var(--fog);margin-left:auto;}
+
+.step-grid{display:flex;gap:3px;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+.step{flex-shrink:0;width:42px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;border-radius:1px;padding:.12rem .08rem;border:1px solid transparent;transition:all .1s;position:relative;}
+.step:hover{border-color:var(--bd);}
+.step.playing{border-color:var(--mel)!important;background:rgba(74,96,128,.05);}
+.step.beat1{border-top:2px solid rgba(208,202,191,.6);}
+.step.beat1.playing{border-top-color:var(--mel);}
+.step.mutated{background:rgba(160,80,64,.03);}
+.step-note{font-family:'Libre Baskerville',serif;font-size:.68rem;font-style:italic;color:var(--dim);line-height:1;}
+.step-note.on{color:var(--ink);}
+.step-bar{width:26px;border-radius:1px;min-height:2px;}
+.step-num{font-size:.27rem;color:var(--fog);}
+.step-mut{position:absolute;top:2px;right:2px;font-size:.2rem;color:var(--ennui);opacity:.55;}
+
+.engine-dock{border-top:1px solid var(--bd);background:var(--paper);position:sticky;bottom:0;z-index:20;}
+.dock-tabbar{display:flex;align-items:stretch;border-bottom:1px solid var(--bd);overflow-x:auto;scrollbar-width:none;}
+.dock-tab{padding:.24rem .5rem;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.4rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.2rem;transition:all .12s;white-space:nowrap;}
+.dock-tab:hover{color:var(--text);}
+.dock-tab.active{color:var(--text);border-bottom-color:var(--mel);}
+.dock-tdot{width:4px;height:4px;border-radius:50%;opacity:.4;}
+.dock-tab.active .dock-tdot{opacity:1;}
+.dock-minibar{display:flex;align-items:center;gap:.38rem;padding:0 .6rem;margin-left:auto;flex-shrink:0;}
+.mini-lbl{font-size:.33rem;color:var(--dim);}
+.mini-bar{width:24px;height:2px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:1px;transition:width .4s;width:0%;}
+.dock-panels{max-height:195px;overflow:hidden;transition:max-height .25s;}
+.dock-panels.collapsed{max-height:0!important;}
+.dock-panel{display:none;padding:.42rem .75rem .55rem;}
+.dock-panel.active{display:block;}
+.dpg{display:grid;gap:.42rem;}
+.dpg-3{grid-template-columns:1fr 1fr 1fr;}
+.dpg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dsub{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.38rem .45rem;}
+.dsub-t{font-family:'Libre Baskerville',serif;font-style:italic;font-size:.75rem;color:var(--dim);margin-bottom:.25rem;padding-left:.22rem;border-left:1px solid var(--acc);}
+.dg-row{display:flex;align-items:center;gap:.25rem;margin-bottom:.14rem;}
+.dg-lbl{font-size:.35rem;color:var(--dim);width:48px;flex-shrink:0;}
+.dg-track{flex:1;height:3px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.dg-fill{height:100%;border-radius:1px;transition:width .3s;width:0%;}
+.dg-val{font-size:.35rem;width:18px;text-align:right;flex-shrink:0;}
+.dg-log{font-size:.36rem;color:var(--dim);line-height:1.9;max-height:58px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-title">
+    <div class="hdr-name">Erik Satie</div>
+    <div class="hdr-sub">Gymnopédie Sequencer · Répétition · Ennui · Meuble · 3/4</div>
+  </div>
+  <div class="rep-wrap">
+    <span class="rep-label">Répétition</span>
+    <span class="rep-count" id="repCount">I</span>
+  </div>
+  <div class="ennui-wrap">
+    <span class="ennui-label">Ennui</span>
+    <div class="ennui-outer"><div class="ennui-fill" id="ennuiFill"></div></div>
+    <span class="ennui-val" id="ennuiVal">0%</span>
+  </div>
+</header>
+
+<div class="layout">
+<div class="left-panel">
+
+  <div class="panel">
+    <div class="panel-title">Gymnopédie</div>
+    <div class="pr"><label>Root</label>
+      <select id="rootSel" onchange="onRootChange()" style="flex:1">
+        <option value="60">C4</option><option value="61">C#4</option><option value="62">D4</option>
+        <option value="63">D#4</option><option value="64">E4</option><option value="65" selected>F4</option>
+        <option value="66">F#4</option><option value="67">G4</option><option value="68">G#4</option>
+        <option value="69">A4</option><option value="70">A#4</option><option value="71">B4</option>
+      </select>
+    </div>
+    <div class="pr"><label>Scale</label>
+      <select id="scaleSel" onchange="onScaleChange()" style="flex:1">
+        <option value="lydian" selected>Lydian</option>
+        <option value="doublelydian">Double Lydian</option>
+        <option value="wholetone">Whole Tone</option>
+        <option value="dorian">Dorian</option>
+        <option value="aeolian">Aeolian</option>
+      </select>
+    </div>
+    <div class="pr"><label>Steps</label>
+      <select id="melStepsSel" onchange="onStepsChange(this.value)" style="flex:1">
+        <option value="9">9 (3×3)</option>
+        <option value="12" selected>12 (3×4)</option>
+        <option value="15">15 (3×5)</option>
+        <option value="18">18 (3×6)</option>
+      </select>
+    </div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="54" min="20" max="120"
+        style="width:46px;font-size:.5rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.08rem .18rem;border-radius:1px">
+      <button class="btn" onclick="tapTempo()" style="font-size:.38rem;padding:.07rem .25rem">TAP</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Répétition</div>
+    <div style="font-size:.38rem;color:var(--dim);line-height:1.8;margin-bottom:.28rem">各ループで旋律がわずかに変容する</div>
+    <div class="pr"><label>Mutation</label><input type="range" id="mutationAmtLeft" min="0" max="100" value="50" oninput="syncMut(this.value)"><span class="pr-val" id="mutationAmtV">50</span></div>
+    <div class="pr"><label>Vel drift</label><input type="range" id="velDrift" min="0" max="100" value="25"><span class="pr-val" id="velDriftV">25</span></div>
+    <div class="pr"><label>Dur drift</label><input type="range" id="durDrift" min="0" max="100" value="20"><span class="pr-val" id="durDriftV">20</span></div>
+  </div>
+
+  <div class="panel" style="border-color:rgba(160,80,64,.2)">
+    <div class="panel-title" style="color:var(--ennui)">Ennui</div>
+    <div style="font-size:.38rem;color:var(--dim);line-height:1.8;margin-bottom:.25rem">倦怠が蓄積すると旋律が沈む</div>
+    <div class="pr"><label>Sensitivity</label><input type="range" id="ennuiSens" min="1" max="100" value="40"><span class="pr-val" id="ennuiSensV" style="color:var(--ennui)">40</span></div>
+    <div class="pr"><label>Sink rate</label><input type="range" id="sinkRate" min="0" max="100" value="30"><span class="pr-val" id="sinkRateV">30</span></div>
+    <div class="pr"><label>Recovery</label><input type="range" id="ennuiRec" min="1" max="100" value="15"><span class="pr-val" id="ennuiRecV">15</span></div>
+    <button onclick="resetEnnui()" class="btn ennui-btn" style="width:100%;margin-top:.28rem;font-size:.42rem;font-style:italic;font-family:'Libre Baskerville',serif">Réveiller</button>
+  </div>
+
+  <div class="panel" style="border-color:rgba(144,152,136,.22)">
+    <div class="panel-title" style="color:var(--meuble)">Musique d'ameublement</div>
+    <div style="font-size:.38rem;color:var(--dim);line-height:1.8;margin-bottom:.25rem">家具音楽 — 空間に溶け込む</div>
+    <div class="pr"><label>Fade</label><input type="range" id="meubleFade" min="0" max="100" value="0"><span class="pr-val" id="meubleFadeV" style="color:var(--meuble)">0</span></div>
+    <div class="pr"><label>Dissolve</label><input type="range" id="meubleDissolve" min="0" max="100" value="0"><span class="pr-val" id="meubleDissolveV">0</span></div>
+    <button onclick="toggleMeuble()" class="btn" id="btnMeuble" style="width:100%;margin-top:.25rem;font-size:.42rem">Ameublement: OFF</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">MIDI</div>
+    <div class="pr" style="margin-bottom:.22rem"><div class="midi-dot" id="midiDot"></div><span id="midiStatus" style="font-size:.42rem;color:var(--dim)">Not connected</span></div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.22rem;font-size:.42rem">↻ Refresh</button>
+    <div class="pr"><label>Out</label><select id="midiDevSel" onchange="selectMidiOut(this.value)" style="flex:1;font-size:.4rem"></select></div>
+    <div class="pr"><label>Mélodie Ch</label><select id="melCh" style="flex:1;font-size:.4rem"><option value="1" selected>Ch 1</option><option value="2">Ch 2</option><option value="3">Ch 3</option><option value="4">Ch 4</option></select></div>
+    <div class="pr"><label>Acc. Ch</label><select id="accCh" style="flex:1;font-size:.4rem"><option value="1">Ch 1</option><option value="2" selected>Ch 2</option><option value="3">Ch 3</option><option value="4">Ch 4</option></select></div>
+    <div class="pr"><label>Clock In</label><select id="midiClockSel" onchange="selectClockIn(this.value)" style="flex:1;font-size:.4rem"><option value="">—</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin:.18rem 0;font-size:.42rem">Slave: OFF</button>
+    <button class="btn mel" onclick="exportMIDI()" style="width:100%;font-size:.42rem">↓ Export MIDI</button>
+  </div>
+
+</div>
+
+<div class="main-area">
+  <div class="transport">
+    <button class="btn mel" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn" onclick="generateAll()">↻ Generate</button>
+    <button class="btn" onclick="mutateNow()" style="color:var(--ennui);font-style:italic;font-family:'Libre Baskerville',serif">Muter</button>
+    <button class="btn" id="btnGeler" onclick="freezePhrase()" style="color:var(--meuble)">Geler</button>
+    <button class="btn" id="btnDegeler" onclick="unfreezePhrase()" style="color:var(--mel2)">Dégeler</button>
+    <div style="display:flex;align-items:center;gap:.35rem;padding:.1rem .5rem;border:1px solid var(--bd);border-radius:1px;background:var(--s0)">
+      <span style="font-family:'Libre Baskerville',serif;font-style:italic;font-size:.52rem;color:var(--dim);white-space:nowrap">変容</span>
+      <input type="range" id="mutationAmt" min="0" max="100" value="50"
+        style="width:80px;height:2px;accent-color:var(--ennui);cursor:pointer"
+        oninput="syncMut(this.value)">
+      <span id="mutAmt2" style="font-size:.42rem;color:var(--ennui);width:20px">50</span>
+    </div>
+    <button class="btn" id="btnUndo" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnRedo" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="saveStateJSON()" style="color:var(--mel)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--acc)">↑ Load<input type="file" accept=".json" onchange="loadStateJSON(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem">
+      <span style="font-size:.4rem;color:var(--dim)" id="beatDisplay">—</span>
+      <span style="font-family:'Libre Baskerville',serif;font-size:.48rem;font-style:italic;color:var(--mel)" id="scaleDisplay">Lydian</span>
+    </div>
+  </div>
+
+  <div class="phrase-area">
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label">Mélodie</span>
+        <canvas id="melCurve" width="130" height="20" style="border-radius:1px;background:var(--s0)"></canvas>
+        <span style="font-size:.38rem;color:var(--ennui);margin-left:.35rem" id="melRepLabel"></span>
+        <span class="voice-info" id="melInfo">12 steps</span>
+      </div>
+      <div class="step-grid" id="melGrid"></div>
+      <div id="freezeBanner" style="display:none;align-items:center;gap:.4rem;margin-top:.3rem;padding:.22rem .55rem;background:rgba(144,152,136,.12);border:1px solid rgba(144,152,136,.35);border-radius:1px;width:fit-content">
+        <span style="font-size:.85rem">❄</span>
+        <span style="font-family:'Libre Baskerville',serif;font-style:italic;font-size:.52rem;color:var(--meuble)">Phrase gelée — la mutation est suspendue</span>
+        <button onclick="unfreezePhrase()" style="border:1px solid var(--mel);color:var(--mel);background:transparent;font-family:'Libre Baskerville',serif;font-style:italic;font-size:.44rem;padding:.1rem .32rem;border-radius:1px;cursor:pointer;margin-left:.3rem">Dégeler →</button>
+      </div>
+    </div>
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label">Accompagnement</span>
+        <span class="voice-info" id="accInfo">12 steps</span>
+      </div>
+      <div class="step-grid" id="accGrid"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="engine-dock">
+  <div class="dock-tabbar">
+    <button class="dock-tab active" data-panel="repetition"><span class="dock-tdot" style="background:var(--mel)"></span>Répétition</button>
+    <button class="dock-tab" data-panel="ennui"><span class="dock-tdot" style="background:var(--ennui)"></span>Ennui</button>
+    <button class="dock-tab" data-panel="meuble"><span class="dock-tdot" style="background:var(--meuble)"></span>Meuble</button>
+    <div class="dock-minibar">
+      <span class="mini-lbl">E</span><div class="mini-bar"><div class="mini-fill" id="miniE" style="background:var(--ennui)"></div></div>
+      <span class="mini-lbl">M</span><div class="mini-bar"><div class="mini-fill" id="miniM" style="background:var(--meuble)"></div></div>
+      <span style="font-size:.34rem;color:var(--dim);padding-left:.28rem" id="miniState">—</span>
+      <button onclick="toggleDock()" id="dockColBtn" style="background:transparent;border:none;color:var(--dim);font-size:.44rem;cursor:pointer">▲</button>
+    </div>
+  </div>
+  <div class="dock-panels" id="dockPanels">
+
+    <div class="dock-panel active" id="dp-repetition">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t">反復変容</div>
+          <div class="dg-row"><span class="dg-lbl">Boucle</span><div class="dg-track"><div class="dg-fill" id="repF" style="background:var(--mel2)"></div></div><span class="dg-val" id="repV" style="color:var(--mel2)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Mutation</span><div class="dg-track"><div class="dg-fill" id="mutF" style="background:var(--ennui)"></div></div><span class="dg-val" id="mutV" style="color:var(--ennui)">0.0</span></div>
+          <div style="font-size:.35rem;color:var(--dim);margin-top:.18rem">State: <span id="repState" style="font-style:italic;font-family:'Libre Baskerville',serif">frais</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">変容履歴</div>
+          <canvas id="mutCanvas" height="44" style="width:100%;display:block;border-radius:1px;background:var(--bg)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">凍結 / 解凍</div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;margin-top:.15rem">
+            <button onclick="freezePhrase()" style="border:1px solid rgba(144,152,136,.4);color:var(--meuble);background:transparent;font-family:'Libre Baskerville',serif;font-size:.44rem;padding:.18rem;border-radius:1px;cursor:pointer;font-style:italic">❄ Geler</button>
+            <button onclick="unfreezePhrase()" style="border:1px solid rgba(74,96,128,.3);color:var(--mel);background:transparent;font-family:'Libre Baskerville',serif;font-size:.44rem;padding:.18rem;border-radius:1px;cursor:pointer;font-style:italic">↺ Dégeler</button>
+            <button onclick="mutateNow()" style="border:1px solid rgba(160,80,64,.3);color:var(--ennui);background:transparent;font-family:'Libre Baskerville',serif;font-size:.44rem;padding:.18rem;border-radius:1px;cursor:pointer;font-style:italic">≈ Muter</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ログ</div>
+          <div id="repLog" class="dg-log"><span style="color:rgba(74,96,128,.35)">— en attente —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-panel" id="dp-ennui">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--ennui)">倦怠エンジン</div>
+          <div class="dg-row"><span class="dg-lbl">Ennui</span><div class="dg-track"><div class="dg-fill" id="enF" style="background:var(--ennui)"></div></div><span class="dg-val" id="enV" style="color:var(--ennui)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Sink</span><div class="dg-track"><div class="dg-fill" id="sinkF" style="background:var(--fog)"></div></div><span class="dg-val" id="sinkV" style="color:var(--fog)">0</span></div>
+          <div style="font-size:.35rem;color:var(--dim);margin-top:.18rem"><span id="ennuiState" style="font-style:italic;font-family:'Libre Baskerville',serif">tranquille</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--ennui)">倦怠曲線</div>
+          <canvas id="ennuiCanvas" height="44" style="width:100%;display:block;border-radius:1px;background:var(--bg)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--ennui)">操作</div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;margin-top:.15rem">
+            <button onclick="resetEnnui()" style="border:1px solid rgba(160,80,64,.4);color:var(--ennui);background:transparent;font-family:'Libre Baskerville',serif;font-size:.46rem;padding:.2rem;border-radius:1px;cursor:pointer;font-style:italic">🌅 Réveiller</button>
+            <button onclick="forceEnnui()" style="border:1px solid rgba(160,80,64,.2);color:var(--fog);background:transparent;font-family:'Libre Baskerville',serif;font-size:.46rem;padding:.2rem;border-radius:1px;cursor:pointer;font-style:italic">😴 S'ennuyer</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--ennui)">ログ</div>
+          <div id="ennuiLog" class="dg-log"><span style="color:rgba(160,80,64,.35)">— tranquille —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-panel" id="dp-meuble">
+      <div class="dpg dpg-3">
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--meuble)">家具音楽</div>
+          <div style="font-size:.36rem;color:var(--dim);line-height:1.9;margin-bottom:.25rem">"音楽は家具のように空間に<br>溶け込むべきだ" — Satie</div>
+          <div class="dg-row"><span class="dg-lbl">Level</span><div class="dg-track"><div class="dg-fill" id="meubF" style="background:var(--meuble)"></div></div><span class="dg-val" id="meubV" style="color:var(--meuble)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Active</span><span style="font-size:.4rem;color:var(--meuble)" id="meubleState">OFF</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--meuble)">溶解曲線</div>
+          <canvas id="meubleCanvas" height="44" style="width:100%;display:block;border-radius:1px;background:var(--bg)"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--meuble)">Control</div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;margin-top:.15rem">
+            <button onclick="toggleMeuble()" id="meubleBtn" style="border:1px solid rgba(144,152,136,.4);color:var(--meuble);background:transparent;font-family:'Libre Baskerville',serif;font-size:.46rem;padding:.2rem;border-radius:1px;cursor:pointer;font-style:italic">🪑 Activer</button>
+            <button onclick="surfaceMeuble()" style="border:1px solid rgba(74,96,128,.3);color:var(--mel);background:transparent;font-family:'Libre Baskerville',serif;font-size:.46rem;padding:.2rem;border-radius:1px;cursor:pointer;font-style:italic">↑ Émerger</button>
+          </div>
+          <div id="meubleLog" style="font-size:.35rem;color:rgba(144,152,136,.7);margin-top:.28rem;line-height:1.8">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const SCALES = {
+  lydian:      {name:'Lydian',      degs:[0,2,4,6,7,9,11]},
+  doublelydian:{name:'Dbl. Lydian', degs:[0,2,4,6,8,10,11]},
+  wholetone:   {name:'Whole Tone',  degs:[0,2,4,6,8,10]},
+  dorian:      {name:'Dorian',      degs:[0,2,3,5,7,9,10]},
+  aeolian:     {name:'Aeolian',     degs:[0,2,3,5,7,8,10]},
+};
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const ACC_INTERVALS = [[0,4,7],[0,3,7],[0,4,8],[0,3,6],[0,5,9]];
+
+let currentScale = 'lydian';
+let melSteps = [], accSteps = [];
+let melLen = 12, accLen = 12;
+let melIdx = 0, accIdx = 0;
+let playing = false, playTimer = null, barCount = 0;
+let melBase = [];
+let mutationDelta = 0;
+let meubleActive = false;
+let midiOut = null, midiAccess = null;
+const SLAVE = {active:false,clockInPort:null,ppqn:24,pulsesPerStep:6,pulseCount:0,bpmSmoothed:54,bpmAlpha:0.15,running:false,lastPulseTime:0};
+
+const REP = {boucle:0, frozen:false, mutHistory:[]};
+const EN  = {ennui:0, sink:0, history:[], state:'tranquille'};
+const MEUB= {level:0, history:[]};
+
+function getRoot()  { return parseInt(document.getElementById('rootSel').value)||65; }
+function getBpm()   { return parseInt(document.getElementById('bpmIn').value)||54; }
+function getScale() { return SCALES[currentScale]||SCALES.lydian; }
+
+function getScalePool(maxOct) {
+  const root=getRoot(), scale=getScale(), pool=[];
+  for(let o=-1;o<=(maxOct||2);o++) scale.degs.forEach(d=>{const m=root+d+o*12;if(m>=36&&m<=96)pool.push(m);});
+  return pool.sort((a,b)=>a-b);
+}
+
+// ─── GENERATE ───────────────────────────────────────
+function generateAll() {
+  pushUndo();
+  const pool = getScalePool(2);
+  const root = getRoot();
+  let pos = Math.floor(pool.length*0.62);
+  melSteps = [];
+  for(let i=0;i<melLen;i++){
+    const beat=i%3;
+    const active = beat===0 ? Math.random()<0.88 : Math.random()<0.58;
+    const dir = Math.random()<0.52 ? -1 : 1;
+    const leap = Math.random()<0.07;
+    pos = Math.max(0,Math.min(pool.length-1, pos+(leap?(Math.floor(Math.random()*3)+2)*dir:dir)));
+    const vel = beat===0 ? 0.36+Math.random()*0.2 : 0.2+Math.random()*0.16;
+    melSteps.push({midi:pool[pos], active, vel:Math.min(0.62,vel), dur:1.0+(Math.random()-0.5)*0.07, mutDelta:0});
+  }
+  // Accompaniment: all notes in-scale, bass in lower register, chord tones above bass
+  const scalePool = getScalePool(2);
+  const scaleSet = new Set(scalePool.map(m=>m%12));
+  function nearestScaleMidi(target, lo, hi) {
+    let best=null, bd=999;
+    for(let m=lo;m<=hi;m++){if(!scaleSet.has(m%12))continue;const d=Math.abs(m-target);if(d<bd){bd=d;best=m;}}
+    return best;
+  }
+  const bassLo=root-24, bassHi=root-5;
+  const bassPool=scalePool.filter(m=>m>=bassLo&&m<=bassHi);
+  const chordLo=root-16, chordHi=root-2;
+  accSteps = [];
+  let lastBass = bassPool[Math.floor(bassPool.length*0.4)]||root-12;
+  for(let i=0;i<accLen;i++){
+    const beat=i%3;
+    let midi, vel, dur;
+    if(beat===0){
+      // Bass: stepwise motion, in-scale
+      const candidates=bassPool.filter(m=>Math.abs(m-lastBass)<=5);
+      const bMidi=candidates.length?candidates[Math.floor(Math.random()*candidates.length)]:lastBass;
+      lastBass=bMidi; midi=bMidi; vel=0.42+Math.random()*0.14; dur=1.8;
+    } else {
+      // Chord tone: scale-degree offset from bass, clamped to chord range
+      const bassIdx=scalePool.findIndex(m=>m===lastBass);
+      const offset=beat===1?2:4;
+      const tIdx=Math.max(0,Math.min(scalePool.length-1,bassIdx+offset+Math.floor(Math.random()*2)));
+      let cm=scalePool[tIdx];
+      if(cm<chordLo)cm+=12; if(cm>chordHi)cm-=12;
+      cm=Math.max(chordLo,Math.min(chordHi,cm));
+      if(!scaleSet.has(cm%12)){const f=nearestScaleMidi(cm,chordLo,chordHi);if(f!==null)cm=f;}
+      midi=cm; vel=0.24+Math.random()*0.13; dur=1.15;
+    }
+    accSteps.push({midi:Math.max(28,Math.min(84,midi)), active:Math.random()<0.9, vel, dur, mutDelta:0});
+  }
+  melBase = JSON.parse(JSON.stringify(melSteps));
+  mutationDelta = 0;
+  buildGrid('mel'); buildGrid('acc');
+  repLog('↻ Nouveau thème');
+}
+
+// ─── BUILD GRID ──────────────────────────────────────
+function buildGrid(voice) {
+  const el=document.getElementById(voice+'Grid'); if(!el) return;
+  const steps=voice==='mel'?melSteps:accSteps;
+  const color=voice==='mel'?'var(--mel)':'var(--acc)';
+  el.innerHTML='';
+  // Frozen tint
+  if(voice==='mel') el.style.opacity=REP.frozen?'0.62':'1';
+  steps.forEach((s,i)=>{
+    const beat=i%3;
+    const d=document.createElement('div');
+    d.className='step'+(beat===0?' beat1':'')+(s.mutDelta>0.2?' mutated':'');
+    d.id=`${voice}Step${i}`;
+    const h=s.active?4+Math.round(s.vel*26):2;
+    const c=s.active?color:'rgba(42,37,32,.05)';
+    const note=s.midi?NOTE_NAMES[s.midi%12]:'—';
+    const mut=s.mutDelta>0.3?`<span class="step-mut">~</span>`:'';
+    d.innerHTML=`${mut}<span class="step-note${s.active?' on':''}">${note}</span><div class="step-bar" style="height:${h}px;background:${c};opacity:${0.5+s.vel*0.5}"></div><span class="step-num">${i+1}</span>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;buildGrid(voice);});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.vel=Math.max(0.05,s.vel-0.07);buildGrid(voice);});
+    el.appendChild(d);
+  });
+  const info=document.getElementById(voice+'Info');
+  if(info)info.textContent=`${steps.length} steps · ${steps.filter(s=>s.active).length} active`;
+  if(voice==='mel')drawMelCurve();
+}
+
+function drawMelCurve(){
+  const cv=document.getElementById('melCurve'); if(!cv||!cv.getContext)return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const act=melSteps.filter(s=>s.active); if(act.length<2)return;
+  const mids=act.map(s=>s.midi),mn=Math.min(...mids)-1,mx=Math.max(...mids)+1;
+  ctx.beginPath();
+  act.forEach((s,i)=>{const x=(i/(act.length-1))*W,y=H-((s.midi-mn)/(mx-mn))*(H-4)-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(74,96,128,.5)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+function onRootChange(){if(melSteps.length)remapToScale();}
+function onScaleChange(){
+  currentScale=document.getElementById('scaleSel').value;
+  document.getElementById('scaleDisplay').textContent=getScale().name;
+  if(melSteps.length)remapToScale();
+}
+function onStepsChange(val){
+  melLen=parseInt(val); accLen=parseInt(val); melIdx=0; accIdx=0;
+  generateAll();
+}
+function remapToScale(){
+  const root=getRoot();
+  [melSteps,accSteps].forEach(steps=>steps.forEach(s=>{
+    if(!s.midi)return;
+    const scalePCs=getScale().degs.map(d=>(root+d)%12), pc=s.midi%12;
+    let best=scalePCs[0],bd=12;
+    scalePCs.forEach(sp=>{const dist=Math.min(Math.abs(sp-pc),12-Math.abs(sp-pc));if(dist<bd){bd=dist;best=sp;}});
+    let nm=Math.floor(s.midi/12)*12+best;
+    if(Math.abs(nm-s.midi)>6)nm+=s.midi>nm?12:-12;
+    s.midi=Math.max(28,Math.min(96,nm));
+  }));
+  buildGrid('mel');buildGrid('acc');
+}
+
+// ─── RÉPÉTITION ENGINE ───────────────────────────────
+function mutatePhrase(){
+  if(REP.frozen)return;
+  const mut=parseInt(document.getElementById('mutationAmt').value)/100;
+  const vd=parseInt(document.getElementById('velDrift').value)/100;
+  const dd=parseInt(document.getElementById('durDrift').value)/100;
+  const pool=getScalePool(2);
+  const sink=EN.ennui*(parseInt(document.getElementById('sinkRate').value)/100)*0.45;
+  let changed=0;
+  melSteps.forEach((s,i)=>{
+    if(Math.random()<vd*0.38)s.vel=Math.max(0.05,Math.min(0.72,s.vel+(Math.random()-0.5)*vd*0.1));
+    if(Math.random()<dd*0.28)s.dur=Math.max(0.7,Math.min(1.5,s.dur+(Math.random()-0.5)*dd*0.12));
+    if(Math.random()<mut*0.07){
+      const cur=pool.findIndex(m=>m>=s.midi);
+      const dir=(Math.random()<0.5+sink*0.28)?-1:1;
+      const ni=Math.max(0,Math.min(pool.length-1,cur+dir));
+      if(ni!==cur){s.midi=pool[ni];s.mutDelta=Math.min(1,(s.mutDelta||0)+0.14);changed++;}
+    }
+    if(Math.random()<mut*0.018)s.active=!s.active;
+  });
+  mutationDelta+=changed*0.09;
+  REP.mutHistory.push(mutationDelta);
+  if(REP.mutHistory.length>120)REP.mutHistory.shift();
+  buildGrid('mel');drawMutCanvas();updateRepUI();
+  if(changed>0)repLog(`≈ ${changed} note(s) mutée(s)`);
+}
+function mutateNow(){
+  pushUndo();
+  // Force strong immediate mutation — bypass the low probabilities in mutatePhrase
+  const pool=getScalePool(2);
+  const sink=EN.ennui*(parseInt(document.getElementById('sinkRate').value)/100)*0.45;
+  let changed=0;
+  melSteps.forEach((s,i)=>{
+    // Velocity: always drift
+    s.vel=Math.max(0.05,Math.min(0.72,s.vel+(Math.random()-0.5)*0.18));
+    // Duration: always drift
+    s.dur=Math.max(0.7,Math.min(1.5,s.dur+(Math.random()-0.5)*0.18));
+    // Pitch: 35% chance per step (much higher than auto)
+    if(Math.random()<0.35){
+      const cur=pool.findIndex(m=>m>=s.midi);
+      const steps=(Math.random()<0.7)?1:2;
+      const dir=(Math.random()<0.5+sink*0.28)?-1:1;
+      const ni=Math.max(0,Math.min(pool.length-1,cur+dir*steps));
+      if(ni!==cur){s.midi=pool[ni];s.mutDelta=Math.min(1,(s.mutDelta||0)+0.2);changed++;}
+    }
+    // Active: 5% flip
+    if(Math.random()<0.05)s.active=!s.active;
+  });
+  mutationDelta+=changed*0.12;
+  REP.mutHistory.push(mutationDelta);
+  if(REP.mutHistory.length>120)REP.mutHistory.shift();
+  buildGrid('mel');drawMutCanvas();updateRepUI();
+  repLog(`△ Mutation forcée — ${changed} note(s)`);
+}
+
+function freezePhrase(){
+  REP.frozen=true;
+  repLog('❄ Phrase gelée');
+  updateFreezeUI();
+  buildGrid('mel'); // apply opacity tint immediately
+}
+function unfreezePhrase(){
+  REP.frozen=false;
+  repLog('↺ Dégel');
+  updateFreezeUI();
+  buildGrid('mel');
+}
+function updateFreezeUI(){
+  const g=document.getElementById('btnGeler');
+  const d=document.getElementById('btnDegeler');
+  const rs=document.getElementById('repState');
+  const mg=document.getElementById('melGrid');
+  const banner=document.getElementById('freezeBanner');
+  if(REP.frozen){
+    // Geler button: filled, prominent
+    if(g){g.textContent='❄ Gelé';g.style.background='var(--meuble)';g.style.borderColor='var(--meuble)';g.style.color='var(--paper)';}
+    // Dégeler button: glowing, inviting
+    if(d){d.textContent='↺ Dégeler';d.style.background='rgba(74,96,128,.15)';d.style.borderColor='var(--mel)';d.style.color='var(--mel)';d.style.fontWeight='bold';}
+    // Grid: dim + blue overlay
+    if(mg){mg.style.opacity='0.45';mg.style.filter='grayscale(40%)';}
+    // Banner
+    if(banner){banner.style.display='flex';}
+    if(rs)rs.textContent='❄ gelée';
+  } else {
+    if(g){g.textContent='Geler';g.style.background='';g.style.borderColor='';g.style.color='var(--meuble)';g.style.fontWeight='';}
+    if(d){d.textContent='Dégeler';d.style.background='';d.style.borderColor='';d.style.color='var(--mel2)';d.style.fontWeight='';}
+    if(mg){mg.style.opacity='1';mg.style.filter='';}
+    if(banner){banner.style.display='none';}
+    if(rs)rs.textContent=REP.boucle<3?'frais':REP.boucle<8?'usé':'ancien';
+  }
+}
+
+function updateRepUI(){
+  const rf=document.getElementById('repF'),mf=document.getElementById('mutF');
+  const rv=document.getElementById('repV'),mv=document.getElementById('mutV');
+  if(rf)rf.style.width=Math.min(100,(REP.boucle%20)*5)+'%';
+  if(mf)mf.style.width=Math.min(100,mutationDelta*28)+'%';
+  if(rv)rv.textContent=REP.boucle;
+  if(mv)mv.textContent=(mutationDelta*10).toFixed(1);
+  const rs=document.getElementById('repState');
+  if(rs&&!REP.frozen)rs.textContent=REP.boucle<3?'frais':REP.boucle<8?'usé':'ancien';
+  if(typeof updateFreezeUI==='function')updateFreezeUI();
+  const romans=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+  const rc=document.getElementById('repCount'); if(rc)rc.textContent=romans[REP.boucle%12]||String(REP.boucle);
+  const rl=document.getElementById('melRepLabel'); if(rl)rl.textContent=REP.boucle>0?`×${REP.boucle}`:'';
+  const mm=document.getElementById('miniM'); if(mm)mm.style.width=Math.min(100,MEUB.level*100).toFixed(0)+'%';
+}
+
+function drawMutCanvas(){
+  const cv=document.getElementById('mutCanvas'); if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160; cv.width=W; cv.height=44;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,44);
+  const h=REP.mutHistory; if(h.length<2)return;
+  ctx.beginPath();
+  h.forEach((v,i)=>{const x=(i/h.length)*W,y=44-Math.min(v/3,1)*40-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(74,96,128,.55)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.lineTo(W,44);ctx.lineTo(0,44);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,44);g.addColorStop(0,'rgba(74,96,128,.15)');g.addColorStop(1,'rgba(74,96,128,.01)');
+  ctx.fillStyle=g;ctx.fill();
+}
+function repLog(msg){const log=document.getElementById('repLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(74,96,128,.75);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>4)log.removeChild(log.lastChild);}
+
+// ─── ENNUI ENGINE ────────────────────────────────────
+function ennuiTick(){
+  if(!playing)return;
+  const sens=parseInt(document.getElementById('ennuiSens').value)/100;
+  const rec=parseInt(document.getElementById('ennuiRec').value)/100;
+  EN.ennui=Math.max(0,Math.min(1,EN.ennui+sens*0.004-rec*0.001));
+  const sr=parseInt(document.getElementById('sinkRate').value)/100;
+  EN.sink=EN.sink*0.95+EN.ennui*sr*0.05;
+  EN.history.push(EN.ennui); if(EN.history.length>150)EN.history.shift();
+  EN.state=EN.ennui<0.25?'tranquille':EN.ennui<0.55?'las':EN.ennui<0.8?'alangui':'épuisé';
+}
+function resetEnnui(){EN.ennui=0;EN.sink=0;ennuiLog('🌅 Réveillé!');updateEnnuiUI();}
+function forceEnnui(){EN.ennui=Math.min(1,EN.ennui+0.28);ennuiLog('😴 S\'ennuie');updateEnnuiUI();}
+
+function updateEnnuiUI(){
+  const ef=document.getElementById('ennuiFill'),ev=document.getElementById('ennuiVal');
+  if(ef)ef.style.width=(EN.ennui*100).toFixed(0)+'%';
+  if(ev)ev.textContent=(EN.ennui*100).toFixed(0)+'%';
+  const enF=document.getElementById('enF'),sF=document.getElementById('sinkF');
+  if(enF)enF.style.width=(EN.ennui*100).toFixed(0)+'%';
+  if(sF)sF.style.width=(EN.sink*100).toFixed(0)+'%';
+  const enV=document.getElementById('enV'),sV=document.getElementById('sinkV');
+  if(enV)enV.textContent=(EN.ennui*100).toFixed(0);
+  if(sV)sV.textContent=(EN.sink*100).toFixed(0);
+  const es=document.getElementById('ennuiState'); if(es)es.textContent=EN.state;
+  const me=document.getElementById('miniE'); if(me)me.style.width=(EN.ennui*100).toFixed(0)+'%';
+  const ms=document.getElementById('miniState'); if(ms)ms.textContent=EN.state==='épuisé'?'😴':EN.state==='alangui'?'~':'○';
+  drawEnnuiCanvas();
+}
+function drawEnnuiCanvas(){
+  const cv=document.getElementById('ennuiCanvas'); if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160; cv.width=W; cv.height=44;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,44);
+  const h=EN.history; if(h.length<2)return;
+  ctx.beginPath();
+  h.forEach((v,i)=>{const x=(i/h.length)*W,y=44-v*40-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(160,80,64,.65)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.lineTo(W,44);ctx.lineTo(0,44);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,44);g.addColorStop(0,'rgba(160,80,64,.16)');g.addColorStop(1,'rgba(160,80,64,.01)');
+  ctx.fillStyle=g;ctx.fill();
+}
+function ennuiLog(msg){const log=document.getElementById('ennuiLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(160,80,64,.75);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>4)log.removeChild(log.lastChild);}
+
+// ─── MEUBLE ENGINE ───────────────────────────────────
+function toggleMeuble(){
+  meubleActive=!meubleActive;MEUB.active=meubleActive;
+  document.getElementById('btnMeuble').textContent=`Ameublement: ${meubleActive?'ON':'OFF'}`;
+  const mb=document.getElementById('meubleBtn'); if(mb)mb.textContent=meubleActive?'🪑 Désactiver':'🪑 Activer';
+  document.getElementById('meubleState').textContent=meubleActive?'ON':'OFF';
+  meubleLog(meubleActive?'🪑 Activé':'↺ Désactivé');
+}
+function surfaceMeuble(){MEUB.level=0;meubleLog('↑ Émergé');}
+function meubleTick(){
+  if(!playing)return;
+  const fade=parseInt(document.getElementById('meubleFade').value)/100;
+  const dissolve=parseInt(document.getElementById('meubleDissolve').value)/100;
+  if(meubleActive)MEUB.level=Math.min(1,MEUB.level+fade*0.01+dissolve*0.005);
+  else MEUB.level=Math.max(0,MEUB.level-0.018);
+  MEUB.history.push(MEUB.level); if(MEUB.history.length>120)MEUB.history.shift();
+}
+function updateMeubleUI(){
+  const mf=document.getElementById('meubF'),mv=document.getElementById('meubV');
+  if(mf)mf.style.width=(MEUB.level*100).toFixed(0)+'%';
+  if(mv)mv.textContent=(MEUB.level*100).toFixed(0);
+  drawMeubleCanvas();
+}
+function drawMeubleCanvas(){
+  const cv=document.getElementById('meubleCanvas'); if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||180; cv.width=W; cv.height=44;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,44);
+  const h=MEUB.history; if(h.length<2)return;
+  ctx.beginPath();
+  h.forEach((v,i)=>{const x=(i/h.length)*W,y=44-v*40-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(144,152,136,.55)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.lineTo(W,44);ctx.lineTo(0,44);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,44);g.addColorStop(0,'rgba(144,152,136,.13)');g.addColorStop(1,'rgba(144,152,136,.01)');
+  ctx.fillStyle=g;ctx.fill();
+}
+function meubleLog(msg){const log=document.getElementById('meubleLog');if(log)log.textContent=msg;}
+
+// ─── PLAYBACK ────────────────────────────────────────
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+let _keepNode=null;
+function startKeepAlive(){const ctx=getAudioCtx();if(_keepNode)return;_keepNode=ctx.createOscillator();const g=ctx.createGain();g.gain.value=0;_keepNode.connect(g);g.connect(ctx.destination);_keepNode.start();}
+const _wC=`const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type==='set'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wC],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){_tw=null;}return _tw;}
+function accurateTimeout(fn,ms){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  const w=getTW();
+  if(w){const id=_tn++;const dl=ctx.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-ctx.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancelled:false,cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}
+  const dl=ctx.currentTime+ms/1000;const tid={cancelled:false};let t=null;
+  function check(){if(tid.cancelled)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(check,rem<25?1:Math.max(1,rem-20));}}
+  t=setTimeout(check,Math.max(1,ms-20));
+  tid.cancel=()=>{tid.cancelled=true;if(t)clearTimeout(t);};
+  return tid;
+}
+document.addEventListener('visibilitychange',()=>{const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();if(!document.hidden&&midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  startKeepAlive();playing=true;melIdx=0;accIdx=0;barCount=0;
+  document.getElementById('btnPlay').textContent='■ Stop';
+  if(!SLAVE.active)tick();
+}
+function stopAll(){
+  playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}
+  document.getElementById('btnPlay').textContent='▶ Play';
+  document.getElementById('beatDisplay').textContent='—';
+  melIdx=0;accIdx=0;
+  if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);
+  document.querySelectorAll('.step.playing').forEach(e=>e.classList.remove('playing'));
+}
+
+let _eTick=0;
+function tick(){
+  if(!playing)return;
+  const bpm=SLAVE.active?SLAVE.bpmSmoothed:getBpm();
+  const baseMs=Math.max(50,60000/bpm);
+  const jitter=(Math.random()-0.5)*0.055*baseMs;
+  const meubleSlowdown=1+MEUB.level*0.11;
+  const stepMs=baseMs*meubleSlowdown;
+
+  document.querySelectorAll('#melGrid .step').forEach((e,i)=>e.classList.toggle('playing',i===melIdx));
+  document.querySelectorAll('#accGrid .step').forEach((e,i)=>e.classList.toggle('playing',i===accIdx));
+
+  const vf=1-MEUB.level*0.52;
+  sendStep(melSteps,melIdx,'melCh',0,stepMs,vf);
+  sendStep(accSteps,accIdx,'accCh',-12,stepMs*1.3,vf*0.82);
+
+  const beat=melIdx%3;
+  document.getElementById('beatDisplay').textContent=`${barCount+1} · ${beat+1}/3`;
+
+  melIdx++;if(melIdx>=melLen){melIdx=0;barCount++;onLoopEnd();}
+  accIdx++;if(accIdx>=accLen)accIdx=0;
+
+  _eTick++;
+  ennuiTick();meubleTick();
+  if(_eTick%4===0){updateEnnuiUI();updateMeubleUI();updateRepUI();}
+
+  playTimer=accurateTimeout(tick,stepMs+jitter);
+}
+
+function onLoopEnd(){
+  REP.boucle++;
+  mutatePhrase();
+  updateRepUI();
+  // Rare scale drift
+  if(REP.boucle>0&&REP.boucle%16===0&&Math.random()<0.28){
+    const ks=Object.keys(SCALES);
+    const ns=ks[Math.floor(Math.random()*ks.length)];
+    if(ns!==currentScale){
+      currentScale=ns;
+      document.getElementById('scaleSel').value=ns;
+      document.getElementById('scaleDisplay').textContent=getScale().name;
+      remapToScale();
+      repLog(`→ ${getScale().name}`);
+    }
+  }
+}
+
+function sendStep(steps,idx,chId,octOff,durMs,velFactor){
+  if(!steps.length||!midiOut)return;
+  const s=steps[idx%steps.length];if(!s||!s.active)return;
+  const ch=(parseInt(document.getElementById(chId)?.value||1)-1);
+  const raw=Math.max(0,Math.min(127,s.midi+octOff));
+  const sunk=Math.max(0,Math.min(127,raw-Math.round(EN.sink*2)));
+  const v=Math.round(s.vel*(velFactor||1)*95+12);
+  const dur=durMs*(s.dur||1)*0.86;
+  midiOut.send([0x90|ch,sunk,Math.min(100,v)]);
+  const ds=5;
+  for(let k=1;k<=ds;k++){const expr=Math.round(127*(1-k/ds)*0.42+55);setTimeout(()=>{if(midiOut)midiOut.send([0xB0|ch,11,expr]);},dur*k/ds);}
+  setTimeout(()=>{if(midiOut){midiOut.send([0x80|ch,sunk,0]);midiOut.send([0xB0|ch,11,127]);}},dur);
+}
+
+// ─── MIDI ─────────────────────────────────────────────
+function initMIDI(){if(!navigator.requestMIDIAccess){setMidiStatus(false,'Not supported');return;}navigator.requestMIDIAccess().then(ma=>{midiAccess=ma;ma.onstatechange=()=>{populatePorts();populateInPorts();};populatePorts();populateInPorts();}).catch(()=>setMidiStatus(false,'Permission denied'));}
+function populatePorts(){const sel=document.getElementById('midiDevSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">— select —</option>';midiAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectMidiOut(sel.value);}});}
+function populateInPorts(){const sel=document.getElementById('midiClockSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectClockIn(sel.value);}});}
+function selectMidiOut(id){if(!id){midiOut=null;setMidiStatus(false,'—');return;}midiOut=midiAccess?.outputs.get(id);if(midiOut)setMidiStatus(true,midiOut.name);}
+function setMidiStatus(ok,name){const dot=document.getElementById('midiDot'),stat=document.getElementById('midiStatus');if(dot)dot.classList.toggle('connected',ok);if(stat){stat.textContent=ok?`✓ ${name}`:name;stat.style.color=ok?'var(--meuble)':'var(--dim)';}}
+function selectClockIn(id){if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.clockInPort=midiAccess.inputs.get(id);if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=onClockMsg;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const btn=document.getElementById('btnSlave');if(btn){btn.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';btn.style.color=SLAVE.active?'var(--meuble)':'';}if(SLAVE.active&&playTimer){playTimer.cancelled=true;playTimer=null;}else if(!SLAVE.active&&playing)tick();}
+function onClockMsg(e){const d=e.data[0];if(d===0xFA){SLAVE.running=true;SLAVE.pulseCount=0;if(!playing)startPlay();return;}if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;document.getElementById('btnPlay').textContent='■ Stop';}return;}if(d===0xFC){SLAVE.running=false;if(playing&&SLAVE.active)stopAll();return;}if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;const now=e.timeStamp||performance.now();if(SLAVE.lastPulseTime>0){const iv=now-SLAVE.lastPulseTime;const ibpm=60000/(iv*SLAVE.ppqn);if(ibpm>20&&ibpm<160)SLAVE.bpmSmoothed=SLAVE.bpmSmoothed*(1-SLAVE.bpmAlpha)+ibpm*SLAVE.bpmAlpha;}SLAVE.lastPulseTime=now;SLAVE.pulseCount++;if(SLAVE.pulseCount>=SLAVE.pulsesPerStep){SLAVE.pulseCount=0;if(playing)slaveTick();}if(SLAVE.pulseCount===0)document.getElementById('bpmIn').value=Math.round(SLAVE.bpmSmoothed);}
+function slaveTick(){if(!playing||!melSteps.length)return;const sMs=60000/SLAVE.bpmSmoothed;const vf=1-MEUB.level*0.52;sendStep(melSteps,melIdx,'melCh',0,sMs,vf);sendStep(accSteps,accIdx,'accCh',-12,sMs*1.3,vf*0.82);melIdx++;if(melIdx>=melLen){melIdx=0;barCount++;onLoopEnd();}accIdx++;if(accIdx>=accLen)accIdx=0;ennuiTick();meubleTick();}
+
+// Export MIDI
+function exportMIDI(){
+  const bpm=getBpm();const tpb=480;const stk=tpb;const µs=Math.round(60000000/bpm);
+  function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}
+  function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}
+  function i16(v){return[(v>>8)&0xFF,v&0xFF];}
+  const ch=(parseInt(document.getElementById('melCh')?.value||1)-1);
+  const ev=[];
+  melSteps.forEach((s,i)=>{if(!s.active||!s.midi)return;const t=i*stk;ev.push([t,[0x90|ch,s.midi,Math.round(s.vel*88+12)]]);ev.push([t+Math.round(stk*.84),[0x80|ch,s.midi,0]]);});
+  ev.sort((a,b)=>a[0]-b[0]);let lt=0;const td=[];
+  td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);
+  ev.forEach(([t,msg])=>{td.push(...wv(t-lt),...msg);lt=t;});
+  td.push(0,0xFF,0x2F,0);
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,...i16(tpb)];
+  const bytes=new Uint8Array([...hdr,0x4D,0x54,0x72,0x6B,...i32(td.length),...td]);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'audio/midi'}));
+  a.download=`satie_gymnopedie_${currentScale}.mid`;a.click();
+}
+
+// ─── UNDO / REDO / SAVE / LOAD ──────────────────────
+const UMAX=30;let _us=[],_rs=[];
+function captureState(){return{melSteps:JSON.parse(JSON.stringify(melSteps)),accSteps:JSON.parse(JSON.stringify(accSteps)),melBase:JSON.parse(JSON.stringify(melBase)),melLen,accLen,currentScale,rootSel:document.getElementById('rootSel').value,bpm:getBpm()};}
+function pushUndo(){_us.push(captureState());if(_us.length>UMAX)_us.shift();_rs=[];updateUndoBtns();}
+function applyState(s){melSteps=JSON.parse(JSON.stringify(s.melSteps));accSteps=JSON.parse(JSON.stringify(s.accSteps));melBase=JSON.parse(JSON.stringify(s.melBase||s.melSteps));melLen=s.melLen||12;accLen=s.accLen||12;currentScale=s.currentScale||'lydian';const rs=document.getElementById('rootSel');if(rs)rs.value=s.rootSel;const bi=document.getElementById('bpmIn');if(bi)bi.value=s.bpm||54;document.getElementById('scaleSel').value=currentScale;document.getElementById('scaleDisplay').textContent=getScale().name;buildGrid('mel');buildGrid('acc');updateUndoBtns();}
+function undo(){if(!_us.length)return;_rs.push(captureState());applyState(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(captureState());applyState(_rs.pop());}
+function updateUndoBtns(){const u=document.getElementById('btnUndo'),r=document.getElementById('btnRedo');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function saveStateJSON(){const s=captureState();s._tool='SatieGymnopedie';s._at=new Date().toISOString();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download=`satie_${currentScale}_${new Date().toISOString().slice(0,16).replace('T','_')}.json`;a.click();}
+function loadStateJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const s=JSON.parse(ev.target.result);if(!s.melSteps){alert('このJSONはSatieシーケンサーのデータではありません');return;}pushUndo();applyState(s);}catch(err){alert('JSON読み込み失敗: '+err.message);}};r.readAsText(f);e.target.value='';}
+
+let _taps=[];
+function tapTempo(){const now=Date.now();_taps.push(now);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gaps=_taps.slice(1).map((t,i)=>t-_taps[i]);const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;const bpm=Math.round(60000/avg);if(bpm>20&&bpm<120)document.getElementById('bpmIn').value=bpm;}}
+
+// Slider labels
+document.querySelectorAll('input[type=range]').forEach(el=>{
+  const vid=el.id+'V';
+  el.addEventListener('input',()=>{const v=document.getElementById(vid);if(v)v.textContent=el.value;});
+});
+
+// Dock tabs
+(function(){document.querySelectorAll('.dock-tab[data-panel]').forEach(tab=>{tab.addEventListener('click',()=>{const p=tab.dataset.panel;if(tab.classList.contains('active')){toggleDock();return;}document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.querySelectorAll('.dock-panel').forEach(p2=>p2.classList.remove('active'));const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');const panels=document.getElementById('dockPanels');if(panels){panels.classList.remove('collapsed');document.getElementById('dockColBtn').textContent='▲';}});});})();
+let _dockOpen=true;
+function toggleDock(){_dockOpen=!_dockOpen;const p=document.getElementById('dockPanels'),b=document.getElementById('dockColBtn');if(p)p.classList.toggle('collapsed',!_dockOpen);if(b)b.textContent=_dockOpen?'▲':'▼';}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();if(e.shiftKey)redo();else undo();}
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyY'){e.preventDefault();redo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();generateAll();}
+  if(e.code==='KeyM'&&e.target.tagName!=='INPUT'){e.preventDefault();mutateNow();}
+  if(e.code==='KeyF'&&e.target.tagName!=='INPUT'){e.preventDefault();freezePhrase();}
+  if(e.code==='KeyE'&&e.target.tagName!=='INPUT'){e.preventDefault();resetEnnui();}
+});
+
+function syncMut(v){
+  const a=document.getElementById('mutationAmt');
+  const b=document.getElementById('mutationAmtLeft');
+  const va=document.getElementById('mutationAmtV');
+  const vb=document.getElementById('mutAmt2');
+  if(a)a.value=v; if(b)b.value=v;
+  if(va)va.textContent=v; if(vb)vb.textContent=v;
+}
+function init(){
+  document.getElementById('scaleDisplay').textContent=getScale().name;
+  generateAll();
+  initMIDI();
+}
+init();
+</script>
+</body>
+</html>

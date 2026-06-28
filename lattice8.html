@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LATTICE — 音の格子</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070608;--s0:#0b0a0e;--s1:#100e14;--bd:#1a1722;--bd2:#272030;
+  --text:#cbc6d0;--dim:#54505c;--bone:#dcd6cc;
+  --a3:#e0b870;   /* 3-axis (fifths) gold */
+  --a5:#90b4d4;   /* 5-axis (thirds) blue */
+  --a7:#c88fb0;   /* 7-axis (sevenths) rose */
+  --root:#e8e2d6;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;min-height:100vh;}
+header{padding:.9rem 1.5rem .6rem;border-bottom:1px solid var(--bd);display:flex;align-items:flex-end;gap:1.4rem;background:#050409;}
+.hname{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:300;font-style:italic;letter-spacing:.05em;color:var(--bone);line-height:1;}
+.hsub{font-size:.58rem;color:var(--dim);letter-spacing:.32em;text-transform:uppercase;margin-top:.3rem;}
+.transport{padding:.5rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.6rem;background:#050409;flex-wrap:wrap;}
+select,input[type=range]{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.7rem;padding:.16rem .28rem;}
+.tl{font-size:.62rem;color:var(--dim);}
+.btn{padding:.26rem .66rem;border:1px solid var(--bd);background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.7rem;cursor:pointer;}
+.btn:hover{border-color:var(--a3);color:var(--a3);}
+.btn.hi{border-color:var(--a3);color:var(--a3);background:rgba(224,184,112,.08);}
+.layout{display:grid;grid-template-columns:1fr 300px;height:calc(100vh - 96px);}
+.canvaswrap{position:relative;overflow:hidden;border-right:1px solid var(--bd);}
+#lattice{display:block;width:100%;height:100%;cursor:grab;}
+#lattice:active{cursor:grabbing;}
+.side{overflow-y:auto;background:#050409;padding:.7rem;}
+.panel{background:var(--s0);border:1px solid var(--bd);padding:.6rem;margin-bottom:.6rem;}
+.pt{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1rem;margin-bottom:.4rem;color:var(--a3);}
+.note{font-size:.6rem;color:var(--dim);line-height:1.6;font-style:italic;font-family:'Cormorant Garamond',serif;}
+.legend{display:flex;flex-direction:column;gap:.3rem;font-size:.62rem;}
+.legend div{display:flex;align-items:center;gap:.4rem;}
+.sw{width:10px;height:10px;border-radius:2px;}
+.pr{display:flex;align-items:center;gap:.4rem;margin-bottom:.3rem;}
+.pr label{font-size:.6rem;color:var(--dim);width:78px;flex-shrink:0;}
+.pr input[type=range]{flex:1;height:2px;}
+.pv{font-size:.6rem;width:30px;text-align:right;color:var(--a3);}
+.devstack{position:fixed;top:96px;left:0;right:0;bottom:0;overflow:hidden;background:var(--bg);display:grid;grid-template-columns:1fr 280px;}
+.devmain{overflow-y:auto;padding:1rem 1.2rem 4rem;position:relative;}
+.devlog{overflow-y:auto;border-left:1px solid var(--bd);background:#050409;padding:.8rem;}
+.devlog .lt{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.1rem;color:#ff6a4a;margin-bottom:.5rem;}
+.loglink{border:1px solid var(--bd);background:var(--s0);border-radius:3px;padding:.4rem;margin-bottom:.5rem;}
+.loglink .lh{display:flex;justify-content:space-between;align-items:center;font-size:.66rem;color:#ff6a4a;font-weight:bold;margin-bottom:.25rem;}
+.loglink textarea{width:100%;background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono';font-size:.6rem;padding:.25rem;resize:vertical;min-height:2.2rem;}
+.loglink .del{cursor:pointer;color:var(--dim);border:1px solid var(--bd);border-radius:2px;padding:0 .3rem;font-size:.6rem;background:transparent;}
+.loglink .del:hover{color:#ff6a4a;border-color:#ff6a4a;}
+.devtop{display:flex;gap:.6rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;}
+.magfig{background:var(--s0);border:1px solid var(--bd);border-radius:4px;margin-bottom:.5rem;display:flex;gap:1rem;padding:.7rem;}
+.magfig canvas{display:block;background:#050409;border:1px solid var(--bd);border-radius:3px;cursor:crosshair;}
+.magmeta{flex:1;min-width:200px;}
+.magmeta .mn{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.2rem;color:var(--a3);margin-bottom:.3rem;}
+.magmeta .axline{font-size:.62rem;color:var(--dim);margin-bottom:.2rem;}
+.magmeta input[type=text]{width:100%;background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono';font-size:.64rem;padding:.25rem .4rem;margin-top:.3rem;}
+.movearrow{text-align:center;color:var(--dim);font-size:.7rem;padding:.2rem 0;font-style:italic;font-family:'Cormorant Garamond',serif;}
+.movearrow .em{color:var(--a5);}
+.movearrow .st{color:var(--a3);}
+.info{padding:.5rem 1rem;border-top:1px solid var(--bd);background:var(--s0);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.85rem;line-height:1.5;min-height:2rem;}
+.info .k{color:var(--a3);font-style:normal;font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+.selnote{font-size:.66rem;line-height:1.7;}
+.selnote b{color:var(--a3);}
+.chk{display:flex;align-items:center;gap:.3rem;font-size:.62rem;color:var(--dim);cursor:pointer;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="hname">Lattice</div>
+    <div class="hsub">音の格子 · the just-intonation lattice (7-limit)</div>
+  </div>
+</header>
+
+<div class="transport">
+  <label class="tl">Root</label>
+  <select id="root" onchange="redraw()">
+    <option value="0">C</option><option value="1">C#</option><option value="2">D</option>
+    <option value="3">Eb</option><option value="4">E</option><option value="5">F</option>
+    <option value="6">F#</option><option value="7">G</option><option value="8">Ab</option>
+    <option value="9" selected>A</option><option value="10">Bb</option><option value="11">B</option>
+  </select>
+  <label class="tl">Scale</label>
+  <select id="scale" onchange="redraw()"></select>
+  <div style="width:1px;height:16px;background:var(--bd)"></div>
+  <label class="chk"><input type="checkbox" id="show7" checked onchange="redraw()"> 7の軸を表示</label>
+  <label class="chk"><input type="checkbox" id="showAll" onchange="redraw()"> 全12音を表示</label>
+  <label class="chk"><input type="checkbox" id="showNP" checked onchange="redraw()"> 音の個性を反映</label>
+  <button class="btn" onclick="resetView()" style="font-size:.58rem">視点リセット</button>
+  <div style="width:1px;height:16px;background:var(--bd)"></div>
+  <button class="btn" id="modeBtn" onclick="toggleMapMode()" style="font-size:.58rem">▶ 展開の地図モード</button>
+</div>
+
+<div class="layout">
+  <div class="canvaswrap"><canvas id="lattice"></canvas>
+    <div class="info" id="info" style="position:absolute;left:0;right:0;bottom:0">原点(主音)からの距離が、引力＝協和度。近いほど安定、遠いほど緊張。<span class="k">ドラッグ</span>で視点を回す。点をクリックで詳細。</div>
+  </div>
+  <div class="side" id="side"></div>
+</div>
+<div class="devstack" id="devstack" style="display:none"></div>
+
+<script>
+const SCALES={
+  // ── Western church modes ──
+  ionian:[0,2,4,5,7,9,11], dorian:[0,2,3,5,7,9,10], phrygian:[0,1,3,5,7,8,10],
+  lydian:[0,2,4,6,7,9,11], mixolydian:[0,2,4,5,7,9,10], aeolian:[0,2,3,5,7,8,10],
+  locrian:[0,1,3,5,6,8,10],
+  // ── Melodic minor modes ──
+  mel_minor:[0,2,3,5,7,9,11], dorian_b2:[0,1,3,5,7,9,10], lydian_aug:[0,2,4,6,8,9,11],
+  lydian_dom:[0,2,4,6,7,9,10], mixo_b6:[0,2,4,5,7,8,10], locrian_n2:[0,2,3,5,6,8,10],
+  altered:[0,1,3,4,6,8,10],
+  // ── Harmonic minor modes ──
+  har_minor:[0,2,3,5,7,8,11], locrian_n6:[0,1,3,5,6,9,10], ionian_s5:[0,2,4,5,8,9,11],
+  dorian_s4:[0,2,3,6,7,9,10], phrygian_dom:[0,1,4,5,7,8,10], lydian_s2:[0,3,4,6,7,9,11],
+  ultralocrian:[0,1,3,4,6,8,9],
+  // ── Harmonic major modes ──
+  har_major:[0,2,4,5,7,8,11], dorian_b5:[0,2,3,5,6,9,10], phrygian_b4:[0,1,4,5,7,8,10],
+  lydian_b3:[0,2,3,6,7,9,11], mixo_b2:[0,1,4,5,7,9,10], lydian_aug_s2:[0,3,4,6,8,9,11],
+  // ── Double harmonic / Byzantine family ──
+  double_har:[0,1,4,5,7,8,11], byzantine:[0,1,4,5,7,8,11], hungarian_min:[0,2,3,6,7,8,11],
+  hungarian_maj:[0,3,4,6,7,9,10], oriental:[0,1,4,5,6,9,10], gypsy:[0,2,3,6,7,8,11],
+  // ── Symmetric ──
+  wholetone:[0,2,4,6,8,10], dim_wh:[0,2,3,5,6,8,9,11], dim_hw:[0,1,3,4,6,7,9,10],
+  augmented:[0,3,4,7,8,11], tritone:[0,1,4,6,7,10],
+  // ── Pentatonic (world) ──
+  maj_pent:[0,2,4,7,9], min_pent:[0,3,5,7,10], blues:[0,3,5,6,7,10],
+  egyptian:[0,2,5,7,10], man_gong:[0,3,5,8,10], ritusen:[0,2,5,7,9],
+  // ── Japanese ──
+  in_sen:[0,1,5,7,8], hirajoshi:[0,2,3,7,8], iwato:[0,1,5,6,10],
+  kumoi:[0,2,3,7,9], yo:[0,2,5,7,9], insen2:[0,1,5,7,10], akebono:[0,2,3,7,9],
+  // ── Indian raags (आरोह) ──
+  bhairav:[0,1,4,5,7,8,11], yaman:[0,2,4,6,7,9,11], kafi:[0,2,3,5,7,9,10],
+  bhairavi:[0,1,3,5,7,8,10], todi:[0,1,3,6,7,8,11], marwa:[0,1,4,6,7,9,11],
+  purvi:[0,1,4,6,7,8,11], des:[0,2,4,5,7,9,10], malkauns:[0,3,5,8,10],
+  bhoopali:[0,2,4,7,9], darbari:[0,2,3,5,7,8,10], charukeshi:[0,2,4,5,7,8,10],
+  kirwani:[0,2,3,5,7,8,11], ahirbhairav:[0,1,4,5,7,9,10], madhuvanti:[0,3,4,6,7,9,11],
+  hamsadhwani:[0,2,4,7,11], shree:[0,1,4,6,7,8,11], pilu:[0,2,3,4,5,7,9,10,11],
+  // ── Arabic / Middle-Eastern maqamat (approx, 12-TET) ──
+  hijaz:[0,1,4,5,7,8,10], nahawand:[0,2,3,5,7,8,10], kurd:[0,1,3,5,7,8,10],
+  ajam:[0,2,4,5,7,9,11], saba:[0,2,3,4,7,8,10], bayati:[0,2,3,5,7,8,10],
+  hijazkar:[0,1,4,5,7,8,11], suzidil:[0,1,4,5,7,8,11],
+  // ── Greek / Eastern European ──
+  phrygian_greek:[0,1,3,5,7,8,10], chromatic_dorian:[0,1,4,5,7,8,11],
+  enigmatic:[0,1,4,6,8,10,11], neapolitan_min:[0,1,3,5,7,8,11], neapolitan_maj:[0,1,3,5,7,9,11],
+  // ── Synthetic / exotic ──
+  prometheus:[0,2,4,6,9,10], scriabin:[0,1,4,7,9], blues_maj:[0,2,3,4,7,9],
+  blues_nine:[0,2,3,4,5,6,7,9,10,11], bebop_dom:[0,2,4,5,7,9,10,11], bebop_maj:[0,2,4,5,7,8,9,11],
+  bebop_dorian:[0,2,3,4,5,7,9,10], six_tone_sym:[0,1,4,5,8,9], leading_whole:[0,2,4,6,8,10,11],
+  // ── chromatic ──
+  chromatic:[0,1,2,3,4,5,6,7,8,9,10,11],
+};
+
+
+// ── 7-limit lattice coordinates per pitch class [a3, a5, a7] (octave reduced) ──
+const LATTICE={
+  0:{r:'1/1',  c:[0,0,0],  cents:0},
+  1:{r:'16/15',c:[-1,-1,0],cents:111.7},
+  2:{r:'9/8',  c:[2,0,0],  cents:203.9},
+  3:{r:'6/5',  c:[1,-1,0], cents:315.6},
+  4:{r:'5/4',  c:[0,1,0],  cents:386.3},
+  5:{r:'4/3',  c:[-1,0,0], cents:498.0},
+  6:{r:'7/5',  c:[0,-1,1], cents:582.5},
+  7:{r:'3/2',  c:[1,0,0],  cents:702.0},
+  8:{r:'8/5',  c:[0,-1,0], cents:813.7},
+  9:{r:'5/3',  c:[-1,1,0], cents:884.4},
+  10:{r:'7/4', c:[0,0,1],  cents:968.8},
+  11:{r:'15/8',c:[1,1,0],  cents:1088.3},
+};
+const NOTE=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+// 2D Mathieu lattice: x=fifths(3), y=thirds(5). [a3,a5]
+// 5-limit base [a3,a5] (a7=0)
+const LAT2D={
+  0:{r:'1/1',c:[0,0,0]}, 7:{r:'3/2',c:[1,0,0]}, 2:{r:'9/8',c:[2,0,0]}, 5:{r:'4/3',c:[-1,0,0]},
+  10:{r:'16/9',c:[-2,0,0]}, 4:{r:'5/4',c:[0,1,0]}, 11:{r:'15/8',c:[1,1,0]}, 9:{r:'5/3',c:[-1,1,0]},
+  8:{r:'8/5',c:[0,-1,0]}, 3:{r:'6/5',c:[1,-1,0]}, 1:{r:'16/15',c:[-1,-1,0]}, 6:{r:'45/32',c:[2,1,0]},
+};
+// 7-limit alternatives for pitch classes where a septimal ratio is simpler/characterful
+const LAT7={
+  10:{r:'7/4', c:[0,0,1]},   // harmonic 7th (vs 16/9)
+  6: {r:'7/5', c:[0,-1,1]},  // septimal tritone (vs 45/32)
+  3: {r:'7/6', c:[-1,-1,1]}, // septimal minor third (vs 6/5)
+  4: {r:'9/7', c:[2,0,-1]},  // septimal major third (vs 5/4)
+};
+let USE7=true;
+// resolve a pitch class to its active lattice entry (7-limit if enabled & available)
+function latOf(pc){ if(USE7 && LAT7[pc]) return LAT7[pc]; return LAT2D[pc]; }
+// project [a3,a5,a7] to 2D screen offsets (7-axis = shallow diagonal)
+function latXY(c){ return {x:c[0]+0.42*(c[2]||0), y:c[1]-0.58*(c[2]||0)}; }
+
+// note personality (weight/center) — shared concept with CIRANDA, here per pitch-class-in-scale
+const NP={weight:{},center:{}};
+function npReset(degs){ NP.weight={};NP.center={}; degs.forEach(function(d,i){ NP.weight[i]=1; NP.center[i]=(i===0?0.8:(d===7?0.3:0)); }); }
+
+function getRoot(){return parseInt(document.getElementById('root').value)||0;}
+function getScale(){return SCALES[document.getElementById('scale').value]||SCALES.dorian;}
+
+// 3D lattice point → 2D projection (isometric-ish, rotatable)
+let rotX=-0.35, rotY=0.6, zoom=1;
+function project(c){
+  // axis vectors in 3D space: 3-axis (right), 5-axis (up-ish), 7-axis (depth)
+  const ax3=[1.0,0,0], ax5=[0,1.0,0], ax7=[0,0,1.0];
+  let x=c[0]*ax3[0]+c[1]*ax5[0]+c[2]*ax7[0];
+  let y=c[0]*ax3[1]+c[1]*ax5[1]+c[2]*ax7[1];
+  let z=c[0]*ax3[2]+c[1]*ax5[2]+c[2]*ax7[2];
+  // rotate around Y then X
+  let x1=x*Math.cos(rotY)-z*Math.sin(rotY);
+  let z1=x*Math.sin(rotY)+z*Math.cos(rotY);
+  let y1=y*Math.cos(rotX)-z1*Math.sin(rotX);
+  return {x:x1, y:y1};
+}
+function dist3(c){ return Math.sqrt(c[0]*c[0]+c[1]*c[1]+c[2]*c[2]); }
+
+let SEL=-1;
+function redraw(){ if(MAP_MODE){ if(typeof buildDevStack==='function')buildDevStack(); return; } draw(); buildSide(); }
+function draw(){
+  const cv=document.getElementById('lattice'); const wrap=cv.parentElement;
+  const W=wrap.clientWidth, H=wrap.clientHeight;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2-10, scale=78*zoom;
+  if(MAP_MODE){ drawMapClean(ctx,W,H,cx,cy); return; }
+  const root=getRoot(); const degs=getScale();
+  if(Object.keys(NP.weight).length!==degs.length) npReset(degs);
+  const show7=document.getElementById('show7').checked;
+  const showAll=document.getElementById('showAll').checked;
+  const showNP=document.getElementById('showNP').checked;
+
+  // which pitch classes to show
+  const inScale={}; degs.forEach(function(d){ inScale[d]=true; });
+  const pcs = showAll ? [0,1,2,3,4,5,6,7,8,9,10,11] : degs.slice();
+
+  // draw axis guide lines from origin
+  function axisLine(c,col){ const o=project([0,0,0]),p=project(c);
+    ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.4;
+    ctx.beginPath();ctx.moveTo(cx+o.x*scale,cy-o.y*scale);ctx.lineTo(cx+p.x*scale,cy-p.y*scale);ctx.stroke();ctx.globalAlpha=1; }
+  axisLine([2,0,0],'#e0b870'); axisLine([0,2,0],'#90b4d4'); if(show7)axisLine([0,0,2],'#c88fb0');
+  // axis labels
+  function axLabel(c,t,col){ const p=project(c);ctx.fillStyle=col;ctx.font='italic 11px Cormorant Garamond';ctx.fillText(t,cx+p.x*scale+4,cy-p.y*scale); }
+  axLabel([2.3,0,0],'3 · 5度',  '#e0b870');
+  axLabel([0,2.3,0],'5 · 3度',  '#90b4d4');
+  if(show7) axLabel([0,0,2.3],'7 · 7度','#c88fb0');
+
+  // connective edges between scale tones that differ by a single axis step
+  const pts={};
+  pcs.forEach(function(pc){ pts[pc]=LATTICE[pc]; });
+  // draw points
+  const order=pcs.slice().sort(function(a,b){ return project(LATTICE[b].c).y - project(LATTICE[a].c).y; });
+  order.forEach(function(pc){
+    const L=LATTICE[pc]; const p=project(L.c);
+    const px=cx+p.x*scale, py=cy-p.y*scale;
+    const isRoot=(pc===0);
+    const di=degs.indexOf(pc);
+    const inSc=di>=0;
+    const d=dist3(L.c);
+    // size: by note personality weight (if shown & in scale), else by closeness
+    let radius=isRoot?13:9;
+    if(showNP && inSc){ radius = 6 + (NP.weight[di]||0)*6; }
+    // color by which axis dominates
+    let col;
+    if(isRoot) col='#e8e2d6';
+    else if(L.c[2]!==0) col='#c88fb0';        // has 7
+    else if(L.c[1]!==0) col='#90b4d4';        // has 5
+    else col='#e0b870';                         // pure 3
+    // dim out-of-scale notes
+    const alpha = inSc? 1 : 0.22;
+    ctx.globalAlpha=alpha;
+    // center-note ring (nyas)
+    if(showNP && inSc && (NP.center[di]||0)>0.05){
+      ctx.strokeStyle='#fff';ctx.lineWidth=1+ (NP.center[di]||0)*2;
+      ctx.beginPath();ctx.arc(px,py,radius+5,0,7);ctx.stroke();
+    }
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(px,py,radius,0,7);ctx.fill();
+    if(pc===SEL){ ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,radius+3,0,7);ctx.stroke(); }
+    // label: note name + ST
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=isRoot?'#000':'#0b0a0e';
+    ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText(NOTE[(root+pc)%12], px, py+3);
+    ctx.fillStyle=col;ctx.font='8px JetBrains Mono';
+    ctx.fillText('ST'+pc+' · '+L.r, px, py+radius+10);
+    ctx.textAlign='left';ctx.globalAlpha=1;
+    L._px=px; L._py=py; L._r=radius;
+  });
+  ctx.globalAlpha=1;
+}
+
+function buildSide(){
+  if(MAP_MODE){ buildMapSide(); return; }
+  const root=getRoot(); const degs=getScale();
+  if(Object.keys(NP.weight).length!==degs.length) npReset(degs);
+  let h='<div class="panel"><div class="pt">軸 (素数)</div><div class="legend">'
+    +'<div><span class="sw" style="background:#e8e2d6"></span> 主音 (原点) 1/1</div>'
+    +'<div><span class="sw" style="background:#e0b870"></span> 3の軸 — 完全5度 (3/2)</div>'
+    +'<div><span class="sw" style="background:#90b4d4"></span> 5の軸 — 長3度 (5/4)</div>'
+    +'<div><span class="sw" style="background:#c88fb0"></span> 7の軸 — 自然7度 (7/4)</div>'
+    +'</div><div class="note" style="margin-top:.4rem">原点からの距離 = 引力(協和度)。近い=安定、遠い=緊張。白い輪=中心音(nyas)。点の大きさ=重み。</div></div>';
+
+  // selected note detail
+  if(SEL>=0){
+    const L=LATTICE[SEL]; const di=degs.indexOf(SEL);
+    h+='<div class="panel"><div class="pt">'+NOTE[(root+SEL)%12]+' の座標</div><div class="selnote">'
+      +'ST <b>'+SEL+'</b> (主音から'+SEL+'半音)<br>'
+      +'純正律比 <b>'+L.r+'</b><br>'
+      +'セント <b>'+L.cents+'¢</b><br>'
+      +'ラティス座標 <b>[3:'+L.c[0]+', 5:'+L.c[1]+', 7:'+L.c[2]+']</b><br>'
+      +'原点からの距離 <b>'+(Math.round(dist3(L.c)*100)/100)+'</b> (引力の弱さ)<br>'
+      +'平均律との差 <b>'+(Math.round((L.cents-SEL*100)*10)/10)+'¢</b><br>';
+    if(di>=0){
+      h+='<br>重み '+npSlider('weight',di,0,2,0.05)+'<br>中心 '+npSlider('center',di,0,1,0.05);
+    } else { h+='<br><span style="color:var(--dim)">この音はスケール外</span>'; }
+    h+='</div></div>';
+  } else {
+    h+='<div class="panel"><div class="note">点をクリックすると、その音のラティス座標・純正律比・引力距離・音の個性が見える。</div></div>';
+  }
+  document.getElementById('side').innerHTML=h;
+}
+function buildMapSide(){
+  const root=getRoot();
+  let h='<div class="panel"><div class="pt">展開の設計</div>'
+    +'<div class="note" style="margin-bottom:.4rem">格子の上に磁場を重ね、共有点(pivot,白)を見る。Cmd+クリックで点を複数選択 → ドラッグで相手の点へ繋ぐ。繋ぎがログになる。</div>'
+    +'<button class="btn" onclick="addStation()" style="font-size:.6rem;width:100%">＋ 今のルート/スケールを磁場に追加</button>'
+    +'</div>';
+  // magnets with on/off (the forest)
+  h+='<div class="panel"><div class="pt">磁場 (オンオフで森を見る)</div>';
+  if(STATIONS.length===0){ h+='<div class="note">まだ磁場がない。</div>'; }
+  STATIONS.forEach(function(st,i){
+    const col=magnetColor(i);
+    const isCur=(i===SELSTATION);
+    h+='<div style="display:flex;align-items:center;gap:.3rem;margin-bottom:.25rem">'
+      +'<span class="sw" style="background:'+col+'"></span>'
+      +'<label class="chk" style="margin:0"><input type="checkbox" '+(st.on?'checked':'')+' onchange="toggleStationOn('+i+')"> </label>'
+      +'<span style="flex:1;font-size:.66rem;cursor:pointer;color:'+(isCur?'#fff':'var(--text)')+';'+(isCur?'font-weight:bold':'')+'" onclick="selectStation('+i+')">'+st.name+(isCur?' ◀ 現在':'')+'</span>'
+      +'<button class="btn" style="font-size:.5rem;padding:.1rem .3rem" onclick="removeStation('+i+')">×</button></div>';
+  });
+  h+='<div class="note" style="margin-top:.3rem">チェック=表示。「現在」の磁場の点を選択・接続元にできる。</div></div>';
+  // current selection
+  if(SELSEL.length){
+    h+='<div class="panel"><div class="pt">選択中の点</div><div class="selnote">'
+      +SELSEL.map(function(x){return '<b>'+NOTE[(root+x.pc)%12]+'</b>(ST'+x.pc+')';}).join(' · ')
+      +'<br><span style="color:var(--dim);font-size:.56rem">この点群からドラッグで繋ぐ。</span>'
+      +'<br><button class="btn" style="font-size:.55rem;margin-top:.2rem" onclick="clearSel()">選択解除</button></div></div>';
+  }
+  // link log (the journey as thought-record)
+  h+='<div class="panel"><div class="pt">繋ぎのログ (思考の記録)</div>';
+  if(LINKS.length===0){ h+='<div class="note">まだ繋ぎがない。点群を選んでドラッグで繋ぐ。</div>'; }
+  LINKS.forEach(function(l,li){
+    const fromN=l.from.map(function(p){return NOTE[(root+p.pc)%12];}).join(' ');
+    const toN=l.to.map(function(p){return NOTE[(root+p.pc)%12];}).join(' ');
+    h+='<div style="border-top:1px solid var(--bd);padding:.3rem 0;font-size:.62rem">'
+      +'<div style="display:flex;justify-content:space-between"><span style="color:#ff6a4a;font-weight:bold">'+(li+1)+'. '+fromN+' → '+toN+'</span>'
+      +'<button class="btn" style="font-size:.5rem;padding:0 .3rem" onclick="deleteLink('+l.id+')">×</button></div>'
+      +'<input type="text" placeholder="何を考えて繋いだか…" value="'+(l.memo||'').replace(/"/g,'&quot;')+'" oninput="setLinkMemo('+l.id+',this.value)" '
+        +'style="width:100%;margin-top:.2rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:JetBrains Mono;font-size:.6rem;padding:.15rem .3rem">'
+      +'</div>';
+  });
+  h+='</div>';
+  document.getElementById('side').innerHTML=h;
+}
+function npSlider(attr,di,min,max,step){
+  const v=NP[attr][di]!=null?NP[attr][di]:0;
+  return '<input type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+v+'" oninput="setNP(\''+attr+'\','+di+',this.value)" style="width:120px"> <span style="color:var(--a3)">'+(Math.round(v*100)/100)+'</span>';
+}
+function setNP(attr,di,val){ NP[attr][di]=parseFloat(val); draw(); }
+
+// ── interaction: drag to rotate, click to select ──
+let dragging=false, lastX=0, lastY=0, moved=false, mouseDownPt=null;
+const cv=document.getElementById('lattice');
+// find the pitch-class point under the cursor (map mode)
+function pcUnder(mx,my){
+  const sF=drawMapClean._scaleF, cx=drawMapClean._cx, cy=drawMapClean._cy;
+  if(sF==null) return -1;
+  let best=-1,bd=14;
+  const active=activeStations();
+  for(let pc=0;pc<12;pc++){
+    const inActive=active.some(function(si){return stPCs(STATIONS[si]).indexOf(pc)>=0;});
+    if(!inActive)continue;
+    const s=pcScreen(pc,cx,cy,sF); const d=Math.hypot(mx-s.x,my-s.y);
+    if(d<bd){bd=d;best=pc;}
+  }
+  return best;
+}
+cv.addEventListener('mousedown',function(e){
+  const rect=cv.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  moved=false; lastX=e.clientX; lastY=e.clientY; mouseDownPt=null;
+  if(MAP_MODE){
+    const pc=pcUnder(mx,my);
+    if(pc>=0){
+      // if this point is part of the current selection, start a drag-link from the selection
+      const inSel=SELSEL.some(function(x){return x.pc===pc;});
+      if(inSel && SELSEL.length){
+        dragLink={fromSel:SELSEL.slice(), x:mx, y:my};
+      } else {
+        mouseDownPt=pc;  // candidate for select on mouseup (if no drag)
+      }
+      return;  // don't rotate when interacting with a point
+    }
+  }
+  dragging=true;  // empty space → rotate
+});
+window.addEventListener('mousemove',function(e){
+  const rect=cv.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  if(dragLink){ dragLink.x=mx; dragLink.y=my; draw(); return; }
+  if(!dragging)return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+  rotY+=dx*0.008; rotX+=dy*0.008;
+  rotX=Math.max(-1.4,Math.min(1.4,rotX));
+  lastX=e.clientX;lastY=e.clientY; draw();
+});
+window.addEventListener('mouseup',function(e){
+  const rect=cv.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  if(dragLink){
+    // complete the link: target = the point group under cursor (its magnet's selected-or-single pc)
+    const pc=pcUnder(mx,my);
+    if(pc>=0){
+      // to-group: if there are other selected points NOT in fromSel, use them; else just this pc
+      let toGroup=[{st:SELSTATION,pc:pc}];
+      const extra=SELSEL.filter(function(x){return !dragLink.fromSel.some(function(f){return f.pc===x.pc;});});
+      if(extra.length) toGroup=extra.slice();
+      LINKS.push({id:++linkSeq, from:dragLink.fromSel.slice(), to:toGroup, memo:''});
+      SELSEL=[];  // clear after committing
+    }
+    dragLink=null; redraw(); return;
+  }
+  if(MAP_MODE && mouseDownPt!=null && !moved){
+    // Cmd/Ctrl+click = add to selection; plain click = single select
+    const pc=mouseDownPt;
+    if(e.metaKey||e.ctrlKey){
+      const idx=SELSEL.findIndex(function(x){return x.pc===pc;});
+      if(idx>=0) SELSEL.splice(idx,1); else SELSEL.push({st:SELSTATION,pc:pc});
+    } else {
+      SELSEL=[{st:SELSTATION,pc:pc}];
+    }
+    redraw();
+  }
+  dragging=false; mouseDownPt=null;
+});
+cv.addEventListener('click',function(e){
+  if(MAP_MODE) return;  // map mode handled in mousedown/up
+  if(moved)return;
+  const rect=cv.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  let best=-1,bd=99;
+  Object.keys(LATTICE).forEach(function(pc){
+    const L=LATTICE[pc]; if(L._px==null)return;
+    const d=Math.hypot(mx-L._px,my-L._py);
+    if(d<(L._r+6)&&d<bd){bd=d;best=parseInt(pc);}
+  });
+  SEL=best; redraw();
+});
+cv.addEventListener('wheel',function(e){ e.preventDefault(); zoom=Math.max(0.4,Math.min(2.5,zoom*(e.deltaY>0?0.92:1.08))); draw(); },{passive:false});
+function resetView(){ rotX=-0.35;rotY=0.6;zoom=1; draw(); }
+function setLinkMemo(id,val){ const l=LINKS.find(function(x){return x.id===id;}); if(l)l.memo=val; }
+function deleteLink(id){ LINKS=LINKS.filter(function(x){return x.id!==id;}); pushHist(); buildDevStack(); }
+function toggle7(){ USE7=!USE7; buildDevStack(); }
+function clearSel(){ SELSEL=[]; redraw(); }
+
+// populate scales (reuse CIRANDA grouping, compact)
+function populateScales(){
+  const sel=document.getElementById('scale');
+  const groups=[
+    ['Western',['ionian','dorian','phrygian','lydian','mixolydian','aeolian','locrian']],
+    ['Melodic minor',['mel_minor','lydian_dom','altered']],
+    ['Harmonic',['har_minor','phrygian_dom','har_major']],
+    ['Gypsy/Double',['double_har','byzantine','hungarian_min']],
+    ['Pentatonic',['maj_pent','min_pent','blues','egyptian']],
+    ['Japanese',['in_sen','hirajoshi','iwato','yo']],
+    ['Raag',['bhairav','yaman','kafi','bhairavi','todi','marwa','malkauns']],
+    ['Maqam',['hijaz','bayati','saba']],
+  ];
+  let html='';
+  groups.forEach(function(g){ html+='<optgroup label="'+g[0]+'">';
+    g[1].forEach(function(k){ if(SCALES[k]) html+='<option value="'+k+'"'+(k==='dorian'?' selected':'')+'>'+k+'</option>'; });
+    html+='</optgroup>'; });
+  sel.innerHTML=html; sel.value='dorian';
+}
+
+// ════════════════════════════════════════════════════════════
+//  DEVELOPMENT MAP — stations (root×scale magnets) the music travels between.
+//  Distance between stations = transition smoothness (shared tones + lattice).
+// ════════════════════════════════════════════════════════════
+let MAP_MODE=false;
+let STATIONS=[];   // {root, scale, name, on}  — magnets; on=visible
+let SELSTATION=-1; // the "current" magnet being worked
+let SELSEL=[];     // selected points within current view: [{stationIdx, pc}]
+let LINKS=[];      // connections: {from:[{st,pc}...], to:[{st,pc}...], memo, id}
+let dragLink=null; // in-progress drag {fromSel:[...], x,y}
+let linkSeq=0;
+
+function toggleMapMode(){
+  MAP_MODE=!MAP_MODE;
+  const b=document.getElementById('modeBtn');
+  if(b){ b.textContent=MAP_MODE?'■ 展開モード':'▶ 展開モード'; b.classList.toggle('hi',MAP_MODE); }
+  document.querySelector('.layout').style.display = MAP_MODE?'none':'grid';
+  document.getElementById('devstack').style.display = MAP_MODE?'flex':'none';
+  if(MAP_MODE){ if(STATIONS.length===0) addStation(true); pushHist(); buildDevStack(); }
+}
+
+// ── history (undo/redo) ──
+let HIST=[], HI=-1;
+function snap(){ return JSON.stringify({STATIONS:STATIONS,LINKS:LINKS,linkSeq:linkSeq}); }
+function pushHist(){ HIST=HIST.slice(0,HI+1); HIST.push(snap()); if(HIST.length>80)HIST.shift(); HI=HIST.length-1; }
+function restoreHist(s){ const o=JSON.parse(s); STATIONS=o.STATIONS; LINKS=o.LINKS; linkSeq=o.linkSeq; buildDevStack(); }
+function undo(){ if(HI>0){HI--; restoreHist(HIST[HI]);} }
+function redo(){ if(HI<HIST.length-1){HI++; restoreHist(HIST[HI]);} }
+
+// ── 2D lattice figure for ONE magnet ──
+function drawMagnet(canvas, st){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const cell=46, cx=W/2, cy=H/2;
+  function xy(pc){ const e=latOf(pc); const s=latXY(e.c); return {x:cx+s.x*cell, y:cy-s.y*cell}; }
+  const pcs=stPCs(st);
+  const inScale={}; pcs.forEach(function(pc){ inScale[pc]=true; });
+  // faint 5-limit grid dots
+  for(let a=-3;a<=3;a++) for(let b=-2;b<=2;b++){
+    const x=cx+a*cell,y=cy-b*cell; ctx.fillStyle='rgba(203,198,208,.06)';
+    ctx.beginPath();ctx.arc(x,y,1.5,0,7);ctx.fill();
+  }
+  // triad triangles (major: pc, +5th, +3rd)
+  pcs.forEach(function(pc){
+    const g=(pc+7)%12, e=(pc+4)%12;
+    if(inScale[g]&&inScale[e]){
+      const p0=xy(pc),p1=xy(g),p2=xy(e);
+      ctx.fillStyle='rgba(224,184,112,.06)';
+      ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.closePath();ctx.fill();
+    }
+  });
+  // edges: 5th(gold), 3rd(blue), and 7th(rose) when 7-limit note present
+  pcs.forEach(function(pc){
+    [[7,'#e0b870'],[4,'#90b4d4']].forEach(function(nb){
+      const n=(pc+nb[0])%12;
+      if(inScale[n]){ const p0=xy(pc),p1=xy(n);
+        ctx.strokeStyle=nb[1];ctx.globalAlpha=.32;ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.stroke();ctx.globalAlpha=1; }
+    });
+    // 7-axis edge: if this pc is a 7-limit note, draw a rose line to its 5-limit "origin" direction
+    if(USE7 && LAT7[pc] && inScale[pc]){
+      const p=xy(pc); const o={x:cx+LAT2D[pc].c[0]*cell, y:cy-LAT2D[pc].c[1]*cell};
+      ctx.strokeStyle='#c88fb0';ctx.globalAlpha=.3;ctx.setLineDash([3,3]);ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(o.x,o.y);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+    }
+  });
+  const root=st.root; const magIdx=STATIONS.indexOf(st);
+  pcs.forEach(function(pc){
+    const p=xy(pc);
+    const deg=((pc-st.root)%12+12)%12;
+    const isRoot=(deg===0);
+    const is7=USE7 && !!LAT7[pc];
+    const isSel=SELSEL.some(function(x){return x.st===magIdx&&x.pc===pc;});
+    const rad=isRoot?12:9;
+    // node
+    ctx.fillStyle=isRoot?'#e8e2d6':(is7?'#c88fb0':'#e0b870');
+    ctx.beginPath();ctx.arc(p.x,p.y,rad,0,7);ctx.fill();
+    if(isSel){ctx.strokeStyle='#ff6a4a';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,rad+4,0,7);ctx.stroke();}
+    // note name INSIDE the dot
+    ctx.fillStyle=is7?'#fff':'#0b0a0e';ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText(NOTE[(root+deg)%12],p.x,p.y+3);
+    // ST below, ratio above — offset clearly so links won't fully hide them
+    ctx.fillStyle='#90b4d4';ctx.font='7px JetBrains Mono';
+    ctx.fillText('ST'+deg,p.x,p.y+rad+9);
+    ctx.fillStyle=is7?'rgba(200,143,176,.9)':'rgba(203,198,208,.45)';
+    ctx.fillText(latOf(pc).r,p.x,p.y-rad-4);
+    ctx.textAlign='left';
+  });
+}
+function magAxes(st){ const ax={a3:0,a5:0,a7:0}; SCALES[st.scale].forEach(function(d){ const c=LATTICE[d].c; if(c[0])ax.a3++; if(c[1])ax.a5++; if(c[2])ax.a7++; }); return ax; }
+function moveDesc(a,b){
+  const ri=((b.root-a.root)%12+12)%12;
+  const pa=stPCs(a), pb=stPCs(b); const shared=pa.filter(function(x){return pb.indexOf(x)>=0;});
+  const ratio=LAT2D[ri]?LAT2D[ri].r:LATTICE[ri].r;
+  // horizontal (fifth) vs vertical (third) character
+  const c=LAT2D[ri]?LAT2D[ri].c:[0,0];
+  let dir='';
+  if(Math.abs(c[0])>Math.abs(c[1])) dir='<span class="st">横移動(5度系) — 力強い・静的</span>';
+  else if(Math.abs(c[1])>0) dir='<span class="em">縦移動(3度系) — エモーショナル・ドラマ</span>';
+  else dir='同位置';
+  return {ri:ri, ratio:ratio, shared:shared, dir:dir};
+}
+function buildDevStack(){
+  const box=document.getElementById('devstack');
+  let h='<div class="devmain" id="devmain"><div class="devtop">'
+    +'<span style="font-family:Cormorant Garamond;font-style:italic;font-size:1.3rem;color:var(--a3)">展開 — 磁場の旅</span>'
+    +'<button class="btn" onclick="addStation();buildDevStack();pushHist()">＋ 磁場を追加</button>'
+    +'<button class="btn" onclick="undo()">↶ 戻る</button>'
+    +'<button class="btn" onclick="redo()">↷ Redo</button>'
+    +'<button class="btn'+(USE7?' hi':'')+'" onclick="toggle7()">7-limit '+(USE7?'●':'○')+'</button>'
+    +'<button class="btn" onclick="saveDev()">⬇ 保存</button>'
+    +'<button class="btn" onclick="document.getElementById(\'devload\').click()">⬆ 読込</button>'
+    +'<input type="file" id="devload" accept=".json" style="display:none" onchange="loadDev(event)">'
+    +'<span style="font-size:.56rem;color:var(--dim)">点クリックで選択 / Cmd+クリックで複数 / 別の図の点へドラッグで繋ぐ</span>'
+    +'</div>';
+  STATIONS.forEach(function(st,i){
+    const ax=magAxes(st);
+    h+='<div class="magfig" data-mag="'+i+'">'
+      +'<canvas id="magcv'+i+'" width="360" height="240"></canvas>'
+      +'<div class="magmeta">'
+        +'<div class="mn">'+(i+1)+'. '+st.name+'</div>'
+        +'<div class="axline">主音 ST'+(st.root%12)+' ('+NOTE[st.root%12]+')</div>'
+        +'<div class="axline">軸(素数): <span style="color:#e0b870">3の軸 '+ax.a3+'音</span> · <span style="color:#90b4d4">5の軸 '+ax.a5+'音</span> · <span style="color:#c88fb0">7の軸 '+ax.a7+'音</span></div>'
+        +'<div style="display:flex;gap:.3rem;margin-top:.3rem">'
+          +'<select onchange="changeMagRoot('+i+',this.value)" style="font-size:.6rem">'+NOTE.map(function(n,ni){return '<option value="'+ni+'"'+(ni===st.root%12?' selected':'')+'>'+n+'</option>';}).join('')+'</select>'
+          +'<button class="btn" style="font-size:.55rem" onclick="removeStation('+i+');buildDevStack();pushHist()">× 削除</button>'
+        +'</div>'
+        +'<input type="text" placeholder="この磁場のメモ…" value="'+(st.memo||'').replace(/"/g,'&quot;')+'" oninput="setMagMemo('+i+',this.value)">'
+      +'</div></div>';
+    // move arrow to next magnet
+    if(i<STATIONS.length-1){
+      const m=moveDesc(st,STATIONS[i+1]);
+      const sharedN=m.shared.map(function(pc){return NOTE[(st.root+((pc-st.root)%12+12)%12)%12];});
+      h+='<div class="movearrow">↓ ルート移動 ST'+m.ri+' ('+m.ratio+') · '+m.dir+' · 共有(pivot): '+(sharedN.length?sharedN.join(' '):'なし')+'</div>';
+    }
+  });
+  h+='</div>';  // close devmain
+  // ── right: link log (繋ぎの記録 + 説明 + 削除) ──
+  h+='<div class="devlog"><div class="lt">繋ぎのログ</div>';
+  if(LINKS.length===0){ h+='<div style="font-size:.6rem;color:var(--dim);font-style:italic;font-family:Cormorant Garamond">点と点をドラッグで繋ぐと、ここに記録される。</div>'; }
+  LINKS.forEach(function(l,li){
+    const a=STATIONS[l.fromMag], b=STATIONS[l.toMag];
+    if(!a||!b)return;
+    const fromDeg=((l.fromPc-a.root)%12+12)%12, toDeg=((l.toPc-b.root)%12+12)%12;
+    const fromN=NOTE[(a.root+fromDeg)%12], toN=NOTE[(b.root+toDeg)%12];
+    h+='<div class="loglink">'
+      +'<div class="lh"><span>'+(li+1)+'. '+fromN+'(磁場'+(l.fromMag+1)+') → '+toN+'(磁場'+(l.toMag+1)+')</span>'
+      +'<button class="del" onclick="deleteLink('+l.id+')">×</button></div>'
+      +'<div style="font-size:.54rem;color:var(--dim);margin-bottom:.2rem">ST'+fromDeg+' '+latOf(l.fromPc).r+' → ST'+toDeg+' '+latOf(l.toPc).r+'</div>'
+      +'<textarea placeholder="どんな意図で繋いだか…" oninput="setLinkMemo('+l.id+',this.value)">'+(l.memo||'')+'</textarea>'
+      +'</div>';
+  });
+  h+='</div>';
+  box.innerHTML=h;
+  // render each canvas + attach interaction
+  STATIONS.forEach(function(st,i){
+    const cv=document.getElementById('magcv'+i);
+    drawMagnet(cv,st);
+    attachMagCanvas(cv,i);
+  });
+  drawLinksOverlay();
+}
+function changeMagRoot(i,v){ STATIONS[i].root=parseInt(v); STATIONS[i].name=NOTE[STATIONS[i].root%12]+' '+STATIONS[i].scale; buildDevStack(); pushHist(); }
+function setMagMemo(i,v){ STATIONS[i].memo=v; }
+
+// interaction on a magnet canvas: click=select pt, cmd+click=multi, drag to another canvas=link
+let devDrag=null;
+function attachMagCanvas(cv,magIdx){
+  function ptUnder(mx,my){
+    let best=-1,bd=15;
+    stPCs(STATIONS[magIdx]).forEach(function(pc){
+      if(LAT2D[pc]._sx==null)return; const d=Math.hypot(mx-LAT2D[pc]._sx,my-LAT2D[pc]._sy);
+      // recompute since _sx is overwritten per draw — redraw stores last; safer to recompute
+    });
+    const W=cv.width,H=cv.height,cell=46,cx=W/2,cy=H/2;
+    stPCs(STATIONS[magIdx]).forEach(function(pc){
+      const s=latXY(latOf(pc).c); const x=cx+s.x*cell,y=cy-s.y*cell; const d=Math.hypot(mx-x,my-y);
+      if(d<bd){bd=d;best=pc;}
+    });
+    return best;
+  }
+  cv.addEventListener('mousedown',function(e){
+    const r=cv.getBoundingClientRect(); const mx=e.clientX-r.left,my=e.clientY-r.top;
+    const pc=ptUnder(mx,my);
+    if(pc>=0){ devDrag={fromMag:magIdx,fromPc:pc,startX:e.clientX,startY:e.clientY,moved:false}; }
+  });
+  cv.addEventListener('click',function(e){
+    const r=cv.getBoundingClientRect(); const mx=e.clientX-r.left,my=e.clientY-r.top;
+    const pc=ptUnder(mx,my); if(pc<0)return;
+    if(e.metaKey||e.ctrlKey){ const idx=SELSEL.findIndex(function(x){return x.st===magIdx&&x.pc===pc;}); if(idx>=0)SELSEL.splice(idx,1); else SELSEL.push({st:magIdx,pc:pc}); }
+    else { SELSEL=[{st:magIdx,pc:pc}]; }
+    STATIONS.forEach(function(s,i){ drawMagnet(document.getElementById('magcv'+i),s); });
+    drawLinksOverlay();
+  });
+}
+window.addEventListener('mousemove',function(e){ if(devDrag){ if(Math.abs(e.clientX-devDrag.startX)+Math.abs(e.clientY-devDrag.startY)>4)devDrag.moved=true; } });
+window.addEventListener('mouseup',function(e){
+  if(!devDrag)return;
+  if(devDrag.moved){
+    // find which magnet canvas the cursor is over, and which point
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    if(el&&el.id&&el.id.indexOf('magcv')===0){
+      const toMag=parseInt(el.id.replace('magcv',''));
+      const r=el.getBoundingClientRect(); const mx=e.clientX-r.left,my=e.clientY-r.top;
+      const W=el.width,H=el.height,cell=46,cx=W/2,cy=H/2; let best=-1,bd=15;
+      stPCs(STATIONS[toMag]).forEach(function(pc){ const s=latXY(latOf(pc).c); const x=cx+s.x*cell,y=cy-s.y*cell; const d=Math.hypot(mx-x,my-y); if(d<bd){bd=d;best=pc;} });
+      if(best>=0 && !(toMag===devDrag.fromMag&&best===devDrag.fromPc)){
+        LINKS.push({id:++linkSeq, fromMag:devDrag.fromMag, fromPc:devDrag.fromPc, toMag:toMag, toPc:best, memo:''});
+        pushHist(); buildDevStack();
+      }
+    }
+  }
+  devDrag=null;
+});
+
+// draw committed cross-figure links as an SVG overlay on the stack
+function drawLinksOverlay(){
+  const box=document.getElementById('devmain'); if(!box)return;
+  let svg=document.getElementById('linksvg');
+  if(!svg||svg.parentElement!==box){ if(svg)svg.remove(); svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.id='linksvg';
+    svg.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;'; box.appendChild(svg); }
+  svg.setAttribute('width',box.scrollWidth); svg.setAttribute('height',box.scrollHeight);
+  let inner='';
+  LINKS.forEach(function(l,li){
+    const ca=document.getElementById('magcv'+l.fromMag), cb=document.getElementById('magcv'+l.toMag);
+    if(!ca||!cb)return;
+    const ra=ca.getBoundingClientRect(), rb=cb.getBoundingClientRect(), rbox=box.getBoundingClientRect();
+    const cell=46;
+    function pos(cv,rect,pc){ const s=latXY(latOf(pc).c); const x=cv.width/2+s.x*cell, y=cv.height/2-s.y*cell;
+      return {x:rect.left-rbox.left+box.scrollLeft+x*(rect.width/cv.width), y:rect.top-rbox.top+box.scrollTop+y*(rect.height/cv.height)}; }
+    const pa=pos(ca,ra,l.fromPc), pb=pos(cb,rb,l.toPc);
+    // thin line + small offset endpoints so note names stay readable
+    inner+='<line x1="'+pa.x+'" y1="'+pa.y+'" x2="'+pb.x+'" y2="'+pb.y+'" stroke="#ff6a4a" stroke-width="1.5" stroke-opacity="0.8"/>';
+    inner+='<circle cx="'+pa.x+'" cy="'+pa.y+'" r="3" fill="none" stroke="#ff6a4a" stroke-width="1.5"/><circle cx="'+pb.x+'" cy="'+pb.y+'" r="3" fill="none" stroke="#ff6a4a" stroke-width="1.5"/>';
+    inner+='<text x="'+((pa.x+pb.x)/2+6)+'" y="'+((pa.y+pb.y)/2-4)+'" fill="#ff6a4a" font-size="11" font-weight="bold" font-family="JetBrains Mono">'+(li+1)+'</text>';
+  });
+  svg.innerHTML=inner;
+}
+function saveDev(){
+  const blob=new Blob([JSON.stringify({STATIONS:STATIONS,LINKS:LINKS},null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='lattice_journey_'+Date.now()+'.json';a.click();URL.revokeObjectURL(u);
+}
+function loadDev(ev){ const f=ev.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=function(e){ try{ const o=JSON.parse(e.target.result); STATIONS=o.STATIONS||[]; LINKS=o.LINKS||[]; linkSeq=LINKS.reduce(function(m,l){return Math.max(m,l.id||0);},0); buildDevStack(); pushHist(); }catch(err){} };
+  r.readAsText(f); ev.target.value=''; }
+
+function scalePCs(root,scale){ const degs=SCALES[scale]||SCALES.dorian; return degs.map(function(d){return (root+d)%12;}); }
+function stationCentroid(st){
+  const degs=SCALES[st.scale]||SCALES.dorian;
+  let cx=0,cy=0,cz=0;
+  degs.forEach(function(d){ const c=LATTICE[d].c; cx+=c[0];cy+=c[1];cz+=c[2]; });
+  const n=degs.length; const rc=LATTICE[st.root%12].c;
+  return [cx/n+rc[0], cy/n+rc[1], cz/n+rc[2]];
+}
+function sharedTones(a,b){ const pa=scalePCs(a.root,a.scale), pb=scalePCs(b.root,b.scale); let s=0; pa.forEach(function(x){ if(pb.indexOf(x)>=0)s++; }); return s; }
+function stationDist(a,b){ const ca=stationCentroid(a),cb=stationCentroid(b); return Math.sqrt((ca[0]-cb[0])**2+(ca[1]-cb[1])**2+(ca[2]-cb[2])**2); }
+function transitionLabel(sh,dist){
+  if(sh>=6 && dist<1.5) return 'なめらか';
+  if(sh>=5) return '近い';
+  if(sh>=3) return '中程度';
+  return '劇的';
+}
+function addStation(silent){
+  const root=getRoot(), scale=document.getElementById('scale').value;
+  const st={root:root, scale:scale, name:NOTE[root%12]+' '+scale, on:true};
+  STATIONS.push(st);
+  SELSTATION=STATIONS.length-1;
+  if(!silent){ redraw(); }
+}
+function removeStation(i){
+  STATIONS.splice(i,1);
+  // drop links/selection referencing this station, reindex
+  SELSEL=SELSEL.filter(function(s){return s.st!==i;}).map(function(s){return {st:s.st>i?s.st-1:s.st,pc:s.pc};});
+  LINKS=LINKS.filter(function(l){ return !l.from.some(function(p){return p.st===i;}) && !l.to.some(function(p){return p.st===i;}); })
+    .map(function(l){ l.from=l.from.map(function(p){return {st:p.st>i?p.st-1:p.st,pc:p.pc};}); l.to=l.to.map(function(p){return {st:p.st>i?p.st-1:p.st,pc:p.pc};}); return l; });
+  if(SELSTATION>=STATIONS.length)SELSTATION=STATIONS.length-1;
+  redraw();
+}
+function selectStation(i){ SELSTATION=i; const st=STATIONS[i]; if(st){ document.getElementById('root').value=st.root; document.getElementById('scale').value=st.scale; } redraw(); }
+function toggleStationOn(i){ if(STATIONS[i]){ STATIONS[i].on=!STATIONS[i].on; redraw(); } }
+// magnet pitch-class set
+function stPCs(st){ const degs=SCALES[st.scale]||SCALES.dorian; return degs.map(function(d){return (st.root+d)%12;}); }
+// which stations are "active" to show: the selected (current) + any toggled on
+function activeStations(){ return STATIONS.map(function(s,i){return i;}).filter(function(i){ return i===SELSTATION || STATIONS[i].on; }); }
+
+// project a station to screen using its centroid in lattice space
+// ════════════════════════════════════════════════════════════
+//  DESIGN DEVICE — lattice grid + overlaid magnets + pivots + hand-drawn links
+// ════════════════════════════════════════════════════════════
+const MAGNET_COLORS=['#e0b870','#90b4d4','#c88fb0','#88c8a0','#d49090','#b0a0e0'];
+function magnetColor(i){ return MAGNET_COLORS[i%MAGNET_COLORS.length]; }
+
+// screen position of a pitch-class point on the lattice (shared by all magnets)
+function pcScreen(pc,cx,cy,scaleF){ const p=project(LATTICE[pc].c); return {x:cx+p.x*scaleF, y:cy-p.y*scaleF}; }
+
+function drawMapClean(ctx,W,H,cx,cy){
+  const scaleF=92*zoom;
+  const root=getRoot();
+  // ── 1. the lattice grid: all 12 points, faint (the forest) ──
+  for(let pc=0;pc<12;pc++){
+    const s=pcScreen(pc,cx,cy,scaleF);
+    ctx.fillStyle='rgba(203,198,208,.10)';
+    ctx.beginPath();ctx.arc(s.x,s.y,3,0,7);ctx.fill();
+    ctx.fillStyle='rgba(203,198,208,.18)';ctx.font='7px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('ST'+pc,s.x,s.y-7);ctx.textAlign='left';
+  }
+  // axis guides
+  function axisLine(c,col){ const o=project([0,0,0]),p=project(c);
+    ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.15;
+    ctx.beginPath();ctx.moveTo(cx+o.x*scaleF,cy-o.y*scaleF);ctx.lineTo(cx+p.x*scaleF,cy-p.y*scaleF);ctx.stroke();ctx.globalAlpha=1; }
+  axisLine([2,0,0],'#e0b870');axisLine([0,2,0],'#90b4d4');axisLine([0,0,2],'#c88fb0');
+
+  const active=activeStations();
+  // compute pivots: pcs shared by 2+ active magnets
+  const pcCount={};
+  active.forEach(function(si){ stPCs(STATIONS[si]).forEach(function(pc){ pcCount[pc]=(pcCount[pc]||0)+1; }); });
+
+  // ── 2. each active magnet: its tones light up in the magnet's colour ──
+  // a magnet draws a ring of its colour around each of its tones, offset slightly
+  // so overlapping magnets are distinguishable.
+  active.forEach(function(si,ai){
+    const st=STATIONS[si]; const col=magnetColor(si);
+    const isCurrent=(si===SELSTATION);
+    const off=ai*3;   // slight radial offset per magnet
+    stPCs(st).forEach(function(pc){
+      const s=pcScreen(pc,cx,cy,scaleF);
+      ctx.strokeStyle=col; ctx.lineWidth=isCurrent?2:1.2; ctx.globalAlpha=isCurrent?1:0.7;
+      ctx.beginPath();ctx.arc(s.x,s.y,9+off,0,7);ctx.stroke();ctx.globalAlpha=1;
+    });
+  });
+
+  // ── 3. magnet tone dots + pivots ──
+  for(let pc=0;pc<12;pc++){
+    const inActive = active.some(function(si){ return stPCs(STATIONS[si]).indexOf(pc)>=0; });
+    if(!inActive) continue;
+    const s=pcScreen(pc,cx,cy,scaleF);
+    const isPivot = (pcCount[pc]||0)>=2;
+    // is this point selected?
+    const isSel = SELSEL.some(function(x){return x.pc===pc;});
+    let r=isPivot?8:6;
+    if(isPivot){
+      // pivot: bright white core + glow ring (the door)
+      ctx.fillStyle='rgba(255,255,255,.15)';ctx.beginPath();ctx.arc(s.x,s.y,15,0,7);ctx.fill();
+      ctx.fillStyle='#fff';
+    } else {
+      ctx.fillStyle='#cbc6d0';
+    }
+    ctx.beginPath();ctx.arc(s.x,s.y,r,0,7);ctx.fill();
+    if(isSel){ ctx.strokeStyle='#ff6a4a';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(s.x,s.y,r+4,0,7);ctx.stroke(); }
+    // label: note name + ST
+    ctx.fillStyle=isPivot?'#000':'#0b0a0e';ctx.font='bold 8px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText(NOTE[(root+pc)%12],s.x,s.y+3);ctx.textAlign='left';
+    if(isPivot){ ctx.fillStyle='#fff';ctx.font='7px JetBrains Mono';ctx.textAlign='center';ctx.fillText('pivot',s.x,s.y+r+9);ctx.textAlign='left'; }
+  }
+
+  // ── 4. committed links (the journey log) ──
+  LINKS.forEach(function(l,li){
+    // connect centroid of from-group to centroid of to-group
+    function gc(group){ let x=0,y=0; group.forEach(function(p){ const s=pcScreen(p.pc,cx,cy,scaleF); x+=s.x;y+=s.y; }); return {x:x/group.length,y:y/group.length}; }
+    if(!l.from.length||!l.to.length)return;
+    const a=gc(l.from), b=gc(l.to);
+    ctx.strokeStyle='rgba(255,106,74,.7)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    const ang=Math.atan2(b.y-a.y,b.x-a.x);
+    ctx.fillStyle='rgba(255,106,74,.8)';
+    ctx.beginPath();ctx.moveTo(b.x-Math.cos(ang)*8,b.y-Math.sin(ang)*8);
+    ctx.lineTo(b.x-Math.cos(ang)*16-Math.sin(ang)*4,b.y-Math.sin(ang)*16+Math.cos(ang)*4);
+    ctx.lineTo(b.x-Math.cos(ang)*16+Math.sin(ang)*4,b.y-Math.sin(ang)*16-Math.cos(ang)*4);
+    ctx.closePath();ctx.fill();
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    ctx.fillStyle='#ff6a4a';ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText((li+1),mx,my-2);ctx.textAlign='left';
+  });
+
+  // ── 5. in-progress drag link ──
+  if(dragLink){
+    function gc(group){ let x=0,y=0; group.forEach(function(p){ const s=pcScreen(p.pc,cx,cy,scaleF); x+=s.x;y+=s.y; }); return {x:x/group.length,y:y/group.length}; }
+    if(dragLink.fromSel.length){
+      const a=gc(dragLink.fromSel);
+      ctx.strokeStyle='rgba(255,106,74,.5)';ctx.lineWidth=2;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(dragLink.x,dragLink.y);ctx.stroke();ctx.setLineDash([]);
+    }
+  }
+  // store screen coords for hit-testing
+  drawMapClean._scaleF=scaleF; drawMapClean._cx=cx; drawMapClean._cy=cy;
+}
+
+window.addEventListener('resize',draw);
+populateScales();
+redraw();
+</script>
+</body>
+</html>

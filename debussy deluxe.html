@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude Debussy — Rêverie · Pagodes · Cathédrale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ── Debussy palette: water, mist, ancient light ── */
+:root {
+  --bg:     #06080e;
+  --s0:     #090c14;
+  --s1:     #0e1220;
+  --bd:     #161e30;
+  --bd2:    #1e2a40;
+  --text:   #c8cce0;
+  --dim:    #485068;
+  --fog:    #1e2438;
+
+  /* Cathédrale: stone, depth, ancient weight */
+  --cat:    #8098c0;  /* stone blue-grey */
+  --cat2:   #506880;
+  --cat3:   #304860;  /* deep cathedral shadow */
+  --sil:    #1e2838;
+
+  /* Rêverie: drift, dissolution, gentle sadness */
+  --rev:    #c8a8e0;  /* lavender */
+  --rev2:   #907098;
+  --rev3:   #604878;  /* deep violet */
+
+  /* Pagodes: mystery, labyrinth, ancient encounter */
+  --pag:    #80c890;  /* jade green */
+  --pag2:   #48886a;
+  --egypt:  '#c8a840'; /* ochre gold */
+  --pag-egypt: #c8a840;
+  --cathedral: #304860; /* sinking cathedral: deep blue */
+
+  --bone:   #d8d0c0;
+  --paper:  #070910;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;}
+
+/* Water surface texture */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(180deg,
+    transparent 0px,transparent 4px,
+    rgba(100,130,200,.008) 4px,rgba(100,130,200,.008) 5px
+  );opacity:.6;}
+
+header{
+  padding:.9rem 1.5rem .65rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:flex-end;gap:1.4rem;
+  background:var(--paper);position:relative;z-index:10;
+}
+.hdr-name{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:300;font-style:italic;color:var(--bone);line-height:1;}
+.hdr-sub{font-size:.38rem;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-top:.22rem;}
+.hdr-title{flex:1;}
+
+/* Engine blend display */
+.blend-display{flex-shrink:0;display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;}
+.blend-row{display:flex;align-items:center;gap:.4rem;}
+.blend-name{font-family:'Cormorant Garamond',serif;font-size:.72rem;font-style:italic;width:52px;text-align:right;}
+.blend-bar{width:80px;height:3px;background:var(--s1);border-radius:2px;overflow:hidden;}
+.blend-fill{height:100%;border-radius:2px;transition:width .4s ease;}
+.blend-pct{font-size:.36rem;width:22px;text-align:right;}
+
+/* Silence indicator */
+.silence-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:.22rem;}
+.silence-label{font-size:.36rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.silence-orb{width:10px;height:10px;border-radius:50%;background:var(--sil);transition:all .3s;}
+.silence-orb.active{background:var(--cat);box-shadow:0 0 8px var(--cat);}
+
+.layout{display:grid;grid-template-columns:210px 1fr;min-height:calc(100vh - 136px);position:relative;z-index:1;}
+.left-panel{border-right:1px solid var(--bd);padding:.6rem;display:flex;flex-direction:column;gap:.42rem;overflow-y:auto;background:var(--paper);}
+.panel{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.48rem .56rem;}
+.panel-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:var(--dim);margin-bottom:.36rem;display:flex;align-items:center;gap:.28rem;}
+.panel-title::before{content:'';width:8px;height:1px;background:currentColor;opacity:.4;flex-shrink:0;}
+.pr{display:flex;align-items:center;gap:.28rem;margin-bottom:.16rem;}
+.pr label{font-size:.37rem;color:var(--dim);width:58px;flex-shrink:0;}
+.pr-val{font-size:.37rem;width:22px;text-align:right;flex-shrink:0;}
+input[type=range]{height:2px;cursor:pointer;flex:1;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.44rem;padding:.08rem .15rem;border-radius:1px;}
+.btn{padding:.14rem .44rem;border:1px solid var(--bd);border-radius:1px;background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.44rem;cursor:pointer;transition:all .1s;}
+.btn:hover{border-color:var(--cat);color:var(--cat);}
+.btn.syn{border-color:rgba(160,184,216,.4);color:var(--cat);background:rgba(160,184,216,.06);}
+.btn.rev{border-color:rgba(200,168,224,.4);color:var(--rev);}
+.btn.pag{border-color:rgba(128,200,144,.4);color:var(--pag);}
+.midi-dot{width:6px;height:6px;border-radius:50%;background:var(--fog);flex-shrink:0;}
+.midi-dot.on{background:var(--pag);box-shadow:0 0 4px var(--pag);}
+
+/* Engine selector tabs */
+.engine-tabs{display:flex;gap:2px;margin-bottom:.4rem;}
+.etab{flex:1;padding:.2rem .3rem;border:1px solid var(--bd);border-radius:1px;background:transparent;font-family:'Cormorant Garamond',serif;font-size:.72rem;font-style:italic;cursor:pointer;text-align:center;transition:all .12s;color:var(--dim);}
+.etab.syn-tab{border-color:rgba(160,184,216,.3);}
+.etab.rev-tab{border-color:rgba(200,168,224,.3);}
+.etab.pag-tab{border-color:rgba(128,200,144,.3);}
+.etab.syn-tab.active{background:rgba(160,184,216,.1);color:var(--cat);border-color:var(--cat);}
+.etab.rev-tab.active{background:rgba(200,168,224,.1);color:var(--rev);border-color:var(--rev);}
+.etab.pag-tab.active{background:rgba(128,200,144,.1);color:var(--pag);border-color:var(--pag);}
+.etab.cat-tab{border-color:rgba(128,152,192,.3);}
+.etab.cat-tab.active{background:rgba(128,152,192,.1);color:var(--cat);border-color:var(--cat);}
+
+.main-area{display:flex;flex-direction:column;}
+.transport{padding:.4rem .85rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.48rem;background:var(--paper);flex-wrap:wrap;}
+
+/* ── BLEND FADERS ── */
+.blend-section{padding:.5rem .85rem;border-bottom:1px solid var(--bd);background:var(--s0);display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;}
+.blend-label-main{font-family:'Cormorant Garamond',serif;font-size:.72rem;font-style:italic;color:var(--dim);white-space:nowrap;}
+.blend-fader{display:flex;align-items:center;gap:.4rem;flex:1;min-width:140px;}
+.blend-fader-name{font-family:'Cormorant Garamond',serif;font-size:.75rem;font-style:italic;width:52px;flex-shrink:0;}
+.blend-fader input{flex:1;height:3px;}
+.blend-fader-val{font-size:.38rem;width:24px;text-align:right;}
+/* Fade transition control */
+.fade-row{display:flex;align-items:center;gap:.4rem;padding-left:.6rem;border-left:1px solid var(--bd);}
+.fade-label{font-size:.37rem;color:var(--dim);white-space:nowrap;}
+
+/* ── STEP DISPLAY ── */
+.steps-area{flex:1;padding:.65rem .85rem;overflow-y:auto;}
+.voice-block{margin-bottom:.85rem;}
+.voice-header{display:flex;align-items:center;gap:.45rem;margin-bottom:.26rem;}
+.voice-label{font-family:'Cormorant Garamond',serif;font-size:.85rem;font-style:italic;}
+.voice-ch{font-size:.35rem;color:var(--dim);padding:.05rem .18rem;border:1px solid var(--bd);border-radius:1px;}
+.voice-info{font-size:.34rem;color:var(--fog);margin-left:auto;}
+
+/* Steps: Debussy style — wide, airy, silence has width */
+.step-row{display:flex;gap:3px;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+.step{flex-shrink:0;min-width:34px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:.08rem .04rem;border:1px solid transparent;transition:all .08s;position:relative;}
+.step:hover{border-color:var(--bd2);}
+.step.playing{border-color:var(--cat)!important;}
+.step.silence{background:rgba(30,40,56,.4);border-color:rgba(30,40,56,.8)!important;}
+.step.silence.playing{background:rgba(30,40,56,.7);border-color:var(--sil)!important;}
+/* Silence step visual: empty but weighted */
+.step-bar{width:26px;border-radius:0;min-height:2px;}
+.step-name{font-family:'Cormorant Garamond',serif;font-size:.68rem;font-style:italic;color:var(--dim);line-height:1;}
+.step-name.on{color:var(--bone);}
+.step-name.sil{color:var(--sil);font-size:.55rem;}
+.step-num{font-size:.24rem;color:var(--fog);}
+/* Silence duration marker */
+.step-sil-dur{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:.3rem;color:var(--cat2);opacity:.5;}
+
+/* Dock */
+.engine-dock{border-top:1px solid var(--bd);background:var(--paper);position:sticky;bottom:0;z-index:20;}
+.dock-tabbar{display:flex;border-bottom:1px solid var(--bd);overflow-x:auto;scrollbar-width:none;}
+.dock-tab{padding:.22rem .46rem;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.38rem;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.18rem;transition:all .1s;white-space:nowrap;}
+.dock-tab:hover{color:var(--text);}
+.dock-tab.active{color:var(--text);border-bottom-color:var(--cat);}
+.dock-tdot{width:4px;height:4px;border-radius:50%;opacity:.4;}
+.dock-tab.active .dock-tdot{opacity:1;}
+.dock-minibar{display:flex;align-items:center;gap:.35rem;padding:0 .55rem;margin-left:auto;flex-shrink:0;}
+.mini-lbl{font-size:.32rem;color:var(--dim);}
+.mini-bar{width:24px;height:2px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:1px;transition:width .4s;}
+.dock-panels{max-height:190px;overflow:hidden;transition:max-height .22s;}
+.dock-panels.collapsed{max-height:0!important;}
+.dock-panel{display:none;padding:.4rem .75rem .52rem;}
+.dock-panel.active{display:block;}
+.dpg{display:grid;gap:.4rem;}
+.dpg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dpg-3{grid-template-columns:1fr 1fr 1fr;}
+.dsub{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.35rem .42rem;}
+.dsub-t{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.78rem;color:var(--dim);margin-bottom:.2rem;padding-left:.2rem;border-left:1px solid var(--cat);opacity:.65;}
+.dg-row{display:flex;align-items:center;gap:.22rem;margin-bottom:.12rem;}
+.dg-lbl{font-size:.34rem;color:var(--dim);width:52px;flex-shrink:0;}
+.dg-track{flex:1;height:3px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.dg-fill{height:100%;border-radius:1px;transition:width .25s;}
+.dg-val{font-size:.34rem;width:18px;text-align:right;flex-shrink:0;}
+.dg-log{font-size:.35rem;color:var(--dim);line-height:1.85;max-height:58px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-title">
+    <div class="hdr-name">Claude Debussy</div>
+    <div class="hdr-sub">Rêverie · Pagodes · Cathédrale engloutie · Three Engines · Blend</div>
+  </div>
+  <div class="silence-wrap">
+    <span class="silence-label">Silence</span>
+    <div class="silence-orb" id="silenceOrb"></div>
+  </div>
+  <div class="blend-display">
+    <div class="blend-row">
+      <span class="blend-name" style="color:var(--cat)">Cathédrale</span>
+      <div class="blend-bar"><div class="blend-fill" id="blendBarSyn" style="background:var(--cat);width:100%"></div></div>
+      <span class="blend-pct" id="blendPctSyn" style="color:var(--cat)">100</span>
+    </div>
+    <div class="blend-row">
+      <span class="blend-name" style="color:var(--rev)">Rêverie</span>
+      <div class="blend-bar"><div class="blend-fill" id="blendBarRev" style="background:var(--rev);width:0%"></div></div>
+      <span class="blend-pct" id="blendPctRev" style="color:var(--rev)">0</span>
+    </div>
+    <div class="blend-row">
+      <span class="blend-name" style="color:var(--pag)">Pagodes</span>
+      <div class="blend-bar"><div class="blend-fill" id="blendBarPag" style="background:var(--pag);width:0%"></div></div>
+      <span class="blend-pct" id="blendPctPag" style="color:var(--pag)">0</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<div class="left-panel">
+
+  <!-- Engine selector -->
+  <div class="panel">
+    <div class="panel-title" style="color:var(--cat)">Engine</div>
+    <div class="engine-tabs">
+      <button class="etab cat-tab active" id="tabSyn" onclick="selectEngine('cathedrale')">Cathédrale</button>
+      <button class="etab rev-tab" id="tabRev" onclick="selectEngine('reverie')">Rêverie</button>
+      <button class="etab pag-tab" id="tabPag" onclick="selectEngine('pagodes')">Pagodes</button>
+    </div>
+    <!-- Engine-specific params (shown/hidden) -->
+    <div id="paramsSyrinx">
+      <div class="pr"><label>Depth</label>
+        <input type="range" id="catDepth" min="0" max="100" value="60" style="accent-color:var(--cat)">
+        <span class="pr-val" id="catDepthV" style="color:var(--cat)">60</span></div>
+      <div class="pr"><label>Rise speed</label>
+        <input type="range" id="catRise" min="0" max="100" value="30">
+        <span class="pr-val" id="catRiseV">30</span></div>
+      <div class="pr"><label>Phase</label>
+        <select id="catPhase" style="flex:1;font-size:.42rem">
+          <option value="submerged" selected>沈没 — ppp霧</option>
+          <option value="emerging">浮上 — fff頂点</option>
+          <option value="sinking">再沈降 — pppp消滅</option>
+          <option value="auto">Auto cycle</option>
+        </select></div>
+      <div class="pr"><label>Parallel 5th</label>
+        <input type="range" id="parallel5" min="0" max="100" value="75">
+        <span class="pr-val" id="parallel5V">75</span></div>
+    </div>
+    <div id="paramsReverie" style="display:none">
+      <div class="pr"><label>Drift amt.</label>
+        <input type="range" id="revDrift" min="0" max="100" value="55" style="accent-color:var(--rev)">
+        <span class="pr-val" id="revDriftV" style="color:var(--rev)">55</span></div>
+      <div class="pr"><label>Pedal</label>
+        <input type="range" id="revPedal" min="0" max="100" value="70">
+        <span class="pr-val" id="revPedalV">70</span></div>
+      <div class="pr"><label>Resolve</label>
+        <select id="revResolve" style="flex:1;font-size:.42rem">
+          <option value="never" selected>Never — 悠久</option>
+          <option value="rare">Rarely</option>
+          <option value="sometimes">Sometimes</option>
+        </select></div>
+      <div class="pr"><label>Satie link</label>
+        <input type="range" id="satieLink" min="0" max="100" value="35">
+        <span class="pr-val" id="satieLinkV">35</span></div>
+    </div>
+    <div id="paramsPagodes" style="display:none">
+      <div class="pr"><label>World</label>
+        <select id="pagWorld" onchange="onPagWorldChange()" style="flex:1;font-size:.42rem">
+          <option value="east" selected>East — Pentatonic</option>
+          <option value="egypt">Egypt — Phrygian</option>
+          <option value="hirajoshi">Hirajoshi — 静</option>
+          <option value="cathedral">Cathedral — 沈む</option>
+        </select></div>
+      <div class="pr"><label>Voices</label>
+        <select id="pagVoices" style="flex:1;font-size:.42rem">
+          <option value="3" selected>3声部</option>
+          <option value="4">4声部</option>
+          <option value="5">5声部</option>
+        </select></div>
+      <div class="pr"><label>Labyrinth</label>
+        <input type="range" id="labyrinth" min="0" max="100" value="60" style="accent-color:var(--pag)">
+        <span class="pr-val" id="labyrinthV" style="color:var(--pag)">60</span></div>
+      <div class="pr"><label>Cathedral</label>
+        <input type="range" id="cathedralAmt" min="0" max="100" value="20">
+        <span class="pr-val" id="cathedralAmtV">20</span></div>
+    </div>
+  </div>
+
+  <!-- Tuning -->
+  <div class="panel">
+    <div class="panel-title">Tuning</div>
+    <div class="pr"><label>Root</label>
+      <select id="rootSel" onchange="onRootChange()" style="flex:1">
+        <option value="60">C4</option><option value="62">D4</option>
+        <option value="64" selected>E4</option><option value="65">F4</option>
+        <option value="67">G4</option><option value="69">A4</option>
+        <option value="71">B4</option>
+      </select></div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="52" min="20" max="100"
+        style="width:44px;font-size:.5rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.07rem .14rem;border-radius:1px">
+      <button class="btn" onclick="tapTempo()" style="font-size:.36rem;padding:.06rem .22rem">TAP</button></div>
+    <div class="pr"><label>Rubato</label>
+      <input type="range" id="rubatoAmt" min="0" max="100" value="65" style="accent-color:var(--rev)">
+      <span class="pr-val" id="rubatoAmtV" style="color:var(--rev)">65</span></div>
+    <div class="pr"><label>Steps</label>
+      <select id="stepsSel" onchange="generateActive()" style="flex:1">
+        <option value="8">8</option>
+        <option value="12" selected>12</option>
+        <option value="16">16</option>
+        <option value="24">24</option>
+      </select></div>
+  </div>
+
+  <!-- Velocity -->
+  <div class="panel">
+    <div class="panel-title">Velocity — 消えていく方向</div>
+    <div style="font-size:.36rem;color:var(--dim);line-height:1.8;margin-bottom:.22rem">
+      音は消えていく方向に向かう
+    </div>
+    <div class="pr"><label>Base</label>
+      <input type="range" id="baseVel" min="10" max="80" value="38" style="accent-color:var(--cat)">
+      <span class="pr-val" id="baseVelV" style="color:var(--cat)">38</span></div>
+    <div class="pr"><label>Decay shape</label>
+      <select id="decayShape" style="flex:1;font-size:.42rem">
+        <option value="fade" selected>Fade — 消えていく</option>
+        <option value="swell">Swell — 膨らんで消える</option>
+        <option value="sudden">Sudden — 突然の静寂</option>
+        <option value="flat">Flat — 均一</option>
+      </select></div>
+    <div class="pr"><label>Pedal vel.</label>
+      <input type="range" id="pedalVel" min="5" max="60" value="22">
+      <span class="pr-val" id="pedalVelV">22</span></div>
+  </div>
+
+  <!-- MIDI -->
+  <div class="panel">
+    <div class="panel-title">MIDI → Pianoteq</div>
+    <div class="pr"><div class="midi-dot" id="midiDot"></div>
+      <span id="midiStatus" style="font-size:.4rem;color:var(--dim)">—</span></div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.18rem;font-size:.4rem">↻ Refresh</button>
+    <div class="pr"><label>Out</label>
+      <select id="midiDevSel" onchange="selectMidiOut(this.value)" style="flex:1;font-size:.38rem"></select></div>
+    <div class="pr"><label>Melody Ch</label>
+      <select id="melCh" style="flex:1;font-size:.38rem">
+        <option value="1" selected>Ch 1</option><option value="2">Ch 2</option><option value="3">Ch 3</option></select></div>
+    <div class="pr"><label>Harmony Ch</label>
+      <select id="harCh" style="flex:1;font-size:.38rem">
+        <option value="1">Ch 1</option><option value="2" selected>Ch 2</option><option value="3">Ch 3</option></select></div>
+    <div class="pr"><label>Bass Ch</label>
+      <select id="basCh" style="flex:1;font-size:.38rem">
+        <option value="1">Ch 1</option><option value="2" selected>Ch 2</option><option value="3">Ch 3</option><option value="4">Ch 4</option></select></div>
+    <div class="pr"><label>Clock In</label>
+      <select id="clockInSel" onchange="selectClockIn(this.value)" style="flex:1;font-size:.38rem"><option value="">—</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin:.16rem 0;font-size:.4rem">Slave: OFF</button>
+    <button class="btn syn" onclick="exportMIDI()" style="width:100%;font-size:.4rem">↓ Export MIDI</button>
+  </div>
+
+</div>
+
+<div class="main-area">
+  <div class="transport">
+    <button class="btn syn" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn" onclick="generateActive()">↻ Generate</button>
+    <button class="btn" style="color:var(--cat)" onclick="selectEngine('cathedrale')" style="font-family:'Cormorant Garamond',serif;font-style:italic">Cathédrale</button>
+    <button class="btn rev" onclick="selectEngine('reverie')" style="font-family:'Cormorant Garamond',serif;font-style:italic">Rêverie</button>
+    <button class="btn pag" onclick="selectEngine('pagodes')" style="font-family:'Cormorant Garamond',serif;font-style:italic">Pagodes</button>
+    <button class="btn" id="btnUndo" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnRedo" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="saveState()" style="color:var(--pag)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--dim)">↑ Load
+      <input type="file" accept=".json" onchange="loadState(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.45rem">
+      <span style="font-size:.38rem;color:var(--dim)" id="stepDisplay">—</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:.52rem;font-style:italic" id="engineDisplay" style="color:var(--cat)">Syrinx</span>
+    </div>
+  </div>
+
+  <!-- Blend faders -->
+  <div class="blend-section">
+    <span class="blend-label-main">Blend</span>
+    <div class="blend-fader">
+      <span class="blend-fader-name" style="color:var(--cat)">Cathédrale</span>
+      <input type="range" id="blendSyn" min="0" max="100" value="100"
+        style="accent-color:var(--cat)" oninput="onBlendChange()">
+      <span class="blend-fader-val" id="blendSynV" style="color:var(--cat)">100</span>
+    </div>
+    <div class="blend-fader">
+      <span class="blend-fader-name" style="color:var(--rev)">Rêverie</span>
+      <input type="range" id="blendRev" min="0" max="100" value="0"
+        style="accent-color:var(--rev)" oninput="onBlendChange()">
+      <span class="blend-fader-val" id="blendRevV" style="color:var(--rev)">0</span>
+    </div>
+    <div class="blend-fader">
+      <span class="blend-fader-name" style="color:var(--pag)">Pagodes</span>
+      <input type="range" id="blendPag" min="0" max="100" value="0"
+        style="accent-color:var(--pag)" oninput="onBlendChange()">
+      <span class="blend-fader-val" id="blendPagV" style="color:var(--pag)">0</span>
+    </div>
+    <div class="fade-row">
+      <span class="fade-label">Fade</span>
+      <input type="range" id="fadeTime" min="0" max="100" value="30"
+        style="width:60px;height:2px;accent-color:var(--dim)">
+      <span style="font-size:.36rem;color:var(--dim)" id="fadeTimeV">30</span>
+    </div>
+  </div>
+
+  <div class="steps-area">
+
+    <!-- Melody voice (all engines) -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label" id="melLabel" style="color:var(--cat)">Mélodie</span>
+        <span class="voice-ch">Ch <span id="melChDisp">1</span></span>
+        <canvas id="melCurve" width="110" height="16" style="background:var(--s0);border-radius:1px;margin-left:.35rem"></canvas>
+        <span class="voice-info" id="melInfo">—</span>
+      </div>
+      <div class="step-row" id="melGrid"></div>
+    </div>
+
+    <!-- Harmony voice (Rêverie + Pagodes) -->
+    <div class="voice-block" id="harBlock">
+      <div class="voice-header">
+        <span class="voice-label" id="harLabel" style="color:var(--rev)">Harmonie</span>
+        <span class="voice-ch">Ch <span id="harChDisp">2</span></span>
+        <span style="font-size:.36rem;color:var(--dim);margin-left:.3rem" id="harDesc">—</span>
+        <span class="voice-info" id="harInfo">—</span>
+      </div>
+      <div class="step-row" id="harGrid"></div>
+    </div>
+
+    <!-- Bass/pedal voice (Rêverie + Pagodes) -->
+    <div class="voice-block" id="basBlock">
+      <div class="voice-header">
+        <span class="voice-label" id="basLabel" style="color:var(--cathedral)">Basse</span>
+        <span class="voice-ch">Ch <span id="basChDisp">3</span></span>
+        <span style="font-size:.36rem;color:var(--dim);margin-left:.3rem" id="basDesc">—</span>
+        <span class="voice-info" id="basInfo">—</span>
+      </div>
+      <div class="step-row" id="basGrid"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Dock -->
+<div class="engine-dock">
+  <div class="dock-tabbar">
+    <button class="dock-tab active" data-panel="engine"><span class="dock-tdot" style="background:var(--cat)"></span>Engine</button>
+    <button class="dock-tab" data-panel="silence"><span class="dock-tdot" style="background:var(--cat)"></span>Cathédrale</button>
+    <button class="dock-tab" data-panel="blend"><span class="dock-tdot" style="background:var(--rev)"></span>Blend</button>
+    <button class="dock-tab" data-panel="log"><span class="dock-tdot" style="background:var(--fog)"></span>Log</button>
+    <div class="dock-minibar">
+      <span class="mini-lbl">Cat</span><div class="mini-bar"><div class="mini-fill" id="miniSyn" style="background:var(--cat)"></div></div>
+      <span class="mini-lbl">Rev</span><div class="mini-bar"><div class="mini-fill" id="miniRev" style="background:var(--rev)"></div></div>
+      <span class="mini-lbl">Pag</span><div class="mini-bar"><div class="mini-fill" id="miniPag" style="background:var(--pag)"></div></div>
+      <button onclick="toggleDock()" id="dockColBtn" style="background:transparent;border:none;color:var(--dim);font-size:.42rem;cursor:pointer;margin-left:.28rem">▲</button>
+    </div>
+  </div>
+  <div class="dock-panels" id="dockPanels">
+
+    <div class="dock-panel active" id="dp-engine">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t">Active Engine</div>
+          <div class="dg-row"><span class="dg-lbl">Engine</span><span id="activeEngineDisp" style="font-size:.42rem;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--cat)">Syrinx</span></div>
+          <div class="dg-row"><span class="dg-lbl">Phase</span><span id="silenceCountDisp" style="font-size:.38rem;color:var(--cat2)">—</span></div>
+          <div class="dg-row"><span class="dg-lbl">Dynamics</span><span id="cageModeDisp" style="font-size:.38rem;color:var(--dim)">OFF</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Melody Curve</div>
+          <canvas id="melCurveDoc" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--rev)">Rêverie State</div>
+          <div class="dg-row"><span class="dg-lbl">Drift</span><div class="dg-track"><div class="dg-fill" id="revDriftF" style="background:var(--rev)"></div></div><span class="dg-val" id="revDriftV2" style="color:var(--rev)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Resolve</span><span id="resolveDisp" style="font-size:.36rem;color:var(--dim);font-family:'Cormorant Garamond',serif;font-style:italic">never</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--pag)">Pagodes State</div>
+          <div class="dg-row"><span class="dg-lbl">World</span><span id="pagWorldDisp" style="font-size:.38rem;color:var(--pag);font-family:'Cormorant Garamond',serif;font-style:italic">East</span></div>
+          <div class="dg-row"><span class="dg-lbl">Voices</span><span id="pagVoicesDisp" style="font-size:.38rem;color:var(--dim)">3</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-panel" id="dp-silence">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--cat)">Cathédrale State</div>
+          <div class="dg-row"><span class="dg-lbl">Phase</span><span id="catPhaseDisp" style="font-size:.4rem;color:var(--cat);font-family:'Cormorant Garamond',serif;font-style:italic">沈没</span></div>
+          <div class="dg-row"><span class="dg-lbl">Depth</span><div class="dg-track"><div class="dg-fill" id="catDepthF" style="background:var(--cat3)"></div></div><span class="dg-val" id="catDepthV2" style="color:var(--cat)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Dynamics</span><div class="dg-track"><div class="dg-fill" id="catDynF" style="background:var(--cat)"></div></div><span class="dg-val" id="catDynV">ppp</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t" style="border-left-color:var(--cat)">Emergence Curve</div>
+          <canvas id="silCanvas" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">大聖堂のフェーズ</div>
+          <div style="font-size:.36rem;color:var(--dim);line-height:1.85">
+            沈没 — ppp·霧の中<br>
+            浮上 → fff·頂点に達する<br>
+            再沈降 → pppp·消えていく<br>
+            平行5度が「古い」音を作る
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ログ</div>
+          <div id="silLog" class="dg-log"><span style="color:rgba(128,152,192,.3)">— waiting —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-panel" id="dp-blend">
+      <div class="dpg dpg-3">
+        <div class="dsub">
+          <div class="dsub-t">Blend State</div>
+          <div class="dg-row"><span class="dg-lbl">Cathédrale</span><div class="dg-track"><div class="dg-fill" id="blendDocSyn" style="background:var(--cat)"></div></div><span class="dg-val" id="blendDocSynV" style="color:var(--cat)">100</span></div>
+          <div class="dg-row"><span class="dg-lbl">Rêverie</span><div class="dg-track"><div class="dg-fill" id="blendDocRev" style="background:var(--rev)"></div></div><span class="dg-val" id="blendDocRevV" style="color:var(--rev)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Pagodes</span><div class="dg-track"><div class="dg-fill" id="blendDocPag" style="background:var(--pag)"></div></div><span class="dg-val" id="blendDocPagV" style="color:var(--pag)">0</span></div>
+          <div style="font-size:.35rem;color:var(--dim);margin-top:.15rem">Fade: <span id="fadeDisp">30</span>s</div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Blend Curve</div>
+          <canvas id="blendCanvas" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Quick Presets</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem;margin-top:.1rem">
+            <button onclick="setBlendPreset([100,0,0])" style="border:1px solid rgba(128,152,192,.3);color:var(--cat);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Pure Cathédrale</button>
+            <button onclick="setBlendPreset([0,100,0])" style="border:1px solid rgba(200,168,224,.3);color:var(--rev);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Pure Rêverie</button>
+            <button onclick="setBlendPreset([0,0,100])" style="border:1px solid rgba(128,200,144,.3);color:var(--pag);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Pure Pagodes</button>
+            <button onclick="setBlendPreset([40,40,20])" style="border:1px solid rgba(90,80,100,.4);color:var(--dim);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Mélange</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-panel" id="dp-log">
+      <div class="dsub">
+        <div class="dsub-t">Event Log</div>
+        <div id="mainLog" class="dg-log" style="max-height:120px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  SCALES — Debussy's tonal palette
+// ══════════════════════════════════════════════════════
+const SCALES = {
+  wholetone:  {name:'Whole Tone',  degs:[0,2,4,6,8,10]},
+  phrygian:   {name:'Phrygian',    degs:[0,1,3,5,7,8,10]},
+  dorian:     {name:'Dorian',      degs:[0,2,3,5,7,9,10]},
+  chromatic:  {name:'Chromatic',   degs:[0,1,2,3,4,5,6,7,8,9,10,11]},
+  pentatonic: {name:'Pentatonic',  degs:[0,2,4,7,9]},
+  hirajoshi:  {name:'Hirajoshi',   degs:[0,2,3,7,8]},
+  lydian:     {name:'Lydian',      degs:[0,2,4,6,7,9,11]},
+  egypt:      {name:'Egypt',       degs:[0,1,4,5,7,8,11]}, // double harmonic / Arabic
+};
+const NOTE_NAMES = ['C','C#','D','E♭','E','F','F#','G','A♭','A','B♭','B'];
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let activeEngine = 'cathedrale';
+let playing = false;
+let midiOut = null, midiAccess = null;
+
+// Three step arrays
+let melSteps = [], harSteps = [], basSteps = [];
+let melIdx=0, harIdx=0, basIdx=0;
+let playTimer=null, barCount=0;
+let audioCtx=null, _keepNode=null;
+
+// Blend state (0-1 each, independent)
+const BLEND = {
+  syn: 1.0,
+  rev: 0.0,
+  pag: 0.0,
+  // Current smoothed values (for fade)
+  synSmooth: 1.0,
+  revSmooth: 0.0,
+  pagSmooth: 0.0,
+  history: [],
+};
+
+// Silence state (Syrinx engine)
+const SILENCE = {
+  nextSilenceIn: 3,  // steps until next silence
+  count: 0,
+  log: [],
+};
+
+// Rêverie drift state
+const REV_STATE = {
+  driftPhase: 0,
+  harmonyShift: 0,
+  pedal: null,
+};
+
+// Pagodes state
+const PAG_STATE = {
+  world: 'east',
+  voicePhases: [0, 0, 0, 0, 0],
+};
+
+// MIDI Slave
+const SLAVE={active:false,running:false,clockInPort:null,ppqn:24,pulsesPerStep:6,pulseCount:0,bpmSmoothed:52,bpmAlpha:0.15,lastPulseTime:0};
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function getRoot(){return parseInt(document.getElementById('rootSel').value)||64;}
+function getBpm(){return parseInt(document.getElementById('bpmIn').value)||52;}
+function getScale(name){return SCALES[name]||SCALES.wholetone;}
+
+function getScalePool(scaleName, loOff, hiOff){
+  const root=getRoot(), scale=getScale(scaleName);
+  const lo=root+(loOff||-12), hi=root+(hiOff||20);
+  const pool=[];
+  for(let o=-2;o<=3;o++) scale.degs.forEach(d=>{
+    const m=root+d+o*12;
+    if(m>=lo&&m<=hi) pool.push(m);
+  });
+  return [...new Set(pool)].sort((a,b)=>a-b);
+}
+
+function snapToScale(midi, scaleName){
+  const root=getRoot(), degs=getScale(scaleName).degs;
+  const pcs=degs.map(d=>(root+d)%12);
+  const pc=midi%12;
+  let best=pcs[0],bd=12;
+  pcs.forEach(sp=>{const d=Math.min(Math.abs(sp-pc),12-Math.abs(sp-pc));if(d<bd){bd=d;best=sp;}});
+  let nm=Math.floor(midi/12)*12+best;
+  if(Math.abs(nm-midi)>6)nm+=midi>nm?12:-12;
+  return Math.max(24,Math.min(108,nm));
+}
+
+function midiName(m){return NOTE_NAMES[m%12]+(Math.floor(m/12)-1);}
+
+// ══════════════════════════════════════════════════════
+//  ENGINE SELECTOR
+// ══════════════════════════════════════════════════════
+function selectEngine(engine){
+  activeEngine=engine;
+  // Update tabs
+  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('active'));
+  const tabIds={cathedrale:'tabSyn',reverie:'tabRev',pagodes:'tabPag'};
+  const tabEl=document.getElementById(tabIds[engine]);
+  if(tabEl)tabEl.classList.add('active');
+  // Show/hide params
+  // Show params for active engine (all use paramsSyrinx div as container)
+  const paramsEl=document.getElementById('paramsSyrinx');
+  if(paramsEl) paramsEl.style.display='block';
+  const paramsRev=document.getElementById('paramsReverie');
+  if(paramsRev) paramsRev.style.display=engine==='reverie'?'block':'none';
+  const paramsPag=document.getElementById('paramsPagodes');
+  if(paramsPag) paramsPag.style.display=engine==='pagodes'?'block':'none';
+  // Update display
+  const colors={cathedrale:'var(--cat)',reverie:'var(--rev)',pagodes:'var(--pag)'};
+  const names={cathedrale:'Cathédrale',reverie:'Rêverie',pagodes:'Pagodes'};
+  const ed=document.getElementById('engineDisplay');
+  if(ed){ed.textContent=names[engine];ed.style.color=colors[engine];}
+  const aed=document.getElementById('activeEngineDisp');
+  if(aed){aed.textContent=names[engine];aed.style.color=colors[engine];}
+  // Show/hide voice blocks
+  const showHar=engine==='reverie'||engine==='pagodes'||engine==='cathedrale';
+  const showBas=engine==='reverie'||engine==='pagodes'||engine==='cathedrale';
+  const hb=document.getElementById('harBlock');if(hb)hb.style.display=showHar?'block':'none';
+  const bb=document.getElementById('basBlock');if(bb)bb.style.display=showBas?'block':'none';
+  updateVoiceLabels();
+  // Update voice descriptions
+  const hd=document.getElementById('harDesc');
+  const bd=document.getElementById('basDesc');
+  if(hd){
+    hd.textContent=engine==='cathedrale'?'平行5度 — organum':
+                   engine==='reverie'?'浮遊和声':'ガムラン';
+  }
+  if(bd){
+    bd.textContent=engine==='cathedrale'?'沈む土台 — pedal point':
+                   engine==='reverie'?'ペダルポイント':'大聖堂低音';
+  }
+  generateActive();
+}
+
+function updateVoiceLabels(){
+  const ml=document.getElementById('melLabel');
+  const hl=document.getElementById('harLabel');
+  const bl=document.getElementById('basLabel');
+  if(activeEngine==='cathedrale'){
+    if(ml){ml.textContent='Cloches';ml.style.color='var(--cat)';}
+    if(hl){hl.textContent='Organum 5ths';hl.style.color='var(--cat2)';}
+    if(bl){bl.textContent='Pédale profonde';bl.style.color='var(--cat3)';}
+  } else if(activeEngine==='reverie'){
+    if(ml){ml.textContent='Mélodie';ml.style.color='var(--rev)';}
+    if(hl){hl.textContent='Harmonie';hl.style.color='var(--rev2)';}
+    if(bl){bl.textContent='Pédale';bl.style.color='var(--rev3)';}
+  } else {
+    if(ml){ml.textContent='Chant';ml.style.color='var(--pag)';}
+    if(hl){hl.textContent='Gamelan';hl.style.color='var(--pag2)';}
+    if(bl){bl.textContent='Basse';bl.style.color='var(--cathedral)';}
+  }
+}
+
+function onPagWorldChange(){
+  PAG_STATE.world=document.getElementById('pagWorld').value;
+  const wd=document.getElementById('pagWorldDisp');
+  if(wd) wd.textContent=document.getElementById('pagWorld').options[document.getElementById('pagWorld').selectedIndex].text.split('—')[0].trim();
+  generateActive();
+}
+
+// ══════════════════════════════════════════════════════
+//  CATHÉDRALE ENGLOUTIE ENGINE
+// ══════════════════════════════════════════════════════
+// Phase state: the cathedral rises and sinks
+const CAT_STATE = {
+  phase:      'submerged',  // submerged / emerging / sinking
+  depth:      1.0,          // 0=surface 1=deepest
+  dynLevel:   0.0,          // 0=ppp 1=fff
+  cyclePos:   0,            // position in emergence cycle
+  autoTimer:  0,
+};
+
+function updateCathedralPhase(){
+  const phaseEl = document.getElementById('catPhase');
+  const phase = phaseEl ? phaseEl.value : 'auto';
+  const riseSpeed = parseInt(document.getElementById('catRise').value)/100;
+
+  if(phase === 'auto'){
+    // Auto cycle: submerged → emerging → sinking → submerged
+    CAT_STATE.cyclePos += riseSpeed * 0.008;
+    const t = CAT_STATE.cyclePos % 3;
+    if(t < 1){ CAT_STATE.phase='submerged'; CAT_STATE.dynLevel=t*0.3; CAT_STATE.depth=1-t*0.3; }
+    else if(t < 2){ CAT_STATE.phase='emerging'; CAT_STATE.dynLevel=0.3+(t-1)*0.7; CAT_STATE.depth=0.7-(t-1)*0.7; }
+    else { CAT_STATE.phase='sinking'; CAT_STATE.dynLevel=1-(t-2)*0.95; CAT_STATE.depth=(t-2)*0.9; }
+  } else {
+    CAT_STATE.phase = phase;
+    if(phase==='submerged'){ CAT_STATE.dynLevel=0.1; CAT_STATE.depth=0.9; }
+    else if(phase==='emerging'){ CAT_STATE.dynLevel=0.7+Math.sin(Date.now()*0.001)*0.3; CAT_STATE.depth=0.2; }
+    else { CAT_STATE.dynLevel=Math.max(0,CAT_STATE.dynLevel-0.01); CAT_STATE.depth=Math.min(1,CAT_STATE.depth+0.01); }
+  }
+}
+
+function generateCathedrale(){
+  updateCathedralPhase();
+  const steps    = parseInt(document.getElementById('stepsSel').value)||12;
+  const depth    = parseInt(document.getElementById('catDepth').value)/100;
+  const par5     = parseInt(document.getElementById('parallel5').value)/100;
+  const baseVel  = parseInt(document.getElementById('baseVel').value)/100;
+  const pedalVel = parseInt(document.getElementById('pedalVel').value)/100;
+  const decayShape = document.getElementById('decayShape').value;
+
+  // Cathedral uses church modes: Dorian base, Mixolydian for emergence
+  const scaleName = CAT_STATE.dynLevel > 0.5 ? 'mixolydian' : 'dorian';
+  const pool     = getScalePool(scaleName, -2, 20);
+  const bassPool = getScalePool(scaleName, -20, -8);
+  const root     = getRoot();
+
+  // Dynamic level affects velocity range
+  // ppp (submerged): very soft, barely audible
+  // fff (emerging):  full power, organ-like
+  const dynMult = 0.15 + CAT_STATE.dynLevel * 0.85;
+
+  // ── Melody: the cathedral bells emerging ──
+  melSteps = [];
+  let pos = Math.floor(pool.length * 0.55);
+  for(let i=0; i<steps; i++){
+    // During emergence: stepwise motion upward (bells rising)
+    // During submersion: slow stepwise descent
+    const dir = CAT_STATE.phase==='emerging' ? 1 :
+                CAT_STATE.phase==='sinking'   ? -1 :
+                (Math.random()<0.45 ? 1 : -1);
+    const leap = Math.random() < 0.1; // rare leaps — cathedral is stately
+    pos = Math.max(0, Math.min(pool.length-1, pos + dir*(leap?3:1)));
+
+    // Velocity: follows dynamic arc
+    const t = i/steps;
+    let vel;
+    if(decayShape==='swell') vel = baseVel * dynMult * (0.7+Math.sin(t*Math.PI)*0.3);
+    else vel = baseVel * dynMult * (0.85 + (Math.random()-0.5)*0.15);
+
+    // Duration: cathedral moves slowly — long notes
+    const dur = Math.random()<0.2 ? 4 : Math.random()<0.4 ? 6 : 8;
+
+    melSteps.push({
+      midi: pool[pos], active: Math.random()<0.82, vel: Math.max(0.06, Math.min(0.95, vel)),
+      dur, isSilence: false
+    });
+  }
+
+  // ── Harmony: parallel 5ths and octaves (Debussy's forbidden parallel motion) ──
+  // This is THE sound of La Cathédrale — parallel chords moving together
+  harSteps = [];
+  for(let i=0; i<steps; i++){
+    const mel = melSteps[i];
+    if(!mel || !mel.active || !mel.midi){
+      harSteps.push({midi: root, active: false, vel: 0, dur: 4, isSilence: false});
+      continue;
+    }
+    // Parallel 5th below (or 4th above) — the medieval organum sound
+    const usePar5 = Math.random() < par5;
+    const harmInterval = usePar5 ? -7 : -5; // perfect 5th or minor 3rd below
+    const harmMidi = Math.max(24, Math.min(108, mel.midi + harmInterval));
+    const hVel = mel.vel * (0.75 + (Math.random()-0.5)*0.1);
+    harSteps.push({
+      midi: harmMidi, active: Math.random()<0.88,
+      vel: Math.max(0.05, hVel), dur: mel.dur, isSilence: false
+    });
+  }
+
+  // ── Bass: the deep pedal point — immovable foundation ──
+  // The cathedral rests on bedrock: bass barely moves
+  basSteps = [];
+  let bpos = Math.floor(bassPool.length * 0.3); // low register
+  for(let i=0; i<steps; i++){
+    // Bass changes only at major structural moments
+    if(i===0 || (i % Math.ceil(steps/3) === 0 && Math.random()<0.4)){
+      bpos = Math.max(0, Math.min(bassPool.length-1, bpos + (Math.random()<0.5?1:-1)));
+    }
+    const bVel = pedalVel * dynMult * (0.8 + (Math.random()-0.5)*0.1);
+    // Submerged: bass is most present (weight of water)
+    // Emerging: bass recedes as melody rises
+    const bassActive = CAT_STATE.phase==='submerged'
+      ? Math.random()<0.85
+      : Math.random()<(0.5 + (1-CAT_STATE.dynLevel)*0.35);
+
+    basSteps.push({
+      midi: bassPool[bpos], active: bassActive,
+      vel: Math.max(0.08, Math.min(0.7, bVel)),
+      dur: 8, // bass: very long notes
+      isSilence: false
+    });
+  }
+
+  // Update UI
+  const pd = document.getElementById('catPhaseDisp');
+  const phaseNames = {submerged:'沈没 ppp', emerging:'浮上 fff', sinking:'再沈降 pppp'};
+  if(pd) pd.textContent = phaseNames[CAT_STATE.phase]||'—';
+  const df = document.getElementById('catDepthF');
+  if(df) df.style.width = (CAT_STATE.depth*100).toFixed(0)+'%';
+  const dv = document.getElementById('catDepthV2');
+  if(dv) dv.textContent = (CAT_STATE.depth*100).toFixed(0);
+  const dynNames = ['ppp','pp','p','mp','mf','f','ff','fff'];
+  const dynIdx = Math.min(7, Math.floor(CAT_STATE.dynLevel*8));
+  const dynF = document.getElementById('catDynF');
+  if(dynF) dynF.style.width = (CAT_STATE.dynLevel*100).toFixed(0)+'%';
+  const dynV = document.getElementById('catDynV');
+  if(dynV) dynV.textContent = dynNames[dynIdx];
+  const scd = document.getElementById('silenceCountDisp');
+  if(scd) scd.textContent = phaseNames[CAT_STATE.phase]||'—';
+  const cmd = document.getElementById('cageModeDisp');
+  if(cmd) cmd.textContent = dynNames[dynIdx];
+
+  sLog('↻ Cathédrale: '+CAT_STATE.phase+' dyn='+dynNames[dynIdx]);
+}
+
+// ══════════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════════
+//  RÊVERIE ENGINE
+// ══════════════════════════════════════════════════════
+function generateReverie(){
+  const steps = parseInt(document.getElementById('stepsSel').value)||12;
+  const drift = parseInt(document.getElementById('revDrift').value)/100;
+  const pedal = parseInt(document.getElementById('revPedal').value)/100;
+  const resolve = document.getElementById('revResolve').value;
+  const satieLink = parseInt(document.getElementById('satieLink').value)/100;
+  const baseVel = parseInt(document.getElementById('baseVel').value)/100;
+  const decayShape = document.getElementById('decayShape').value;
+  const pedalVel = parseInt(document.getElementById('pedalVel').value)/100;
+
+  // Rêverie: melody drifts, harmony supports without resolving
+  // Scale: Lydian (floating) or Whole Tone — boundary between major/minor dissolved
+  const scaleName = Math.random()<0.5?'lydian':'wholetone';
+  const pool = getScalePool(scaleName, -2, 18);
+  const root = getRoot();
+
+  melSteps=[];
+  // Rêverie melody: unhurried, each note a thought
+  let pos=Math.floor(pool.length*0.6);
+  for(let i=0;i<steps;i++){
+    // Occasional silence — Rêverie breathes differently from Syrinx
+    // Less frequent, more like a thought pausing
+    if(Math.random()<0.12){
+      melSteps.push({midi:null,active:false,vel:0,dur:2,isSilence:true,silType:'breath'});
+      continue;
+    }
+    // Drift: stepwise with gentle pulls toward non-resolution
+    const driftDir = Math.random()<0.5+drift*0.2?1:-1;
+    pos=Math.max(0,Math.min(pool.length-1,pos+driftDir*(Math.random()<0.7?1:2)));
+    const t=i/steps;
+    let vel;
+    if(decayShape==='fade') vel=baseVel*(0.9-t*0.3)+(Math.random()-0.5)*0.05;
+    else if(decayShape==='swell') vel=baseVel+Math.sin(t*Math.PI*0.8)*0.2+(Math.random()-0.5)*0.05;
+    else vel=baseVel+(Math.random()-0.5)*0.08;
+    // Duration: Rêverie notes linger — mostly long
+    const dur=Math.random()<0.2?2:Math.random()<0.4?4:6;
+    melSteps.push({midi:pool[pos],active:true,vel:Math.max(0.1,Math.min(0.75,vel)),dur,isSilence:false});
+  }
+
+  // Harmony: Rêverie's floating chords — never fully resolving
+  // Uses incomplete 7th chords, suspended chords
+  const harmPool = getScalePool(scaleName, -10, 6);
+  harSteps=[];
+  for(let i=0;i<steps;i++){
+    if(Math.random()<0.3){
+      harSteps.push({midi:null,active:false,vel:0,dur:4,isSilence:true,silType:'breath'});
+      continue;
+    }
+    const melNote=melSteps[i]&&melSteps[i].active?melSteps[i].midi:root+4;
+    // Harmony note: 3rd or 7th below melody (floating)
+    const intervalDown=[3,5,7][Math.floor(Math.random()*3)];
+    const harmMidi=snapToScale(melNote-intervalDown*2,scaleName);
+    const hVel=pedalVel+(Math.random()-0.5)*0.06;
+    harSteps.push({midi:harmMidi,active:Math.random()<0.75,vel:Math.max(0.08,hVel),dur:4,isSilence:false});
+  }
+
+  // Pedal: sustained low notes — Rêverie's anchor
+  // Changes rarely — like a painter who doesn't lift the brush
+  const pedalPool = getScalePool(scaleName, -18, -8);
+  if(!REV_STATE.pedal||Math.random()<0.15){
+    REV_STATE.pedal=pedalPool[Math.floor(Math.random()*pedalPool.length)]||root-12;
+  }
+  basSteps=[];
+  for(let i=0;i<steps;i++){
+    // Pedal changes rarely — drift
+    if(Math.random()<0.08){
+      const newPedal=pedalPool.filter(m=>Math.abs(m-REV_STATE.pedal)<=4);
+      if(newPedal.length) REV_STATE.pedal=newPedal[Math.floor(Math.random()*newPedal.length)];
+    }
+    basSteps.push({midi:REV_STATE.pedal,active:Math.random()<pedal,vel:pedalVel*0.8+(Math.random()-0.5)*0.05,dur:6,isSilence:false});
+  }
+
+  sLog('↻ Rêverie: '+scaleName+' drifting');
+  document.getElementById('resolveDisp').textContent=resolve;
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGODES ENGINE
+// ══════════════════════════════════════════════════════
+function generatePagodes(){
+  const steps = parseInt(document.getElementById('stepsSel').value)||12;
+  const world = PAG_STATE.world;
+  const numVoices = parseInt(document.getElementById('pagVoices').value)||3;
+  const labyrinth = parseInt(document.getElementById('labyrinth').value)/100;
+  const cathedralAmt = parseInt(document.getElementById('cathedralAmt').value)/100;
+  const baseVel = parseInt(document.getElementById('baseVel').value)/100;
+  const pedalVel = parseInt(document.getElementById('pedalVel').value)/100;
+
+  // World determines scale
+  const scaleMap={east:'pentatonic',egypt:'egypt',hirajoshi:'hirajoshi',cathedral:'dorian'};
+  const scaleName=scaleMap[world]||'pentatonic';
+  const pool=getScalePool(scaleName,-2,20);
+  const bassPool=getScalePool(scaleName,-18,-4);
+
+  // Pagodes: multiple voices with DIFFERENT cycle lengths = labyrinth feel
+  // Each voice has its own prime-ish length, they meet at the LCM
+  const voiceLengths=[steps, Math.max(3,steps-3), Math.max(3,steps+3)];
+  if(numVoices>=4) voiceLengths.push(Math.max(3,steps-5));
+  if(numVoices>=5) voiceLengths.push(Math.max(3,steps+5));
+
+  // Melody (highest voice): the "mysterious melody" that leads into the labyrinth
+  melSteps=[];
+  let mpos=Math.floor(pool.length*0.65);
+  for(let i=0;i<steps;i++){
+    if(Math.random()<0.1){
+      melSteps.push({midi:null,active:false,vel:0,dur:2,isSilence:true,silType:'breath'});
+      continue;
+    }
+    // Labyrinth motion: more leaps as labyrinth increases
+    const leap=Math.random()<labyrinth*0.4;
+    const dir=Math.random()<0.5?1:-1;
+    mpos=Math.max(0,Math.min(pool.length-1,mpos+dir*(leap?Math.floor(Math.random()*3)+2:1)));
+    const vel=baseVel*0.85+(Math.random()-0.5)*0.12;
+    // Egypt: add decorative ornamentation feel (dotted rhythms)
+    const dur=world==='egypt'?(Math.random()<0.4?1:Math.random()<0.5?3:4):(Math.random()<0.3?2:Math.random()<0.4?3:4);
+    melSteps.push({midi:pool[mpos],active:Math.random()<0.82,vel:Math.max(0.1,Math.min(0.8,vel)),dur,isSilence:false});
+  }
+
+  // Harmony/gamelan middle voice: different cycle length = phasing effect
+  harSteps=[];
+  const harmLen=voiceLengths[1];
+  let hpos=Math.floor(pool.length*0.45);
+  for(let i=0;i<steps;i++){
+    const hi=i%harmLen;
+    // Pagodes harmony: more repetitive than melody (gamelan ostinato)
+    if(hi===0&&Math.random()<0.3) hpos=Math.max(0,Math.min(pool.length-1,hpos+(Math.random()<0.5?1:-1)));
+    else if(Math.random()<labyrinth*0.2) hpos=Math.max(0,Math.min(pool.length-1,hpos+(Math.random()<0.5?1:-1)));
+    const vel=baseVel*0.65+(Math.random()-0.5)*0.08;
+    const dur=world==='east'?2:world==='egypt'?2:3; // gamelan: shorter articulation
+    harSteps.push({midi:pool[hpos],active:Math.random()<0.78,vel:Math.max(0.08,vel),dur,isSilence:false});
+  }
+
+  // Bass: slow, heavy — "cathedral sinking" element
+  basSteps=[];
+  let bpos=Math.floor(bassPool.length*0.4);
+  for(let i=0;i<steps;i++){
+    // Cathedral: bass moves very slowly, mostly sustained
+    if(i%Math.max(3,Math.floor(steps/4))===0&&Math.random()<0.4){
+      bpos=Math.max(0,Math.min(bassPool.length-1,bpos+(Math.random()<0.5?1:-1)));
+    }
+    const vel=pedalVel+(cathedralAmt*0.25)+(Math.random()-0.5)*0.05;
+    // Cathedral: very long notes
+    const dur=world==='cathedral'?8:(Math.random()<0.6?6:4);
+    const active=cathedralAmt>0?Math.random()<(0.5+cathedralAmt*0.4):Math.random()<0.45;
+    basSteps.push({midi:bassPool[bpos],active,vel:Math.max(0.1,Math.min(0.65,vel)),dur,isSilence:false});
+  }
+
+  document.getElementById('pagWorldDisp').textContent=document.getElementById('pagWorld').options[document.getElementById('pagWorld').selectedIndex].text.split('—')[0].trim();
+  document.getElementById('pagVoicesDisp').textContent=numVoices;
+  sLog('↻ Pagodes: '+world+' / '+numVoices+' voices');
+}
+
+function generateActive(){
+  pushUndo();
+  if(activeEngine==='cathedrale') generateCathedrale();
+  else if(activeEngine==='reverie') generateReverie();
+  else generatePagodes();
+  buildGrid('mel');buildGrid('har');buildGrid('bas');
+  drawMelCurve();drawSilCanvas();updateBlendUI();
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD GRID
+// ══════════════════════════════════════════════════════
+function buildGrid(voice){
+  const el=document.getElementById(voice+'Grid'); if(!el) return;
+  const steps=voice==='mel'?melSteps:voice==='har'?harSteps:basSteps;
+  const engineColor={cathedrale:'var(--cat)',reverie:voice==='mel'?'var(--rev)':voice==='har'?'var(--rev2)':'var(--rev3)',pagodes:voice==='mel'?'var(--pag)':voice==='har'?'var(--pag2)':'var(--cathedral)'};
+  const col=engineColor[activeEngine]||'var(--cat)';
+  el.innerHTML='';
+  steps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    if(s.isSilence){
+      d.className='step silence';
+      // Silence width proportional to duration
+      d.style.minWidth=Math.max(28,s.dur*18)+'px';
+      const silSymbol=s.silType==='breath'?'·':s.silType==='pause'?'··':'···';
+      d.innerHTML=`<span class="step-sil-dur">${silSymbol}</span>
+        <div class="step-bar" style="height:2px;background:var(--sil);width:${s.dur*16}px;opacity:.5"></div>
+        <span class="step-num">${i+1}</span>`;
+    } else {
+      d.className='step';
+      const h=s.active?3+Math.round(s.vel*32):1;
+      const c=s.active?col:'rgba(255,255,255,.03)';
+      const note=s.midi?NOTE_NAMES[s.midi%12]:'—';
+      d.innerHTML=`<span class="step-name${s.active?' on':''}">${note}</span>
+        <div class="step-bar" style="height:${h}px;background:${c};opacity:${0.4+s.vel*0.6}"></div>
+        <span class="step-num">${i+1}</span>`;
+    }
+    d.addEventListener('click',()=>{
+      pushUndo();
+      if(s.isSilence){s.isSilence=false;s.midi=getScalePool('wholetone',-2,14)[8]||64;s.active=true;s.vel=0.35;}
+      else s.active=!s.active;
+      buildGrid(voice);
+    });
+    el.appendChild(d);
+  });
+  const info=document.getElementById(voice+'Info');
+  if(info){
+    const act=steps.filter(s=>s.active).length;
+    const sils=steps.filter(s=>s.isSilence).length;
+    info.textContent=steps.length+' steps · '+act+' notes · '+sils+' silences';
+  }
+  const cd=document.getElementById(voice+'ChDisp');
+  if(cd){const ce=document.getElementById(voice==='mel'?'melCh':voice==='har'?'harCh':'basCh');if(ce)cd.textContent=ce.value;}
+}
+
+function drawMelCurve(){
+  const cv=document.getElementById('melCurve');if(!cv||!cv.getContext)return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H);
+  const act=melSteps.filter(s=>s.active&&!s.isSilence);if(act.length<2)return;
+  const mids=act.map(s=>s.midi),mn=Math.min(...mids)-1,mx=Math.max(...mids)+1;
+  ctx.beginPath();
+  act.forEach((s,i)=>{const x=(i/(act.length-1))*W,y=H-((s.midi-mn)/(mx-mn))*(H-4)-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  const eng={cathedrale:'rgba(128,152,192,.6)',reverie:'rgba(200,168,224,.6)',pagodes:'rgba(128,200,144,.6)'};
+  ctx.strokeStyle=eng[activeEngine]||'rgba(160,184,216,.6)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+function drawSilCanvas(){
+  // Cathedral emergence curve: depth over time
+  const cv=document.getElementById('silCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=50;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,50);
+  if(!melSteps.length)return;
+  const bw=W/melSteps.length;
+  // Draw velocity profile = dynamic contour of the cathedral
+  melSteps.forEach((s,i)=>{
+    const x=i*bw;
+    if(s.active&&!s.isSilence){
+      const h=s.vel*44;
+      ctx.fillStyle='rgba(128,152,192,.55)';
+      ctx.fillRect(x,50-h,bw-1,h);
+    }
+  });
+  // Draw dynamic level line
+  ctx.beginPath();
+  ctx.moveTo(0,50-CAT_STATE.dynLevel*44);
+  ctx.lineTo(W,50-CAT_STATE.dynLevel*44);
+  ctx.strokeStyle='rgba(128,152,192,.3)';ctx.lineWidth=1;ctx.stroke();
+}
+
+function drawBlendCanvas(){
+  const cv=document.getElementById('blendCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||180;cv.width=W;cv.height=50;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,50);
+  const h=BLEND.history;if(h.length<2)return;
+  ['syn','rev','pag'].forEach((k,ki)=>{
+    const cols=['rgba(160,184,216,.6)','rgba(200,168,224,.6)','rgba(128,200,144,.6)'];
+    ctx.beginPath();
+    h.forEach((v,i)=>{const x=(i/h.length)*W,y=50-v[k]*46-2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.strokeStyle=cols[ki];ctx.lineWidth=1;ctx.stroke();
+  });
+}
+
+function onRootChange(){if(melSteps.length) generateActive();}
+
+// ══════════════════════════════════════════════════════
+//  BLEND ENGINE
+// ══════════════════════════════════════════════════════
+function onBlendChange(){
+  BLEND.syn=parseInt(document.getElementById('blendSyn').value)/100;
+  BLEND.rev=parseInt(document.getElementById('blendRev').value)/100;
+  BLEND.pag=parseInt(document.getElementById('blendPag').value)/100;
+  document.getElementById('blendSynV').textContent=Math.round(BLEND.syn*100);
+  document.getElementById('blendRevV').textContent=Math.round(BLEND.rev*100);
+  document.getElementById('blendPagV').textContent=Math.round(BLEND.pag*100);
+  updateBlendUI();
+  // If blend changes significantly, regenerate
+  if(BLEND.rev>0.3&&harSteps.length===0) generateReverie();
+  if(BLEND.pag>0.3&&basSteps.length===0) generatePagodes();
+}
+
+function setBlendPreset(vals){
+  const [s,r,p]=vals;
+  document.getElementById('blendSyn').value=s;
+  document.getElementById('blendRev').value=r;
+  document.getElementById('blendPag').value=p;
+  onBlendChange();
+}
+
+function blendTick(){
+  // Smooth blend values toward targets
+  const fadeTime=parseInt(document.getElementById('fadeTime').value)||30;
+  const alpha=Math.max(0.01,1/(fadeTime*2+1));
+  BLEND.synSmooth=BLEND.synSmooth*(1-alpha)+BLEND.syn*alpha;
+  BLEND.revSmooth=BLEND.revSmooth*(1-alpha)+BLEND.rev*alpha;
+  BLEND.pagSmooth=BLEND.pagSmooth*(1-alpha)+BLEND.pag*alpha;
+  BLEND.history.push({syn:BLEND.synSmooth,rev:BLEND.revSmooth,pag:BLEND.pagSmooth});
+  if(BLEND.history.length>120)BLEND.history.shift();
+}
+
+function updateBlendUI(){
+  const s=Math.round(BLEND.synSmooth*100),r=Math.round(BLEND.revSmooth*100),p=Math.round(BLEND.pagSmooth*100);
+  ['Syn','Rev','Pag'].forEach((n,i)=>{
+    const vals=[s,r,p];
+    const bf=document.getElementById('blendBar'+n);if(bf)bf.style.width=vals[i]+'%';
+    const bpct=document.getElementById('blendPct'+n);if(bpct)bpct.textContent=vals[i];
+    const bd=document.getElementById('blendDoc'+n);if(bd)bd.style.width=vals[i]+'%';
+    const bdv=document.getElementById('blendDoc'+n+'V');if(bdv)bdv.textContent=vals[i];
+    const mb=document.getElementById('mini'+n);if(mb)mb.style.width=vals[i]+'%';
+  });
+  const fd=document.getElementById('fadeDisp');if(fd)fd.textContent=document.getElementById('fadeTime').value;
+}
+
+// Get blended velocity for a step
+function getBlendedVel(baseVel, voice){
+  // Apply blend factors to velocity
+  const total=BLEND.synSmooth+BLEND.revSmooth+BLEND.pagSmooth;
+  if(total<0.01) return 0;
+  return baseVel * (total/3 + 0.7); // never fully silent
+}
+
+// ══════════════════════════════════════════════════════
+//  PLAYBACK
+// ══════════════════════════════════════════════════════
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function startKeepAlive(){const ctx=getAudioCtx();if(_keepNode)return;_keepNode=ctx.createOscillator();const g=ctx.createGain();g.gain.value=0;_keepNode.connect(g);g.connect(ctx.destination);_keepNode.start();}
+
+const _wC=`const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type==='set'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wC],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){_tw=null;}return _tw;}
+function bgTimeout(fn,ms){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  const w=getTW();
+  if(w){const id=_tn++;const dl=ctx.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-ctx.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancelled:false,cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}
+  const dl=ctx.currentTime+ms/1000;const tid={cancelled:false};let t=null;
+  function check(){if(tid.cancelled)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(check,rem<25?1:Math.max(1,rem-20));}}
+  t=setTimeout(check,Math.max(1,ms-20));
+  tid.cancel=()=>{tid.cancelled=true;if(t)clearTimeout(t);};
+  return tid;
+}
+
+document.addEventListener('visibilitychange',()=>{const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();if(!document.hidden&&midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  startKeepAlive();
+  playing=true;melIdx=0;harIdx=0;basIdx=0;barCount=0;
+  document.getElementById('btnPlay').textContent='■ Stop';
+  if(SLAVE.active&&SLAVE.running)return;
+  tick();
+}
+function stopAll(){
+  playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}
+  document.getElementById('btnPlay').textContent='▶ Play';
+  document.getElementById('stepDisplay').textContent='—';
+  melIdx=0;harIdx=0;basIdx=0;
+  if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);
+  document.querySelectorAll('.step.playing').forEach(e=>e.classList.remove('playing'));
+}
+
+let _tc2=0;
+function tick(){
+  if(!playing)return;
+  if(SLAVE.active&&SLAVE.running){playing=true;return;}
+  const bpm=getBpm();
+  const rubato=parseInt(document.getElementById('rubatoAmt').value)/100;
+  const curStep=melSteps[melIdx%Math.max(1,melSteps.length)];
+  const ratio=curStep?curStep.dur:4;
+  const baseMs=Math.max(40,60000/bpm*(ratio/4));
+  // Debussy: rubato is sinusoidal, wave-like
+  const rubatoPhase=(_tc2*0.08);
+  const rubatoMult=1+(Math.sin(rubatoPhase)*0.12+Math.sin(rubatoPhase*0.3)*0.08)*rubato;
+  const stepMs=baseMs*Math.max(0.6,Math.min(1.5,rubatoMult));
+
+  // Highlight
+  document.querySelectorAll('#melGrid .step').forEach((e,i)=>e.classList.toggle('playing',i===melIdx%Math.max(1,melSteps.length)));
+  document.querySelectorAll('#harGrid .step').forEach((e,i)=>e.classList.toggle('playing',i===harIdx%Math.max(1,harSteps.length)));
+  document.querySelectorAll('#basGrid .step').forEach((e,i)=>e.classList.toggle('playing',i===basIdx%Math.max(1,basSteps.length)));
+
+  // Silence indicator
+  const silOrb=document.getElementById('silenceOrb');
+  const curIsSil=curStep&&curStep.isSilence;
+  if(silOrb)silOrb.classList.toggle('active',!curIsSil);
+
+  // Send MIDI (silence steps skip sending)
+  sendStep(melSteps,melIdx,'melCh',0,stepMs);
+  if(harSteps.length) sendStep(harSteps,harIdx,'harCh',0,stepMs*1.2);
+  if(basSteps.length) sendStep(basSteps,basIdx,'basCh',0,stepMs*2.0);
+
+  document.getElementById('stepDisplay').textContent=`${barCount+1}:${(melIdx%3)+1}`;
+
+  melIdx++;if(melIdx>=melSteps.length){melIdx=0;barCount++;onLoopEnd();}
+  if(harSteps.length){harIdx++;if(harIdx>=harSteps.length)harIdx=0;}
+  if(basSteps.length){basIdx++;if(basIdx>=basSteps.length)basIdx=0;}
+
+  _tc2++;
+  blendTick();
+  if(_tc2%4===0){updateBlendUI();drawBlendCanvas();}
+
+  playTimer=bgTimeout(tick,stepMs);
+}
+
+function onLoopEnd(){
+  // Cathedral: update phase and regenerate if auto
+  if(activeEngine==='cathedrale'){
+    updateCathedralPhase();
+    if(Math.random()<0.3) generateCathedrale();
+  }
+  // Rêverie: slight mutation per loop
+  if(Math.random()<0.2&&activeEngine==='reverie') mutateReverie();
+  // Drift Rêverie pedal
+  if(activeEngine==='reverie'&&Math.random()<0.1){
+    const pool=getScalePool('lydian',-18,-8);
+    const near=pool.filter(m=>Math.abs(m-(REV_STATE.pedal||48))<=5);
+    if(near.length) REV_STATE.pedal=near[Math.floor(Math.random()*near.length)];
+  }
+}
+
+function mutateReverie(){
+  // Rêverie mutation: very gentle, like a thought drifting
+  const pool=getScalePool('lydian',-2,18);
+  melSteps.forEach(s=>{
+    if(s.isSilence||!s.active)return;
+    if(Math.random()<0.15){
+      const cur=pool.findIndex(m=>m>=s.midi);
+      const ni=Math.max(0,Math.min(pool.length-1,cur+(Math.random()<0.5?1:-1)));
+      s.midi=pool[ni];
+    }
+    if(Math.random()<0.12) s.vel=Math.max(0.08,Math.min(0.75,s.vel+(Math.random()-0.5)*0.08));
+  });
+  buildGrid('mel');drawMelCurve();
+}
+
+function sendStep(steps,idx,chId,octOff,durMs){
+  if(!steps.length||!midiOut){
+    // Show MIDI status if not connected
+    const stat=document.getElementById('midiStatus');
+    if(stat&&stat.textContent==='—')stat.textContent='No MIDI out';
+    return;
+  }
+  const s=steps[idx%steps.length];
+  if(!s||!s.active||s.isSilence)return;
+  const chEl=document.getElementById(chId);
+  const ch=(parseInt(chEl?chEl.value:1)||1)-1;
+  const m=Math.max(0,Math.min(127,s.midi+(octOff||0)));
+  const blendVel=getBlendedVel(s.vel,'mel');
+  const v=Math.max(1,Math.min(110,Math.round(blendVel*95+8)));
+  const dur=Math.max(30,durMs*(s.dur/4)*0.92);
+  try{
+    midiOut.send([0x90|ch,m,v]);
+    setTimeout(()=>{try{if(midiOut)midiOut.send([0x80|ch,m,0]);}catch(e){}},dur);
+  }catch(err){
+    const stat=document.getElementById('midiStatus');
+    if(stat)stat.textContent='Send error: '+err.message.slice(0,20);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  MIDI
+// ══════════════════════════════════════════════════════
+function initMIDI(){if(!navigator.requestMIDIAccess){setMS(false,'N/A');return;}navigator.requestMIDIAccess().then(ma=>{midiAccess=ma;ma.onstatechange=()=>{populatePorts();populateIn();};populatePorts();populateIn();}).catch(()=>setMS(false,'denied'));}
+function populatePorts(){const sel=document.getElementById('midiDevSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectMidiOut(sel.value);}});}
+function populateIn(){const sel=document.getElementById('clockInSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;}
+function selectMidiOut(id){if(!id){midiOut=null;setMS(false,'—');return;}midiOut=midiAccess?.outputs.get(id);if(midiOut)setMS(true,midiOut.name);}
+function setMS(ok,name){const dot=document.getElementById('midiDot'),stat=document.getElementById('midiStatus');if(dot)dot.classList.toggle('on',ok);if(stat){stat.textContent=ok?'✓ '+name:name;stat.style.color=ok?'var(--pag)':'var(--dim)';}}
+function selectClockIn(id){if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.clockInPort=midiAccess.inputs.get(id);if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=onClockMsg;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const btn=document.getElementById('btnSlave');if(btn){btn.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';btn.style.color=SLAVE.active?'var(--pag)':'';}if(SLAVE.active){if(playTimer){playTimer.cancelled=true;playTimer=null;}}else if(playing)tick();}
+function onClockMsg(e){const d=e.data[0];if(d===0xFA){SLAVE.running=true;SLAVE.pulseCount=0;if(playTimer){playTimer.cancelled=true;playTimer=null;}playing=true;melIdx=0;harIdx=0;basIdx=0;barCount=0;startKeepAlive();const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();document.getElementById('btnPlay').textContent='■ Stop';return;}if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;startKeepAlive();document.getElementById('btnPlay').textContent='■ Stop';}return;}if(d===0xFC){SLAVE.running=false;playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}document.getElementById('btnPlay').textContent='▶ Play';if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);return;}if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;const now=e.timeStamp||performance.now();if(SLAVE.lastPulseTime>0){const iv=now-SLAVE.lastPulseTime;const ibpm=60000/(iv*SLAVE.ppqn);if(ibpm>20&&ibpm<120)SLAVE.bpmSmoothed=SLAVE.bpmSmoothed*(1-SLAVE.bpmAlpha)+ibpm*SLAVE.bpmAlpha;}SLAVE.lastPulseTime=now;SLAVE.pulseCount++;if(SLAVE.pulseCount>=SLAVE.pulsesPerStep){SLAVE.pulseCount=0;if(playing)slaveStep();}if(SLAVE.pulseCount===0)document.getElementById('bpmIn').value=Math.round(SLAVE.bpmSmoothed);}
+function slaveStep(){if(!playing||!melSteps.length)return;const sMs=60000/SLAVE.bpmSmoothed/4;sendStep(melSteps,melIdx,'melCh',0,sMs);if(harSteps.length)sendStep(harSteps,harIdx,'harCh',0,sMs*1.2);if(basSteps.length)sendStep(basSteps,basIdx,'basCh',0,sMs*2);melIdx++;if(melIdx>=melSteps.length){melIdx=0;barCount++;onLoopEnd();}if(harSteps.length){harIdx++;if(harIdx>=harSteps.length)harIdx=0;}if(basSteps.length){basIdx++;if(basIdx>=basSteps.length)basIdx=0;}blendTick();}
+
+function exportMIDI(){
+  const bpm=getBpm();const tpb=480;const µs=Math.round(60000000/bpm);
+  function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}
+  function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}
+  function i16(v){return[(v>>8)&0xFF,v&0xFF];}
+  const tracks=[[melSteps,'melCh'],[harSteps,'harCh'],[basSteps,'basCh']].filter(([s])=>s.length);
+  const trackData=tracks.map(([steps,chId])=>{
+    const ch=(parseInt(document.getElementById(chId)?.value||1)-1);
+    const ev=[];let t=0;
+    steps.forEach(s=>{const stk=Math.round(tpb*(s.dur/4));if(!s.isSilence&&s.active&&s.midi){ev.push([t,[0x90|ch,s.midi,Math.round(s.vel*95+8)]]);ev.push([t+Math.round(stk*.9),[0x80|ch,s.midi,0]]);}t+=stk;});
+    ev.sort((a,b)=>a[0]-b[0]);let lt=0;const td=[];
+    td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);
+    ev.forEach(([t2,msg])=>{td.push(...wv(t2-lt),...msg);lt=t2;});
+    td.push(0,0xFF,0x2F,0);return td;
+  });
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1,...i16(trackData.length),...i16(tpb)];
+  const all=[...hdr];trackData.forEach(td=>{all.push(...[0x4D,0x54,0x72,0x6B,...i32(td.length)],...td);});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([new Uint8Array(all)],{type:'audio/midi'}));
+  a.download=`debussy_${activeEngine}.mid`;a.click();
+}
+
+// ══════════════════════════════════════════════════════
+//  UNDO / REDO / SAVE / LOAD
+// ══════════════════════════════════════════════════════
+const UMAX=30;let _us=[],_rs=[];
+function captureState(){return{mel:JSON.parse(JSON.stringify(melSteps)),har:JSON.parse(JSON.stringify(harSteps)),bas:JSON.parse(JSON.stringify(basSteps)),engine:activeEngine,root:document.getElementById('rootSel').value,bpm:getBpm(),blend:[BLEND.syn,BLEND.rev,BLEND.pag]};}
+function pushUndo(){_us.push(captureState());if(_us.length>UMAX)_us.shift();_rs=[];updateUndoBtns();}
+function applyState(s){melSteps=JSON.parse(JSON.stringify(s.mel));harSteps=JSON.parse(JSON.stringify(s.har));basSteps=JSON.parse(JSON.stringify(s.bas));activeEngine=s.engine||'cathedrale';const rs=document.getElementById('rootSel');if(rs)rs.value=s.root;const bi=document.getElementById('bpmIn');if(bi)bi.value=s.bpm||52;if(s.blend){document.getElementById('blendSyn').value=Math.round(s.blend[0]*100);document.getElementById('blendRev').value=Math.round(s.blend[1]*100);document.getElementById('blendPag').value=Math.round(s.blend[2]*100);BLEND.syn=s.blend[0];BLEND.rev=s.blend[1];BLEND.pag=s.blend[2];}buildGrid('mel');buildGrid('har');buildGrid('bas');drawMelCurve();updateBlendUI();updateUndoBtns();}
+function undo(){if(!_us.length)return;_rs.push(captureState());applyState(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(captureState());applyState(_rs.pop());}
+function updateUndoBtns(){const u=document.getElementById('btnUndo'),r=document.getElementById('btnRedo');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function saveState(){const s=captureState();s._tool='Debussy';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download=`debussy_${activeEngine}.json`;a.click();}
+function loadState(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const s=JSON.parse(ev.target.result);pushUndo();applyState(s);}catch(err){alert('Load error: '+err.message);}};r.readAsText(f);e.target.value='';}
+
+let _taps=[];
+function tapTempo(){const now=Date.now();_taps.push(now);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gaps=_taps.slice(1).map((t,i)=>t-_taps[i]);const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;const bpm=Math.round(60000/avg);if(bpm>15&&bpm<100)document.getElementById('bpmIn').value=bpm;}}
+
+function sLog(msg){const log=document.getElementById('silLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(160,184,216,.7);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>4)log.removeChild(log.lastChild);}
+
+// Slider labels
+document.querySelectorAll('input[type=range]').forEach(el=>{
+  const vid=el.id+'V';
+  el.addEventListener('input',()=>{const v=document.getElementById(vid);if(v)v.textContent=el.value;});
+});
+
+// Dock tabs
+(function(){document.querySelectorAll('.dock-tab[data-panel]').forEach(tab=>{tab.addEventListener('click',()=>{const p=tab.dataset.panel;if(tab.classList.contains('active')){toggleDock();return;}document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.querySelectorAll('.dock-panel').forEach(p2=>p2.classList.remove('active'));const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');const panels=document.getElementById('dockPanels');if(panels){panels.classList.remove('collapsed');document.getElementById('dockColBtn').textContent='▲';}});});})();
+let _dockOpen=true;
+function toggleDock(){_dockOpen=!_dockOpen;const p=document.getElementById('dockPanels'),b=document.getElementById('dockColBtn');if(p)p.classList.toggle('collapsed',!_dockOpen);if(b)b.textContent=_dockOpen?'▲':'▼';}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();if(e.shiftKey)redo();else undo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();generateActive();}
+  if(e.code==='Digit1'&&e.target.tagName!=='INPUT'){e.preventDefault();selectEngine('cathedrale');}
+  if(e.code==='Digit2'&&e.target.tagName!=='INPUT'){e.preventDefault();selectEngine('reverie');}
+  if(e.code==='Digit3'&&e.target.tagName!=='INPUT'){e.preventDefault();selectEngine('pagodes');}
+});
+
+function init(){
+  selectEngine('cathedrale');
+  updateBlendUI();
+  initMIDI();
+}
+init();
+</script>
+</body>
+</html>

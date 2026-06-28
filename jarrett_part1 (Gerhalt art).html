@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Keith Jarrett — Köln Concert Part I</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0e0c0a;
+  --s0:      #141210;
+  --s1:      #1c1916;
+  --bd:      #2a2620;
+  --bd2:     #3a342c;
+  --text:    #d8d0c0;
+  --dim:     #6a6050;
+  --fog:     #3a3530;
+  --cad:     #e8c832;   /* Cadmium Yellow — melody */
+  --pht:     #1a7a68;   /* Phthalo Green — LH */
+  --cob:     #8a4888;   /* Cobalt Violet — harmony */
+  --tit:     #e8e4dc;   /* Titanium White — peak */
+  --sie:     #b85a28;   /* Burnt Sienna — mid */
+  --str:     #d42820;   /* Strike red — ST+5 */
+  --pgr:     #3a3a4a;   /* Payne's Grey — residue */
+  --paper:   #100e0c;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;overflow-x:hidden;}
+
+/* Richter texture overlay */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(
+    97deg,
+    transparent 0px, transparent 3px,
+    rgba(232,200,50,.012) 3px, rgba(232,200,50,.012) 4px
+  ),
+  repeating-linear-gradient(
+    -8deg,
+    transparent 0px, transparent 8px,
+    rgba(26,107,88,.015) 8px, rgba(26,107,88,.015) 9px
+  );
+  opacity:.7;
+}
+
+header{
+  padding:.9rem 1.5rem .65rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:flex-end;gap:1.2rem;
+  background:var(--paper);position:relative;z-index:10;
+}
+.hdr-name{
+  font-family:'Cormorant Garamond',serif;font-size:1.85rem;
+  font-weight:300;font-style:italic;color:var(--tit);line-height:1;
+  letter-spacing:-.01em;
+}
+.hdr-sub{font-size:.38rem;color:var(--dim);letter-spacing:.28em;text-transform:uppercase;margin-top:.24rem;}
+.hdr-title{flex:1;}
+
+/* Momentum indicator */
+.momentum-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;}
+.momentum-label{font-size:.36rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.momentum-bar{width:100px;height:4px;background:var(--s1);border-radius:2px;overflow:hidden;position:relative;}
+.momentum-fill{height:100%;border-radius:2px;transition:width .15s ease,background .3s;width:0%;background:var(--cad);}
+.momentum-val{font-size:.38rem;color:var(--cad);font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+/* Contrast indicator */
+.contrast-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;}
+.contrast-label{font-size:.36rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.contrast-val{font-family:'Cormorant Garamond',serif;font-size:1.0rem;font-style:italic;color:var(--sie);}
+
+.layout{display:grid;grid-template-columns:205px 1fr;min-height:calc(100vh - 140px);position:relative;z-index:1;}
+.left-panel{border-right:1px solid var(--bd);padding:.6rem;display:flex;flex-direction:column;gap:.4rem;overflow-y:auto;background:var(--paper);}
+.panel{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.48rem .58rem;}
+.panel-title{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.88rem;
+  color:var(--dim);margin-bottom:.38rem;
+  display:flex;align-items:center;gap:.28rem;
+}
+.panel-title::before{content:'';width:8px;height:1px;background:var(--cad);opacity:.5;flex-shrink:0;}
+.pr{display:flex;align-items:center;gap:.28rem;margin-bottom:.16rem;}
+.pr label{font-size:.37rem;color:var(--dim);width:56px;flex-shrink:0;}
+.pr-val{font-size:.37rem;width:20px;text-align:right;flex-shrink:0;color:var(--cad);}
+input[type=range]{height:2px;accent-color:var(--cad);cursor:pointer;flex:1;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.44rem;padding:.08rem .15rem;border-radius:1px;}
+.btn{padding:.14rem .46rem;border:1px solid var(--bd);border-radius:1px;background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.44rem;cursor:pointer;transition:all .1s;}
+.btn:hover{border-color:var(--cad);color:var(--cad);}
+.btn.cad{border-color:rgba(232,200,50,.4);color:var(--cad);background:rgba(232,200,50,.06);}
+.btn.str{border-color:rgba(212,40,32,.4);color:var(--str);}
+.midi-dot{width:6px;height:6px;border-radius:50%;background:var(--fog);flex-shrink:0;}
+.midi-dot.on{background:var(--pht);box-shadow:0 0 4px var(--pht);}
+
+.main-area{display:flex;flex-direction:column;}
+.transport{
+  padding:.42rem .85rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;gap:.5rem;
+  background:var(--paper);flex-wrap:wrap;
+}
+
+/* ── RICHTER PAINTING CANVAS ── */
+.painting-wrap{
+  position:relative;border-bottom:1px solid var(--bd);
+  background:var(--s0);overflow:hidden;
+  height:420px;
+}
+#paintCanvas{display:block;width:100%;cursor:crosshair;}
+
+/* Note strokes — Richter-style wide bars */
+.voice-block{padding:.55rem .85rem .3rem;}
+.voice-header{display:flex;align-items:center;gap:.45rem;margin-bottom:.28rem;}
+.voice-label{font-family:'Cormorant Garamond',serif;font-size:.82rem;font-style:italic;}
+.voice-info{font-size:.35rem;color:var(--fog);margin-left:auto;}
+
+/* Stroke grid — wide rectangles like squeegee marks */
+.stroke-grid{display:flex;gap:3px;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+.stroke{
+  flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;padding:.08rem .04rem;
+  border:1px solid transparent;
+  transition:border-color .08s;
+  position:relative;
+  min-width:32px;
+}
+.stroke:hover{border-color:var(--bd2);}
+.stroke.playing{border-color:var(--cad)!important;}
+.stroke.strike{background:rgba(212,40,32,.05);}
+.stroke.strike.playing{border-color:var(--str)!important;background:rgba(212,40,32,.12);}
+/* The actual stroke bar — wide and painterly */
+.stroke-bar{
+  width:28px;border-radius:1px;min-height:3px;
+  transition:height .15s,opacity .15s;
+}
+.stroke-note{font-family:'Cormorant Garamond',serif;font-size:.68rem;font-style:italic;color:var(--dim);line-height:1;}
+.stroke-note.on{color:var(--tit);}
+.stroke-note.st{color:var(--str);}
+.stroke-num{font-size:.25rem;color:var(--fog);}
+/* Rhythm marker */
+.stroke-rhythm{position:absolute;top:1px;left:1px;font-size:.2rem;color:var(--cad);opacity:.6;}
+
+/* Dock */
+.engine-dock{border-top:1px solid var(--bd);background:var(--paper);position:sticky;bottom:0;z-index:20;}
+.dock-tabbar{display:flex;border-bottom:1px solid var(--bd);overflow-x:auto;scrollbar-width:none;}
+.dock-tab{padding:.22rem .48rem;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.38rem;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.18rem;transition:all .1s;white-space:nowrap;}
+.dock-tab:hover{color:var(--text);}
+.dock-tab.active{color:var(--text);border-bottom-color:var(--cad);}
+.dock-tdot{width:4px;height:4px;border-radius:50%;opacity:.4;}
+.dock-tab.active .dock-tdot{opacity:1;}
+.dock-minibar{display:flex;align-items:center;gap:.35rem;padding:0 .55rem;margin-left:auto;flex-shrink:0;}
+.mini-lbl{font-size:.32rem;color:var(--dim);}
+.mini-bar{width:26px;height:2px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:1px;transition:width .3s;}
+.dock-panels{max-height:185px;overflow:hidden;transition:max-height .22s;}
+.dock-panels.collapsed{max-height:0!important;}
+.dock-panel{display:none;padding:.4rem .75rem .5rem;}
+.dock-panel.active{display:block;}
+.dpg{display:grid;gap:.4rem;}
+.dpg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dpg-3{grid-template-columns:1fr 1fr 1fr;}
+.dsub{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.35rem .42rem;}
+.dsub-t{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.75rem;color:var(--dim);margin-bottom:.2rem;padding-left:.2rem;border-left:1px solid var(--cad);opacity:.65;}
+.dg-row{display:flex;align-items:center;gap:.22rem;margin-bottom:.12rem;}
+.dg-lbl{font-size:.34rem;color:var(--dim);width:50px;flex-shrink:0;}
+.dg-track{flex:1;height:3px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.dg-fill{height:100%;border-radius:1px;transition:width .25s;}
+.dg-val{font-size:.34rem;width:18px;text-align:right;flex-shrink:0;}
+.dg-log{font-size:.35rem;color:var(--dim);line-height:1.85;max-height:55px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-title">
+    <div class="hdr-name">Keith Jarrett</div>
+    <div class="hdr-sub">Köln Concert · Part I · Richter Engine · Live Painting · T=♯4  Y=♯4♯  U=△7  I=±½</div>
+  </div>
+  <div class="contrast-wrap">
+    <span class="contrast-label">Contrast</span>
+    <span class="contrast-val" id="contrastVal">—</span>
+  </div>
+  <div class="momentum-wrap">
+    <span class="momentum-label">Momentum</span>
+    <div class="momentum-bar"><div class="momentum-fill" id="momentumFill"></div></div>
+    <span class="momentum-val" id="momentumVal">0</span>
+  </div>
+</header>
+
+<div class="layout">
+<div class="left-panel">
+
+  <div class="panel">
+    <div class="panel-title">Intonation</div>
+    <div class="pr"><label>Root</label>
+      <select id="rootSel" onchange="onRootChange()" style="flex:1">
+        <option value="53">F3</option><option value="55">G3</option>
+        <option value="57">A3</option><option value="58">B♭3</option>
+        <option value="60">C4</option><option value="62">D4</option>
+        <option value="65" selected>F4</option><option value="67">G4</option>
+      </select>
+    </div>
+    <div class="pr"><label>Scale</label>
+      <select id="scaleSel" onchange="onScaleChange()" style="flex:1">
+        <option value="lydian" selected>Lydian</option>
+        <option value="dorian">Dorian</option>
+        <option value="mixolydian">Mixolydian</option>
+        <option value="aeolian">Aeolian</option>
+        <option value="lydianb7">Lydian ♭7</option>
+        <option value="dorianb2">Dorian ♭2</option>
+        <option value="wholetone">Whole Tone</option>
+        <option value="pentatonic">Pentatonic</option>
+        <option value="blues">Blues</option>
+      </select>
+    </div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="68" min="30" max="120"
+        style="width:44px;font-size:.5rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.07rem .16rem;border-radius:1px">
+      <button class="btn" onclick="tapTempo()" style="font-size:.36rem;padding:.06rem .22rem">TAP</button>
+    </div>
+    <div class="pr"><label>Rubato</label>
+      <input type="range" id="rubatoAmt" min="0" max="100" value="38">
+      <span class="pr-val" id="rubatoAmtV">38</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Motif</div>
+    <div class="pr"><label>Length</label>
+      <select id="motifLen" onchange="generateMotif()" style="flex:1">
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+    <div class="pr"><label>Rhythm</label>
+      <select id="motifRhythm" style="flex:1">
+        <option value="mixed" selected>Mixed</option>
+        <option value="triplet">3連符</option>
+        <option value="binary">2連符</option>
+        <option value="conflict">Conflict</option>
+      </select>
+    </div>
+    <div class="pr"><label>Chord dens.</label>
+      <input type="range" id="chordDens" min="0" max="3" value="1" step="1">
+      <span class="pr-val" id="chordDensV">1</span>
+    </div>
+    <div class="pr"><label>ST+5 prob.</label>
+      <input type="range" id="strikeProb" min="0" max="100" value="28"
+        style="accent-color:var(--str)">
+      <span class="pr-val" id="strikeProbV" style="color:var(--str)">28</span>
+    </div>
+  </div>
+
+  <div class="panel" style="border-color:rgba(232,200,50,.18)">
+    <div class="panel-title" style="color:var(--cad)">Momentum</div>
+    <div style="font-size:.37rem;color:var(--dim);line-height:1.8;margin-bottom:.25rem">
+      前のモチーフの最後の音が<br>次の出発点になる
+    </div>
+    <div class="pr"><label>Strength</label>
+      <input type="range" id="momentumStr" min="0" max="100" value="75">
+      <span class="pr-val" id="momentumStrV">75</span>
+    </div>
+    <div class="pr"><label>Build rate</label>
+      <input type="range" id="momentumBuild" min="1" max="100" value="40">
+      <span class="pr-val" id="momentumBuildV">40</span>
+    </div>
+    <div class="pr"><label>Release</label>
+      <input type="range" id="momentumRel" min="1" max="100" value="20">
+      <span class="pr-val" id="momentumRelV">20</span>
+    </div>
+  </div>
+
+  <div class="panel" style="border-color:rgba(212,40,32,.18)">
+    <div class="panel-title" style="color:var(--str)">Contrast</div>
+    <div style="font-size:.37rem;color:var(--dim);line-height:1.8;margin-bottom:.25rem">
+      ppとffの激しい切り替え
+    </div>
+    <div class="pr"><label>Depth</label>
+      <input type="range" id="contrastDepth" min="0" max="100" value="70"
+        style="accent-color:var(--str)">
+      <span class="pr-val" id="contrastDepthV" style="color:var(--str)">70</span>
+    </div>
+    <div class="pr"><label>Frequency</label>
+      <input type="range" id="contrastFreq" min="0" max="100" value="35">
+      <span class="pr-val" id="contrastFreqV">35</span>
+    </div>
+    <button onclick="forceContrast()" class="btn str" style="width:100%;margin-top:.22rem;font-size:.42rem;font-family:'Cormorant Garamond',serif;font-style:italic">
+      Force Contrast
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Velocity</div>
+    <div class="pr"><label>Base</label>
+      <input type="range" id="baseVel" min="20" max="100" value="58">
+      <span class="pr-val" id="baseVelV">58</span>
+    </div>
+    <div class="pr"><label>Strike boost</label>
+      <input type="range" id="strikeBoost" min="0" max="100" value="65"
+        style="accent-color:var(--str)">
+      <span class="pr-val" id="strikeBoostV" style="color:var(--str)">65</span>
+    </div>
+    <div class="pr"><label>変容</label>
+      <input type="range" id="mutAmt" min="0" max="100" value="35">
+      <span class="pr-val" id="mutAmtV">35</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">MIDI</div>
+    <div class="pr"><div class="midi-dot" id="midiDot"></div>
+      <span id="midiStatus" style="font-size:.4rem;color:var(--dim)">—</span></div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.18rem;font-size:.4rem">↻ Refresh</button>
+    <div class="pr"><label>Out</label>
+      <select id="midiDevSel" onchange="selectMidiOut(this.value)" style="flex:1;font-size:.38rem"></select></div>
+    <div class="pr"><label>RH Ch</label>
+      <select id="rhCh" style="flex:1;font-size:.38rem"><option value="1" selected>Ch 1</option><option value="2">Ch 2</option><option value="3">Ch 3</option></select></div>
+    <div class="pr"><label>LH Ch</label>
+      <select id="lhCh" style="flex:1;font-size:.38rem"><option value="1">Ch 1</option><option value="2" selected>Ch 2</option><option value="3">Ch 3</option></select></div>
+    <div class="pr"><label>Clock In</label>
+      <select id="clockInSel" onchange="selectClockIn(this.value)" style="flex:1;font-size:.38rem"><option value="">—</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin:.16rem 0;font-size:.4rem">Slave: OFF</button>
+    <button class="btn cad" onclick="exportMIDI()" style="width:100%;font-size:.4rem">↓ Export MIDI</button>
+  </div>
+
+</div>
+
+<div class="main-area">
+  <div class="transport">
+    <button class="btn cad" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn" onclick="generateMotif()">↻ Motif</button>
+    <button class="btn" onclick="generateLH()">↻ LH</button>
+    <button class="btn str" onclick="injectTension('tritone')" style="font-family:'Cormorant Garamond',serif;font-style:italic" title="増4度・最大不安定 (T)">♯4</button>
+    <button class="btn str" onclick="injectTension('tritoneChord')" style="font-family:'Cormorant Garamond',serif;font-style:italic;background:rgba(212,40,32,.08)" title="tritone和音 (Y)">♯4♯</button>
+    <button class="btn" onclick="injectTension('maj7')" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--cob);border-color:rgba(138,72,136,.4)" title="長7度・宙吊り (U)">△7</button>
+    <button class="btn" onclick="injectTension('semi')" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--sie);border-color:rgba(184,90,40,.4)" title="半音接近・滑り込み (I)">±½</button>
+    <button class="btn" onclick="forceContrast()" style="color:var(--sie)">Contrast</button>
+    <button class="btn" id="btnUndo" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnRedo" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="clearPainting()" style="color:var(--pgr)">✕ Canvas</button>
+    <button class="btn" onclick="downloadPainting()" style="color:var(--cob)">↓ Art</button>
+    <button class="btn" onclick="saveState()" style="color:var(--pht)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--dim)">↑ Load
+      <input type="file" accept=".json" onchange="loadState(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.45rem">
+      <span style="font-size:.38rem;color:var(--dim)" id="stepDisplay">—</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:.5rem;font-style:italic;color:var(--cad)" id="scaleDisplay">Lydian</span>
+    </div>
+  </div>
+
+  <!-- Richter painting canvas -->
+  <div class="painting-wrap">
+    <canvas id="paintCanvas" height="420"></canvas>
+  </div>
+
+  <!-- RH strokes -->
+  <div class="voice-block">
+    <div class="voice-header">
+      <span class="voice-label" style="color:var(--cad)">Right Hand</span>
+      <canvas id="rhCurve" width="120" height="18" style="background:var(--s0);border-radius:1px;margin-left:.4rem"></canvas>
+      <span class="voice-info" id="rhInfo">—</span>
+    </div>
+    <div class="stroke-grid" id="rhGrid"></div>
+  </div>
+
+  <!-- LH strokes -->
+  <div class="voice-block">
+    <div class="voice-header">
+      <span class="voice-label" style="color:var(--pht)">Left Hand</span>
+      <span style="font-size:.36rem;color:var(--dim);margin-left:.35rem" id="lhLabel">—</span>
+      <span class="voice-info" id="lhInfo">—</span>
+    </div>
+    <div class="stroke-grid" id="lhGrid"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- Engine dock -->
+<div class="engine-dock">
+  <div class="dock-tabbar">
+    <button class="dock-tab active" data-panel="momentum">
+      <span class="dock-tdot" style="background:var(--cad)"></span>Momentum
+    </button>
+    <button class="dock-tab" data-panel="contrast">
+      <span class="dock-tdot" style="background:var(--str)"></span>Contrast
+    </button>
+    <button class="dock-tab" data-panel="rhythm">
+      <span class="dock-tdot" style="background:var(--cob)"></span>Rhythm
+    </button>
+    <button class="dock-tab" data-panel="log">
+      <span class="dock-tdot" style="background:var(--fog)"></span>Log
+    </button>
+    <div class="dock-minibar">
+      <span class="mini-lbl">Mom.</span>
+      <div class="mini-bar"><div class="mini-fill" id="miniMom" style="background:var(--cad)"></div></div>
+      <span class="mini-lbl">ST+5</span>
+      <div class="mini-bar"><div class="mini-fill" id="miniStr" style="background:var(--str)"></div></div>
+      <span class="mini-lbl">Con.</span>
+      <div class="mini-bar"><div class="mini-fill" id="miniCon" style="background:var(--sie)"></div></div>
+      <button onclick="toggleDock()" id="dockColBtn"
+        style="background:transparent;border:none;color:var(--dim);font-size:.42rem;cursor:pointer;margin-left:.28rem">▲</button>
+    </div>
+  </div>
+  <div class="dock-panels" id="dockPanels">
+
+    <!-- Momentum panel -->
+    <div class="dock-panel active" id="dp-momentum">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t">Momentum State</div>
+          <div class="dg-row"><span class="dg-lbl">Level</span><div class="dg-track"><div class="dg-fill" id="momF" style="background:var(--cad)"></div></div><span class="dg-val" id="momV" style="color:var(--cad)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Last note</span><span id="lastNoteDisp" style="font-size:.38rem;color:var(--tit);font-family:'Cormorant Garamond',serif;font-style:italic">—</span></div>
+          <div class="dg-row"><span class="dg-lbl">Handoff</span><span id="handoffDisp" style="font-size:.38rem;color:var(--cad)">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Momentum Curve</div>
+          <canvas id="momCanvas" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Motif Continuity</div>
+          <div style="font-size:.36rem;color:var(--dim);line-height:1.85">
+            <span id="motifChain" style="color:var(--cad)">—</span><br>
+            <span id="chainLen" style="color:var(--dim)">—</span>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ログ</div>
+          <div id="momLog" class="dg-log"><span style="color:rgba(232,200,50,.3)">— waiting —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contrast panel -->
+    <div class="dock-panel" id="dp-contrast">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t">Contrast State</div>
+          <div class="dg-row"><span class="dg-lbl">Mode</span><span id="contrastMode" style="font-size:.4rem;color:var(--sie);font-family:'Cormorant Garamond',serif;font-style:italic">—</span></div>
+          <div class="dg-row"><span class="dg-lbl">Vel level</span><div class="dg-track"><div class="dg-fill" id="contVelF" style="background:var(--sie)"></div></div><span class="dg-val" id="contVelV">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Next flip</span><span id="nextFlip" style="font-size:.38rem;color:var(--dim)">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Contrast Curve</div>
+          <canvas id="contCanvas" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ST+5 Strikes</div>
+          <div class="dg-row"><span class="dg-lbl">Count</span><span id="strikeCount" style="font-size:.4rem;color:var(--str)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Density</span><div class="dg-track"><div class="dg-fill" id="strikeDensF" style="background:var(--str)"></div></div><span class="dg-val" id="strikeDensV" style="color:var(--str)">0</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ログ</div>
+          <div id="contLog" class="dg-log"><span style="color:rgba(212,40,32,.3)">— waiting —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rhythm panel -->
+    <div class="dock-panel" id="dp-rhythm">
+      <div class="dpg dpg-3">
+        <div class="dsub">
+          <div class="dsub-t">Rhythm Conflict</div>
+          <div style="font-size:.36rem;color:var(--dim);line-height:1.85;margin-bottom:.2rem">
+            RH: <span id="rhRhythmDisp" style="color:var(--cad)">—</span><br>
+            LH: <span id="lhRhythmDisp" style="color:var(--pht)">—</span><br>
+            Conflict: <span id="conflictDisp" style="color:var(--cob)">—</span>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Rhythm Curve</div>
+          <canvas id="rhythmCanvas" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Loop Stats</div>
+          <div class="dg-row"><span class="dg-lbl">Loops</span><span id="loopCount" style="font-size:.4rem;color:var(--cad)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Motif #</span><span id="motifCount" style="font-size:.4rem;color:var(--dim)">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="dock-panel" id="dp-log">
+      <div class="dsub">
+        <div class="dsub-t">Event Log</div>
+        <div id="mainLog" class="dg-log" style="max-height:120px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  SCALES
+// ══════════════════════════════════════════════════════
+const SCALES = {
+  lydian:     {name:'Lydian',     degs:[0,2,4,6,7,9,11]},
+  dorian:     {name:'Dorian',     degs:[0,2,3,5,7,9,10]},
+  mixolydian: {name:'Mixolydian', degs:[0,2,4,5,7,9,10]},
+  aeolian:    {name:'Aeolian',    degs:[0,2,3,5,7,8,10]},
+  lydianb7:   {name:'Lydian ♭7',  degs:[0,2,4,6,7,9,10]},
+  dorianb2:   {name:'Dorian ♭2',  degs:[0,1,3,5,7,9,10]},
+  wholetone:  {name:'Whole Tone', degs:[0,2,4,6,8,10]},
+  pentatonic: {name:'Pentatonic', degs:[0,2,4,7,9]},
+  blues:      {name:'Blues',      degs:[0,3,5,6,7,10]},
+};
+const NOTE_NAMES = ['C','C#','D','E♭','E','F','F#','G','A♭','A','B♭','B'];
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let currentScale = 'lydian';
+let playing = false;
+let midiOut = null, midiAccess = null;
+let rhSteps = [], lhSteps = [];
+let rhIdx = 0, lhIdx = 0;
+let playTimer = null;
+let barCount = 0;
+let audioCtx = null, _keepNode = null;
+
+// Momentum engine
+const MOM = {
+  level:     0,      // 0-1
+  lastMidi:  null,   // last RH note played (handoff to next motif)
+  chainLen:  0,      // how many motifs in current chain
+  history:   [],
+  rubatoPhase: 0,
+  rubatoAccum: 1.0,
+};
+
+// Contrast engine
+const CON = {
+  mode:       'mp',   // pp / mp / mf / ff
+  velMult:    0.6,
+  flipsLeft:  3,
+  history:    [],
+  strikeCount:0,
+};
+const VEL_MODES = {pp:0.18, mp:0.48, mf:0.68, ff:0.92};
+
+// Rhythm conflict
+const RHY = {
+  rhType:  'mixed',
+  lhType:  'binary',
+  conflict: 0,
+};
+
+let motifCount = 0;
+let loopCount  = 0;
+let strikeTotal = 0;
+let mutHistory  = [];
+
+// MIDI Slave
+const SLAVE = {
+  active:false,running:false,clockInPort:null,
+  ppqn:24,pulsesPerStep:6,pulseCount:0,
+  bpmSmoothed:68,bpmAlpha:0.15,lastPulseTime:0,
+};
+
+// ── RICHTER PAINTING ENGINE ──
+const PAINT = {
+  init: false,
+  // Horizontal stripe layer state
+  stripeY: 20,       // current vertical position for next stripe
+  stripeDir: 1,      // direction of stripe advance
+  wipePhase: 0,      // white wipe cycle
+  // Color memory for smear continuity
+  lastColor: null,
+  lastY: 0,
+};
+// Richter palette — resolved hex values for canvas
+const RICHTER = {
+  cadmium:  '#e8c832',  // Cadmium Yellow
+  phthalo:  '#1a7a68',  // Phthalo Green
+  cobalt:   '#7a3878',  // Cobalt Violet
+  sienna:   '#b85a28',  // Burnt Sienna
+  carmine:  '#d42820',  // Carmine / Strike
+  prussian: '#1a3060',  // Prussian Blue
+  titanium: '#e8e4dc',  // Titanium White
+  paynes:   '#2a2a3a',  // Payne's Grey
+  ochre:    '#c89830',  // Yellow Ochre
+  bg:       '#0e0c0a',  // Background
+};
+// Map music → Richter color groups
+function getStrokeColor(isTension, isChord, velLevel){
+  if(isTension) return RICHTER.carmine;
+  if(isChord)   return velLevel>0.7 ? RICHTER.cobalt : RICHTER.prussian;
+  // Melody: rotates through warm palette based on momentum
+  const warm=[RICHTER.cadmium,RICHTER.sienna,RICHTER.ochre,RICHTER.titanium];
+  return warm[Math.floor(MOM.level*3.9)%warm.length];
+}
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function getRoot()  { return parseInt(document.getElementById('rootSel').value)||65; }
+function getBpm()   { return parseInt(document.getElementById('bpmIn').value)||68; }
+function getScale() { return SCALES[currentScale]||SCALES.lydian; }
+
+function getScalePool(loOff, hiOff){
+  const root=getRoot(), scale=getScale();
+  const lo=root+(loOff||-14), hi=root+(hiOff||20);
+  const pool=[];
+  for(let o=-2;o<=3;o++) scale.degs.forEach(d=>{
+    const m=root+d+o*12;
+    if(m>=lo&&m<=hi) pool.push(m);
+  });
+  return [...new Set(pool)].sort((a,b)=>a-b);
+}
+
+function isTension(midi){
+  const tn=(getRoot()+5)%12;
+  return (midi%12)===tn;
+}
+
+function snapToScale(midi){
+  const root=getRoot(), degs=getScale().degs;
+  const pcs=degs.map(d=>(root+d)%12);
+  const pc=midi%12;
+  let best=pcs[0],bd=12;
+  pcs.forEach(sp=>{const d=Math.min(Math.abs(sp-pc),12-Math.abs(sp-pc));if(d<bd){bd=d;best=sp;}});
+  let nm=Math.floor(midi/12)*12+best;
+  if(Math.abs(nm-midi)>6)nm+=midi>nm?12:-12;
+  return Math.max(24,Math.min(108,nm));
+}
+
+function midiName(m){ return NOTE_NAMES[m%12]+(Math.floor(m/12)-1); }
+
+// ══════════════════════════════════════════════════════
+//  MOTIF GENERATION — Momentum-aware
+// ══════════════════════════════════════════════════════
+function generateMotif(){
+  pushUndo();
+  const len = parseInt(document.getElementById('motifLen').value)||3;
+  const rhythmType = document.getElementById('motifRhythm').value;
+  const strikeProb = getAutoStrikeProb();
+  const chordDens  = parseInt(document.getElementById('chordDens').value)||1;
+  const momStr     = parseInt(document.getElementById('momentumStr').value)/100;
+
+  const pool = getScalePool(-4, 18);
+
+  // Momentum: start near last played note
+  let startMidi = null;
+  if(MOM.lastMidi && Math.random()<momStr){
+    startMidi = MOM.lastMidi;
+  } else {
+    startMidi = pool[Math.floor(pool.length*0.55)];
+  }
+  let pos = pool.findIndex(m=>m>=startMidi);
+  if(pos<0) pos=Math.floor(pool.length*0.5);
+
+  const notes=[], velCurve=[], rhythm=[];
+
+  for(let i=0;i<len;i++){
+    // Momentum: first note is anchored, subsequent notes move from there
+    if(i>0){
+      const leap=Math.random()<0.18;
+      const dir=Math.random()<0.52?1:-1;
+      const step=leap?(Math.floor(Math.random()*4)+2):1;
+      pos=Math.max(0,Math.min(pool.length-1,pos+dir*step));
+    }
+
+    let midi=pool[pos];
+
+    // ST+5 strike injection
+    if(Math.random()<strikeProb){
+      const stPc=(getRoot()+5)%12;
+      const stMidi=pool.reduce((best,m)=>((m%12===stPc&&Math.abs(m-midi)<Math.abs(best-midi))?m:best),midi);
+      midi=stMidi;
+    }
+
+    // Velocity: sinusoidal swell + contrast engine
+    const t=len>1?i/(len-1):0.5;
+    const swell=Math.sin(t*Math.PI*0.85+0.15);
+    const firstAcc=i===0?0.1:0;
+    const strikeBoost=isTension(midi)?parseInt(document.getElementById('strikeBoost').value)/100*0.4:0;
+    const baseV=parseInt(document.getElementById('baseVel').value)/100;
+    const contV=CON.velMult;
+    const v=Math.max(0.1,Math.min(1.0,
+      baseV*contV + swell*0.35 + firstAcc + strikeBoost
+      +(Math.random()-0.5)*0.03
+    ));
+
+    // Rhythm
+    rhythm.push(genNoteRhythm(rhythmType, i, len));
+    notes.push({midi, isTension:isTension(midi), vel:v, chord:false});
+    velCurve.push(v);
+  }
+
+  // Expand with chord layers
+  rhSteps=[];
+  const chordPool=getScalePool(-4,20);
+  notes.forEach((n,i)=>{
+    // Phrase position shaping
+    const posT=notes.length>1?i/(notes.length-1):0.5;
+    const shape=0.88+0.12*Math.sin(posT*Math.PI);
+    rhSteps.push({midi:n.midi,active:true,vel:n.vel*shape,dur:rhythm[i],isTension:n.isTension,isChord:false,mutDelta:0});
+    for(let c=0;c<Math.min(chordDens,2);c++){
+      const idx=chordPool.findIndex(m=>m>=n.midi);
+      const cIdx=Math.max(0,Math.min(chordPool.length-1,idx+(c===0?2:4)));
+      const cMidi=chordPool[cIdx];
+      if(cMidi&&cMidi!==n.midi){
+        rhSteps.push({midi:cMidi,active:Math.random()<0.78,vel:n.vel*0.65*shape,dur:rhythm[i],isTension:isTension(cMidi),isChord:true,mutDelta:0});
+      }
+    }
+  });
+
+  motifCount++;
+  MOM.chainLen++;
+  buildGrid('rh');
+  drawRHCurve();
+  updateMomUI();
+  updateRhythmUI();
+  mLog('↻ Motif #'+motifCount+' '+notes.map(n=>NOTE_NAMES[n.midi%12]).join('→'));
+}
+
+function genNoteRhythm(type, idx, len){
+  if(type==='triplet') return [2,2,3,3][Math.floor(Math.random()*4)];
+  if(type==='binary')  return [2,4,4,8][Math.floor(Math.random()*4)];
+  if(type==='conflict'){
+    // alternate 3-feel and 2-feel
+    return idx%2===0?[3,3][Math.floor(Math.random()*2)]:[2,4][Math.floor(Math.random()*2)];
+  }
+  // mixed
+  return [2,2,3,3,4,4,6][Math.floor(Math.random()*7)];
+}
+
+// ══════════════════════════════════════════════════════
+//  LEFT HAND
+// ══════════════════════════════════════════════════════
+function generateLH(){
+  pushUndo();
+  const root=getRoot(), pool=getScalePool(-20,-6);
+  const lhLen=Math.max(4,Math.min(12,rhSteps.length||6));
+  let bass=pool.find(m=>m>=root-16&&m<=root-10)||pool[0];
+
+  lhSteps=[];
+  for(let i=0;i<lhLen;i++){
+    const beat=i%3;
+    // LH uses binary/2-feel to conflict with RH triplets
+    const dur=beat===0?6:[4,4,8][Math.floor(Math.random()*3)];
+    let midi,vel;
+    if(beat===0){
+      if(Math.random()<0.15){const cand=pool.filter(m=>Math.abs(m-bass)<=4);bass=cand.length?cand[Math.floor(Math.random()*cand.length)]:bass;}
+      midi=bass;vel=0.55+Math.random()*0.2;
+    } else {
+      const bIdx=pool.findIndex(m=>m>=bass);
+      const cIdx=Math.max(0,Math.min(pool.length-1,bIdx+(beat===1?2:4)));
+      midi=pool[cIdx]||bass+7;vel=0.28+Math.random()*0.15;
+    }
+    lhSteps.push({midi:Math.max(24,Math.min(72,midi)),active:true,vel,dur,isTension:false,isChord:beat>0,mutDelta:0});
+  }
+
+  buildGrid('lh');
+  document.getElementById('lhLabel').textContent=midiName(bass)+' pedal';
+  document.getElementById('lhInfo').textContent=lhSteps.length+' steps';
+  RHY.lhType='binary';
+  updateRhythmUI();
+  mLog('↻ LH generated');
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD GRID — Richter stroke style
+// ══════════════════════════════════════════════════════
+function buildGrid(voice){
+  const el=document.getElementById(voice+'Grid'); if(!el) return;
+  const steps=voice==='rh'?rhSteps:lhSteps;
+  const baseColor=voice==='rh'?'var(--cad)':'var(--pht)';
+  el.innerHTML='';
+  steps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='stroke'+(s.isTension?' strike':'');
+    d.id=`${voice}Step${i}`;
+    const h=s.active?4+Math.round(s.vel*34):2;
+    const col=s.isTension?'var(--str)':s.isChord?(voice==='rh'?'var(--cob)':'var(--pht)'):baseColor;
+    const c=s.active?col:'rgba(255,255,255,.04)';
+    const note=NOTE_NAMES[s.midi%12];
+    const rSym=s.dur<=2?'♩':s.dur<=3?'♩.':s.dur<=4?'𝅗𝅥':'—';
+    d.innerHTML=`<span class="stroke-rhythm">${s.dur}</span>
+      <span class="stroke-note${s.active?' on':''}${s.isTension?' st':''}">${note}</span>
+      <div class="stroke-bar" style="height:${h}px;background:${c};opacity:${0.45+s.vel*0.55};width:${s.isChord?'16':'28'}px"></div>
+      <span class="stroke-num">${i+1}</span>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;buildGrid(voice);});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.vel=Math.max(0.06,s.vel-0.08);buildGrid(voice);});
+    el.appendChild(d);
+  });
+  if(voice==='rh') document.getElementById('rhInfo').textContent=steps.length+' steps · '+steps.filter(s=>s.active).length+' active';
+}
+
+function drawRHCurve(){
+  const cv=document.getElementById('rhCurve');if(!cv||!cv.getContext)return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H);
+  const act=rhSteps.filter(s=>!s.isChord&&s.active);if(act.length<2)return;
+  const mids=act.map(s=>s.midi),mn=Math.min(...mids)-1,mx=Math.max(...mids)+1;
+  ctx.beginPath();
+  act.forEach((s,i)=>{
+    const x=(i/(act.length-1))*W,y=H-((s.midi-mn)/(mx-mn))*(H-4)-2;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(232,200,50,.65)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+function onRootChange(){if(rhSteps.length||lhSteps.length)remapToScale();}
+function onScaleChange(){
+  currentScale=document.getElementById('scaleSel').value;
+  document.getElementById('scaleDisplay').textContent=getScale().name;
+  if(rhSteps.length||lhSteps.length)remapToScale();
+}
+function remapToScale(){
+  [rhSteps,lhSteps].forEach(steps=>steps.forEach(s=>{
+    if(s.midi){s.midi=snapToScale(s.midi);s.isTension=isTension(s.midi);}
+  }));
+  buildGrid('rh');buildGrid('lh');drawRHCurve();
+}
+
+// ══════════════════════════════════════════════════════
+//  MOMENTUM ENGINE
+// ══════════════════════════════════════════════════════
+function momentumTick(){
+  const build=parseInt(document.getElementById('momentumBuild').value)/100;
+  const rel=parseInt(document.getElementById('momentumRel').value)/100;
+  if(playing){
+    MOM.level=Math.min(1,MOM.level+build*0.015);
+  } else {
+    MOM.level=Math.max(0,MOM.level-rel*0.02);
+  }
+  MOM.history.push(MOM.level);
+  if(MOM.history.length>120)MOM.history.shift();
+
+  // Smooth rubato via sinusoidal breathing
+  const rubatoAmt=parseInt(document.getElementById('rubatoAmt').value)/100;
+  MOM.rubatoPhase+=0.025*(0.6+MOM.level*0.6);
+  MOM.rubatoAccum=1.0
+    +Math.sin(MOM.rubatoPhase)*0.08*rubatoAmt
+    +Math.sin(MOM.rubatoPhase*1.9+0.8)*0.04*rubatoAmt
+    +Math.sin(MOM.rubatoPhase*0.4)*0.07*rubatoAmt;
+  MOM.rubatoAccum=Math.max(0.7,Math.min(1.4,MOM.rubatoAccum));
+}
+
+// ══════════════════════════════════════════════════════
+//  CONTRAST ENGINE — pp/ff激烈な切り替え
+// ══════════════════════════════════════════════════════
+function contrastTick(){
+  const depth=parseInt(document.getElementById('contrastDepth').value)/100;
+  const freq=parseInt(document.getElementById('contrastFreq').value)/100;
+
+  // Random flips based on frequency
+  if(Math.random()<freq*0.02){
+    const modes=Object.keys(VEL_MODES);
+    const current=modes.indexOf(CON.mode);
+    // Jarrett-style: favor extreme jumps (pp↔ff)
+    let next;
+    if(Math.random()<depth*0.6){
+      // Extreme flip
+      next=CON.mode==='pp'||CON.mode==='mp'?'ff':'pp';
+    } else {
+      next=modes[(current+1)%modes.length];
+    }
+    CON.mode=next;
+    CON.velMult=VEL_MODES[next];
+    if(next==='pp'||next==='mp') paintWhiteWipe();
+    else if(next==='ff') paintDarkPass();
+    cLog('→ '+next.toUpperCase());
+  }
+
+  CON.history.push(CON.velMult);
+  if(CON.history.length>120)CON.history.shift();
+}
+
+function forceContrast(){
+  const current=CON.mode;
+  const next=current==='pp'||current==='mp'?'ff':'pp';
+  CON.mode=next;
+  CON.velMult=VEL_MODES[next];
+  rhSteps.forEach(s=>{if(!s.isChord)s.vel=Math.min(1,s.vel*(CON.velMult/VEL_MODES[current]||1));});
+  buildGrid('rh');
+  // Richter: pp → white wipe, ff → dark pass
+  if(next==='pp'||next==='mp') paintWhiteWipe();
+  else paintDarkPass();
+  cLog('⚡ Forced: '+next.toUpperCase());
+}
+
+// ══════════════════════════════════════════════════════
+//  TENSION INJECTION ENGINE — Jarrett語法
+// ══════════════════════════════════════════════════════
+
+// Auto-escalation: tension probability rises with momentum
+function getAutoStrikeProb(){
+  const base=parseInt(document.getElementById('strikeProb').value)/100;
+  return Math.min(0.85, base + MOM.level*MOM.level*0.35);
+}
+
+function injectTension(type){
+  pushUndo();
+  const root=getRoot();
+  const pool=getScalePool(-4,18);
+  const scaleDegs=getScale().degs;
+  const boost=parseInt(document.getElementById('strikeBoost').value)/100;
+  const nonSt=rhSteps.filter(s=>!s.isTension&&!s.isChord&&s.active);
+  if(!nonSt.length){cLog('— no target');return;}
+  const target=nonSt[Math.floor(Math.random()*nonSt.length)];
+  const tIdx=rhSteps.indexOf(target);
+  const NOTE=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+
+  function nearestPC(midi, pc){
+    return pool.reduce((best,m)=>(m%12===pc&&Math.abs(m-midi)<Math.abs(best-midi)?m:best), midi);
+  }
+  function addChordNote(baseMidi, pc, velMult, insertAfter){
+    const m=pool.find(n=>n>baseMidi&&n%12===pc)||pool.find(n=>n%12===pc);
+    if(m&&!isNaN(m)&&m!==baseMidi){
+      rhSteps.splice(insertAfter,0,{midi:m,active:true,vel:Math.min(1,target.vel*velMult),dur:target.dur,isTension:true,isChord:true,mutDelta:0});
+      return true;
+    }
+    return false;
+  }
+
+  if(type==='tritone'){
+    // ♯4 単音: tritone above root (ST+5 = augmented 4th)
+    const pc=(root+6)%12;  // true tritone = 6 semitones
+    target.midi=nearestPC(target.midi,pc);
+    target.isTension=true;
+    target.vel=Math.min(1,target.vel*1.3+boost*0.25);
+    cLog('♯4 tritone: '+NOTE[pc]);
+  }
+  else if(type==='tritoneChord'){
+    // ♯4♯ 和音: tritone + dim5th cluster
+    const triPc=(root+6)%12;
+    const tri=nearestPC(target.midi,triPc);
+    target.midi=tri;target.isTension=true;
+    target.vel=Math.min(1,target.vel*1.3+boost*0.25);
+    // Add dim3rd and dim5th above tritone (diminished cluster)
+    const dim3Pc=(triPc+3)%12;
+    const dim5Pc=(triPc+6)%12;
+    let offset=tIdx+1;
+    if(addChordNote(tri,dim3Pc,0.82,offset)){offset++;}
+    addChordNote(tri,dim5Pc,0.68,offset);
+    cLog('♯4♯ dim cluster: '+NOTE[triPc]+'+'+NOTE[dim3Pc]+'+'+NOTE[dim5Pc]);
+  }
+  else if(type==='maj7'){
+    // △7 長7度: major 7th above root = 11 semitones
+    // Jarrettの「宙吊り」 — 解決を求めない
+    const maj7Pc=(root+11)%12;
+    target.midi=nearestPC(target.midi,maj7Pc);
+    target.isTension=true;
+    // Maj7 is more subtle — moderate velocity
+    target.vel=Math.max(0.35,Math.min(0.82,target.vel*1.1+boost*0.12));
+    // Optional: add the root below for context (makes it float above resolution)
+    if(Math.random()<0.55){
+      const rootBelow=pool.filter(m=>m<target.midi&&m%12===root%12);
+      if(rootBelow.length){
+        const rb=rootBelow[rootBelow.length-1];
+        rhSteps.splice(tIdx+1,0,{midi:rb,active:true,vel:target.vel*0.55,dur:target.dur,isTension:false,isChord:true,mutDelta:0});
+      }
+    }
+    cLog('△7 maj7: '+NOTE[maj7Pc]+' (宙吊り)');
+  }
+  else if(type==='semi'){
+    // ±½ 半音接近: chromatic passing — slide into or away
+    // Jarrettの「斜め抜け」縫い目
+    const dir=Math.random()<0.5?1:-1;
+    const semMidi=Math.max(24,Math.min(108,target.midi+dir));
+    // Keep as chromatic (not snapped to scale) — that's the point
+    target.midi=semMidi;
+    target.isTension=true;
+    target.vel=Math.max(0.25,target.vel*0.92); // chromatic passing = slightly softer
+    // Add resolution note after (the note it was heading to)
+    const resolvedPC=target.midi%12;
+    const snapResolved=snapToScale(target.midi+dir);
+    if(snapResolved&&snapResolved!==target.midi){
+      rhSteps.splice(tIdx+1,0,{midi:snapResolved,active:Math.random()<0.7,vel:target.vel*0.8,dur:Math.max(2,target.dur-1),isTension:false,isChord:false,mutDelta:0});
+    }
+    cLog('±½ semi: '+target.midi+'→'+NOTE[target.midi%12]+' (滑り込み)');
+  }
+
+  strikeTotal++;CON.strikeCount++;
+  buildGrid('rh');
+  document.getElementById('strikeCount').textContent=strikeTotal;
+}
+
+// Legacy aliases for keyboard
+function strikeNow()   { injectTension('tritone'); }
+function strikeChord() { injectTension('tritoneChord'); }
+
+// ══════════════════════════════════════════════════════
+//  RICHTER PAINTING CANVAS
+// ══════════════════════════════════════════════════════
+function getPaintCtx(){
+  const cv=document.getElementById('paintCanvas');if(!cv||!cv.getContext)return null;
+  const W=cv.parentElement?.offsetWidth||900;
+  if(!PAINT.init||cv.width!==W){
+    const tmp=document.createElement('canvas');
+    tmp.width=cv.width;tmp.height=cv.height;
+    const tctx=tmp.getContext('2d');
+    if(PAINT.init)tctx.drawImage(cv,0,0);
+    cv.width=W;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle=RICHTER.bg;ctx.fillRect(0,0,W,cv.height);
+    if(PAINT.init)ctx.drawImage(tmp,0,0,W,cv.height);
+    PAINT.init=true;
+  }
+  return cv.getContext('2d');
+}
+
+function addPaintStroke(midi, vel, isTension, isChord){
+  const cv=document.getElementById('paintCanvas');if(!cv)return;
+  const ctx=getPaintCtx();if(!ctx)return;
+  const W=cv.width, H=cv.height;
+  const root=getRoot();
+
+  // ── Pitch → Y position (full canvas height) ──
+  const semRange=42;
+  const pitchT=Math.max(0,Math.min(1,(midi-root+semRange*0.35)/semRange));
+  const baseY=H-(pitchT*H*0.88)-H*0.05;
+  const y=Math.max(4,Math.min(H-4,baseY));
+
+  const col=getStrokeColor(isTension,isChord,vel);
+
+  // ── Horizontal squeegee stripe ──
+  // Richter's key technique: wide horizontal band across the canvas
+  // Each phrase contributes a horizontal layer at the pitch height
+  const stripeH=Math.max(6, vel*55+8)+(isTension?18:0)+(isChord?-4:0);
+  const stripeW=W*(0.45+vel*0.45+(Math.random()-0.5)*0.15);
+  const stripeX=(Math.random()-0.5)*(W-stripeW)*0.8;
+
+  ctx.save();
+  ctx.globalCompositeOperation=isTension?'hard-light':isChord?'multiply':'overlay';
+  ctx.globalAlpha=vel*0.45+0.18;
+  ctx.fillStyle=col;
+  // Main horizontal stroke
+  ctx.fillRect(stripeX, y-stripeH/2, stripeW, stripeH);
+  ctx.restore();
+
+  // ── Smear / drag effect ──
+  // Richter pulls the squeegee, colors blend into adjacent layer
+  if(Math.random()<0.65){
+    ctx.save();
+    ctx.globalCompositeOperation='overlay';
+    ctx.globalAlpha=vel*0.22+0.06;
+    ctx.fillStyle=col;
+    // Slight vertical offset = "drag" from previous stroke
+    const dragY=y+(Math.random()-0.5)*stripeH*2.5;
+    const dragW=stripeW*(0.3+Math.random()*0.5);
+    const dragX=stripeX+(Math.random()-0.5)*W*0.2;
+    ctx.fillRect(dragX, dragY-stripeH*0.3, dragW, stripeH*0.55);
+    ctx.restore();
+  }
+
+  // ── Color bleed at stroke edges ──
+  // The squeegee picks up underlying color at boundaries
+  if(Math.random()<0.4){
+    ctx.save();
+    ctx.globalCompositeOperation='screen';
+    ctx.globalAlpha=0.08+vel*0.06;
+    ctx.fillStyle=RICHTER.titanium;
+    ctx.fillRect(stripeX, y-stripeH/2, stripeW, 2);
+    ctx.fillRect(stripeX, y+stripeH/2-2, stripeW, 2);
+    ctx.restore();
+  }
+
+  // ── Vertical drip / streak ──
+  // Richter's paint sometimes drips vertically between horizontal pulls
+  if(Math.random()<0.18){
+    ctx.save();
+    ctx.globalCompositeOperation='multiply';
+    ctx.globalAlpha=vel*0.35+0.1;
+    ctx.fillStyle=col;
+    const dripX=stripeX+(Math.random())*stripeW;
+    const dripLen=H*(0.05+Math.random()*0.25);
+    const dripDir=Math.random()<0.5?1:-1;
+    ctx.fillRect(dripX-2, y, 3+Math.random()*4, dripLen*dripDir);
+    ctx.restore();
+  }
+
+  // ── Tension: carmine strike = intense hard-light burst ──
+  if(isTension){
+    ctx.save();
+    ctx.globalCompositeOperation='hard-light';
+    ctx.globalAlpha=0.55+vel*0.3;
+    ctx.fillStyle=RICHTER.carmine;
+    // Full-width carmine stripe — Richter's violent red bands
+    ctx.fillRect(0, y-stripeH*0.8, W, stripeH*1.6);
+    // Narrower intense core
+    ctx.globalAlpha=0.7;
+    ctx.fillRect(stripeX, y-stripeH, stripeW*1.2, stripeH*2);
+    ctx.restore();
+  }
+
+  // ── Periodic white wipe ──
+  // Richter drags white over sections, creating grey mid-tones
+  // Triggered by Contrast pp events or low velocity patches
+  PAINT.wipePhase=(PAINT.wipePhase||0)+vel*0.03;
+  if(PAINT.wipePhase>1&&Math.random()<0.12){
+    PAINT.wipePhase=0;
+    ctx.save();
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=0.04+Math.random()*0.06;
+    ctx.fillStyle=RICHTER.titanium;
+    const wipeY=Math.random()*H*0.7+H*0.1;
+    const wipeH=H*(0.05+Math.random()*0.15);
+    ctx.fillRect(0, wipeY, W, wipeH);
+    ctx.restore();
+  }
+
+  // ── Large background wash (base layer accumulation) ──
+  // Richter builds up thick underlayers before squeegee passes
+  if(Math.random()<0.06){
+    ctx.save();
+    ctx.globalCompositeOperation='multiply';
+    ctx.globalAlpha=0.04+vel*0.03;
+    ctx.fillStyle=col;
+    const bx=Math.random()*W*0.6;
+    const bw=W*(0.2+Math.random()*0.4);
+    ctx.fillRect(bx, 0, bw, H);
+    ctx.restore();
+  }
+
+  PAINT.lastColor=col;
+  PAINT.lastY=y;
+}
+
+// Called on Contrast pp — white wipe pass
+function paintWhiteWipe(){
+  const cv=document.getElementById('paintCanvas');if(!cv)return;
+  const ctx=getPaintCtx();if(!ctx)return;
+  const W=cv.width,H=cv.height;
+  const numStripes=2+Math.floor(Math.random()*3);
+  for(let i=0;i<numStripes;i++){
+    ctx.save();
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=0.06+Math.random()*0.09;
+    ctx.fillStyle=RICHTER.titanium;
+    const wy=Math.random()*H;
+    const wh=H*(0.04+Math.random()*0.12);
+    ctx.fillRect(0,wy,W,wh);
+    ctx.restore();
+  }
+}
+
+// Called on Contrast ff — dark Payne's grey pass
+function paintDarkPass(){
+  const cv=document.getElementById('paintCanvas');if(!cv)return;
+  const ctx=getPaintCtx();if(!ctx)return;
+  const W=cv.width,H=cv.height;
+  ctx.save();
+  ctx.globalCompositeOperation='multiply';
+  ctx.globalAlpha=0.08+Math.random()*0.1;
+  ctx.fillStyle=RICHTER.paynes;
+  const wy=Math.random()*H*0.6;
+  ctx.fillRect(0,wy,W*0.4+Math.random()*W*0.4,H*(0.1+Math.random()*0.3));
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════
+//  PLAYBACK
+// ══════════════════════════════════════════════════════
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function startKeepAlive(){const ctx=getAudioCtx();if(_keepNode)return;_keepNode=ctx.createOscillator();const g=ctx.createGain();g.gain.value=0;_keepNode.connect(g);g.connect(ctx.destination);_keepNode.start();}
+
+const _wC=`const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type==='set'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wC],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){_tw=null;}return _tw;}
+function bgTimeout(fn,ms){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  const w=getTW();
+  if(w){const id=_tn++;const dl=ctx.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-ctx.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancelled:false,cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}
+  const dl=ctx.currentTime+ms/1000;const tid={cancelled:false};let t=null;
+  function check(){if(tid.cancelled)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(check,rem<25?1:Math.max(1,rem-20));}}
+  t=setTimeout(check,Math.max(1,ms-20));
+  tid.cancel=()=>{tid.cancelled=true;if(t)clearTimeout(t);};
+  return tid;
+}
+
+document.addEventListener('visibilitychange',()=>{const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();if(!document.hidden&&midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  startKeepAlive();
+  playing=true;rhIdx=0;lhIdx=0;barCount=0;
+  document.getElementById('btnPlay').textContent='■ Stop';
+  if(SLAVE.active&&SLAVE.running)return;
+  tick();
+}
+function stopAll(){
+  playing=false;
+  if(playTimer){playTimer.cancelled=true;playTimer=null;}
+  document.getElementById('btnPlay').textContent='▶ Play';
+  document.getElementById('stepDisplay').textContent='—';
+  rhIdx=0;lhIdx=0;
+  if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);
+  document.querySelectorAll('.stroke.playing').forEach(e=>e.classList.remove('playing'));
+}
+
+let _engineTick=0;
+function tick(){
+  if(!playing)return;
+  if(SLAVE.active&&SLAVE.running){playing=true;return;}
+  const bpm=getBpm();
+  const step=rhSteps[rhIdx%Math.max(1,rhSteps.length)];
+  const ratio=step?step.dur:4;
+  const baseQ=60000/bpm;
+  const stepMs=Math.max(35,baseQ*(ratio/4))*MOM.rubatoAccum;
+  const micro=(Math.random()-0.5)*baseQ*0.025;
+
+  // Highlight
+  document.querySelectorAll('#rhGrid .stroke').forEach((e,i)=>e.classList.toggle('playing',i===rhIdx%Math.max(1,rhSteps.length)));
+  document.querySelectorAll('#lhGrid .stroke').forEach((e,i)=>e.classList.toggle('playing',i===lhIdx%Math.max(1,lhSteps.length)));
+
+  // Send MIDI + paint stroke
+  sendStep(rhSteps,rhIdx,'rhCh',0,stepMs);
+  sendStep(lhSteps,lhIdx,'lhCh',0,stepMs*1.55);
+
+  // Paint stroke for current RH note
+  const rs=rhSteps[rhIdx%Math.max(1,rhSteps.length)];
+  if(rs&&rs.active) addPaintStroke(rs.midi,rs.vel,rs.isTension,rs.isChord);
+
+  document.getElementById('stepDisplay').textContent=`${barCount+1}:${(rhIdx%3)+1}`;
+
+  rhIdx++;
+  if(rhIdx>=rhSteps.length){
+    rhIdx=0;barCount++;loopCount++;
+    document.getElementById('loopCount').textContent=loopCount;
+    onLoopEnd();
+  }
+  lhIdx++;if(lhIdx>=Math.max(1,lhSteps.length))lhIdx=0;
+
+  _engineTick++;
+  momentumTick();contrastTick();
+  if(_engineTick%4===0){updateMomUI();updateContrastUI();}
+
+  playTimer=bgTimeout(tick,stepMs+micro);
+}
+
+function onLoopEnd(){
+  // Update last note for momentum handoff
+  const lastActive=rhSteps.filter(s=>!s.isChord&&s.active);
+  if(lastActive.length>0){
+    MOM.lastMidi=lastActive[lastActive.length-1].midi;
+    document.getElementById('lastNoteDisp').textContent=midiName(MOM.lastMidi);
+    document.getElementById('handoffDisp').textContent='→ '+midiName(MOM.lastMidi);
+  }
+
+  // Auto-mutate occasionally
+  const mutProb=0.3+MOM.level*0.3;
+  if(Math.random()<mutProb) mutateMotif();
+
+  // Check for contrast flip on loop boundary
+  const freq=parseInt(document.getElementById('contrastFreq').value)/100;
+  if(Math.random()<freq*0.4) forceContrast();
+
+  mutHistory.push(rhSteps.filter(s=>s.mutDelta>0).length);
+  if(mutHistory.length>80)mutHistory.shift();
+}
+
+function sendStep(steps,idx,chId,octOff,durMs){
+  if(!steps.length||!midiOut)return;
+  const s=steps[idx%steps.length];if(!s||!s.active)return;
+  const ch=(parseInt(document.getElementById(chId)?.value||1)-1);
+  const m=Math.max(0,Math.min(127,s.midi+octOff));
+  const v=Math.round(s.vel*105+15);
+  const dur=durMs*(s.dur/4)*0.80;
+  midiOut.send([0x90|ch,m,Math.min(115,v)]);
+  const ds=4;
+  for(let k=1;k<=ds;k++){
+    const expr=Math.round(127*(1-k/ds)*0.4+58);
+    setTimeout(()=>{if(midiOut)midiOut.send([0xB0|ch,11,expr]);},dur*k/ds);
+  }
+  setTimeout(()=>{if(midiOut){midiOut.send([0x80|ch,m,0]);midiOut.send([0xB0|ch,11,127]);}},dur);
+}
+
+// ══════════════════════════════════════════════════════
+//  MOTIF MUTATION
+// ══════════════════════════════════════════════════════
+function mutateMotif(){
+  const mut=parseInt(document.getElementById('mutAmt').value)/100;
+  const pool=getScalePool(-4,18);
+  let changed=0;
+  rhSteps.forEach((s,i)=>{
+    if(s.isChord)return;
+    if(Math.random()<mut*0.45){
+      const cur=pool.findIndex(m=>m>=s.midi);
+      const dir=Math.random()<0.5?1:-1;
+      const ni=Math.max(0,Math.min(pool.length-1,cur+dir));
+      if(ni!==cur){s.midi=pool[ni];s.isTension=isTension(s.midi);changed++;s.mutDelta=(s.mutDelta||0)+0.1;}
+    }
+    if(Math.random()<mut*0.3){
+      s.vel=Math.max(0.1,Math.min(1,s.vel+(Math.random()-0.5)*0.22));
+    }
+  });
+  if(changed>0){buildGrid('rh');drawRHCurve();}
+}
+
+// ══════════════════════════════════════════════════════
+//  UI UPDATES
+// ══════════════════════════════════════════════════════
+function updateMomUI(){
+  const mf=document.getElementById('momentumFill');
+  if(mf){mf.style.width=(MOM.level*100).toFixed(0)+'%';mf.style.background=MOM.level>0.7?'var(--tit)':MOM.level>0.4?'var(--sie)':'var(--cad)';}
+  const mv=document.getElementById('momentumVal');if(mv)mv.textContent=(MOM.level*100).toFixed(0);
+  const mf2=document.getElementById('momF');if(mf2)mf2.style.width=(MOM.level*100).toFixed(0)+'%';
+  const mv2=document.getElementById('momV');if(mv2)mv2.textContent=(MOM.level*100).toFixed(0);
+  const mm=document.getElementById('miniMom');if(mm)mm.style.width=(MOM.level*100).toFixed(0)+'%';
+  const mc=document.getElementById('motifChain');if(mc)mc.textContent='Chain: '+MOM.chainLen;
+  const cl=document.getElementById('chainLen');if(cl)cl.textContent='Total: '+motifCount;
+  const mc2=document.getElementById('motifCount');if(mc2)mc2.textContent=motifCount;
+  drawMomCanvas();
+}
+
+function updateContrastUI(){
+  const cm=document.getElementById('contrastMode');if(cm)cm.textContent=CON.mode.toUpperCase();
+  const cv2=document.getElementById('contrastVal');if(cv2){cv2.textContent=CON.mode.toUpperCase();cv2.style.color=CON.mode==='ff'?'var(--tit)':CON.mode==='pp'?'var(--fog)':CON.mode==='mp'?'var(--dim)':'var(--sie)';}
+  const cvf=document.getElementById('contVelF');if(cvf)cvf.style.width=(CON.velMult*100).toFixed(0)+'%';
+  const cvv=document.getElementById('contVelV');if(cvv)cvv.textContent=(CON.velMult*100).toFixed(0);
+  const ms=document.getElementById('miniStr');
+  const strPct=rhSteps.length?rhSteps.filter(s=>s.isTension&&s.active).length/rhSteps.length:0;
+  if(ms)ms.style.width=(strPct*100).toFixed(0)+'%';
+  const sdf=document.getElementById('strikeDensF');if(sdf)sdf.style.width=(strPct*100).toFixed(0)+'%';
+  const sdv=document.getElementById('strikeDensV');if(sdv)sdv.textContent=(strPct*100).toFixed(0);
+  const mcon=document.getElementById('miniCon');if(mcon)mcon.style.width=(CON.velMult*100).toFixed(0)+'%';
+  drawContCanvas();
+}
+
+function updateRhythmUI(){
+  const rr=document.getElementById('rhRhythmDisp');if(rr)rr.textContent=document.getElementById('motifRhythm').value;
+  const lr=document.getElementById('lhRhythmDisp');if(lr)lr.textContent='binary';
+  const co=document.getElementById('conflictDisp');if(co)co.textContent=document.getElementById('motifRhythm').value==='triplet'?'HIGH':'MED';
+}
+
+// Canvas draws
+function drawMomCanvas(){
+  const cv=document.getElementById('momCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=50;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,50);
+  const h=MOM.history;if(h.length<2)return;
+  ctx.beginPath();h.forEach((v,i)=>{const x=(i/h.length)*W,y=48-v*44;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(232,200,50,.6)';ctx.lineWidth=1.2;ctx.stroke();
+  const g=ctx.createLinearGradient(0,0,0,50);g.addColorStop(0,'rgba(232,200,50,.16)');g.addColorStop(1,'rgba(232,200,50,.01)');
+  ctx.lineTo(W,50);ctx.lineTo(0,50);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+}
+
+function drawContCanvas(){
+  const cv=document.getElementById('contCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=50;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,50);
+  const h=CON.history;if(h.length<2)return;
+  ctx.beginPath();h.forEach((v,i)=>{const x=(i/h.length)*W,y=48-v*44;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(212,40,32,.6)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+// ══════════════════════════════════════════════════════
+//  MIDI
+// ══════════════════════════════════════════════════════
+function initMIDI(){if(!navigator.requestMIDIAccess){setMidiSt(false,'N/A');return;}navigator.requestMIDIAccess().then(ma=>{midiAccess=ma;ma.onstatechange=()=>{populatePorts();populateIn();};populatePorts();populateIn();}).catch(()=>setMidiSt(false,'denied'));}
+function populatePorts(){const sel=document.getElementById('midiDevSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectMidiOut(sel.value);}});}
+function populateIn(){const sel=document.getElementById('clockInSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;}
+function selectMidiOut(id){if(!id){midiOut=null;setMidiSt(false,'—');return;}midiOut=midiAccess?.outputs.get(id);if(midiOut)setMidiSt(true,midiOut.name);}
+function setMidiSt(ok,name){const dot=document.getElementById('midiDot'),stat=document.getElementById('midiStatus');if(dot)dot.classList.toggle('on',ok);if(stat){stat.textContent=ok?'✓ '+name:name;stat.style.color=ok?'var(--pht)':'var(--dim)';}}
+function selectClockIn(id){if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.clockInPort=midiAccess.inputs.get(id);if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=onClockMsg;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const btn=document.getElementById('btnSlave');if(btn){btn.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';btn.style.color=SLAVE.active?'var(--pht)':'';}if(SLAVE.active){if(playTimer){playTimer.cancelled=true;playTimer=null;}}else if(playing)tick();}
+function onClockMsg(e){const d=e.data[0];if(d===0xFA){SLAVE.running=true;SLAVE.pulseCount=0;if(playTimer){playTimer.cancelled=true;playTimer=null;}playing=true;rhIdx=0;lhIdx=0;barCount=0;startKeepAlive();const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();document.getElementById('btnPlay').textContent='■ Stop';return;}if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;startKeepAlive();document.getElementById('btnPlay').textContent='■ Stop';}return;}if(d===0xFC){SLAVE.running=false;playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}document.getElementById('btnPlay').textContent='▶ Play';if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);return;}if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;const now=e.timeStamp||performance.now();if(SLAVE.lastPulseTime>0){const iv=now-SLAVE.lastPulseTime;const ibpm=60000/(iv*SLAVE.ppqn);if(ibpm>20&&ibpm<160)SLAVE.bpmSmoothed=SLAVE.bpmSmoothed*(1-SLAVE.bpmAlpha)+ibpm*SLAVE.bpmAlpha;}SLAVE.lastPulseTime=now;SLAVE.pulseCount++;if(SLAVE.pulseCount>=SLAVE.pulsesPerStep){SLAVE.pulseCount=0;if(playing)slaveStep();}if(SLAVE.pulseCount===0)document.getElementById('bpmIn').value=Math.round(SLAVE.bpmSmoothed);}
+function slaveStep(){if(!playing||!rhSteps.length)return;const sMs=60000/SLAVE.bpmSmoothed/4;sendStep(rhSteps,rhIdx,'rhCh',0,sMs);sendStep(lhSteps,lhIdx,'lhCh',0,sMs*1.55);const rs=rhSteps[rhIdx%Math.max(1,rhSteps.length)];if(rs&&rs.active)addPaintStroke(rs.midi,rs.vel,rs.isTension,rs.isChord);rhIdx++;if(rhIdx>=rhSteps.length){rhIdx=0;barCount++;loopCount++;onLoopEnd();}lhIdx++;if(lhIdx>=Math.max(1,lhSteps.length))lhIdx=0;momentumTick();contrastTick();}
+
+function exportMIDI(){
+  if(!rhSteps.length)return;
+  const bpm=getBpm();const tpb=480;const µs=Math.round(60000000/bpm);
+  function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}
+  function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}
+  function i16(v){return[(v>>8)&0xFF,v&0xFF];}
+  const ch=(parseInt(document.getElementById('rhCh')?.value||1)-1);
+  const ev=[];let t=0;
+  rhSteps.forEach(s=>{if(!s.active||!s.midi)return;const stk=Math.round(tpb*(s.dur/4));ev.push([t,[0x90|ch,s.midi,Math.round(s.vel*100+15)]]);ev.push([t+Math.round(stk*.80),[0x80|ch,s.midi,0]]);t+=stk;});
+  ev.sort((a,b)=>a[0]-b[0]);let lt=0;const td=[];
+  td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);
+  ev.forEach(([t2,msg])=>{td.push(...wv(t2-lt),...msg);lt=t2;});
+  td.push(0,0xFF,0x2F,0);
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,...i16(tpb)];
+  const bytes=new Uint8Array([...hdr,0x4D,0x54,0x72,0x6B,...i32(td.length),...td]);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'audio/midi'}));a.download=`jarrett_part1_${currentScale}.mid`;a.click();
+}
+
+// ══════════════════════════════════════════════════════
+//  UNDO / REDO / SAVE / LOAD
+// ══════════════════════════════════════════════════════
+const UMAX=30;let _us=[],_rs=[];
+function captureState(){return{rhSteps:JSON.parse(JSON.stringify(rhSteps)),lhSteps:JSON.parse(JSON.stringify(lhSteps)),currentScale,root:document.getElementById('rootSel').value,bpm:getBpm(),momLevel:MOM.level,conMode:CON.mode};}
+function pushUndo(){_us.push(captureState());if(_us.length>UMAX)_us.shift();_rs=[];updateUndoBtns();}
+function applyState(s){rhSteps=JSON.parse(JSON.stringify(s.rhSteps));lhSteps=JSON.parse(JSON.stringify(s.lhSteps));currentScale=s.currentScale||'lydian';const rs=document.getElementById('rootSel');if(rs)rs.value=s.root;const bi=document.getElementById('bpmIn');if(bi)bi.value=s.bpm||68;document.getElementById('scaleSel').value=currentScale;document.getElementById('scaleDisplay').textContent=getScale().name;if(s.conMode){CON.mode=s.conMode;CON.velMult=VEL_MODES[s.conMode];}buildGrid('rh');buildGrid('lh');drawRHCurve();updateUndoBtns();}
+function undo(){if(!_us.length)return;_rs.push(captureState());applyState(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(captureState());applyState(_rs.pop());}
+function updateUndoBtns(){const u=document.getElementById('btnUndo'),r=document.getElementById('btnRedo');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function saveState(){const s=captureState();s._tool='JarrettPart1';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download=`jarrett_part1_${currentScale}.json`;a.click();}
+function loadState(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const s=JSON.parse(ev.target.result);pushUndo();applyState(s);}catch(err){alert('Load error: '+err.message);}};r.readAsText(f);e.target.value='';}
+
+let _taps=[];
+function tapTempo(){const now=Date.now();_taps.push(now);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gaps=_taps.slice(1).map((t,i)=>t-_taps[i]);const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;const bpm=Math.round(60000/avg);if(bpm>20&&bpm<140)document.getElementById('bpmIn').value=bpm;}}
+
+function mLog(msg){const log=document.getElementById('momLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(232,200,50,.7);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>5)log.removeChild(log.lastChild);}
+function cLog(msg){const log=document.getElementById('contLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(212,40,32,.75);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>5)log.removeChild(log.lastChild);}
+
+// Slider labels
+document.querySelectorAll('input[type=range]').forEach(el=>{
+  const vid=el.id+'V';
+  el.addEventListener('input',()=>{const v=document.getElementById(vid);if(v)v.textContent=el.value;});
+});
+
+// Dock tabs
+(function(){document.querySelectorAll('.dock-tab[data-panel]').forEach(tab=>{tab.addEventListener('click',()=>{const p=tab.dataset.panel;if(tab.classList.contains('active')){toggleDock();return;}document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.querySelectorAll('.dock-panel').forEach(p2=>p2.classList.remove('active'));const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');const panels=document.getElementById('dockPanels');if(panels){panels.classList.remove('collapsed');document.getElementById('dockColBtn').textContent='▲';}});});})();
+let _dockOpen=true;
+function toggleDock(){_dockOpen=!_dockOpen;const p=document.getElementById('dockPanels'),b=document.getElementById('dockColBtn');if(p)p.classList.toggle('collapsed',!_dockOpen);if(b)b.textContent=_dockOpen?'▲':'▼';}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();if(e.shiftKey)redo();else undo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();generateMotif();}
+  if(e.code==='KeyL'&&e.target.tagName!=='INPUT'){e.preventDefault();generateLH();}
+  if(e.code==='KeyT'&&e.target.tagName!=='INPUT'){e.preventDefault();injectTension('tritone');}
+  if(e.code==='KeyY'&&e.target.tagName!=='INPUT'){e.preventDefault();injectTension('tritoneChord');}
+  if(e.code==='KeyU'&&e.target.tagName!=='INPUT'){e.preventDefault();injectTension('maj7');}
+  if(e.code==='KeyI'&&e.target.tagName!=='INPUT'){e.preventDefault();injectTension('semi');}
+  if(e.code==='KeyC'&&e.target.tagName!=='INPUT'){e.preventDefault();forceContrast();}
+});
+
+// RAF loop for painting
+let _rafId=null;
+
+function drawPainting(){ getPaintCtx(); }
+
+function clearPainting(){
+  PAINT.init=false;PAINT.wipePhase=0;PAINT.lastColor=null;
+  const cv=document.getElementById('paintCanvas');if(!cv||!cv.getContext)return;
+  const ctx=cv.getContext('2d');
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  ctx.fillStyle=RICHTER.bg;ctx.fillRect(0,0,cv.width,cv.height);
+  PAINT.init=true;
+}
+
+function downloadPainting(){
+  const cv=document.getElementById('paintCanvas');if(!cv)return;
+  const a=document.createElement('a');
+  a.download='jarrett_part1_'+currentScale+'_'+Date.now()+'.png';
+  a.href=cv.toDataURL('image/png');
+  a.click();
+}
+
+function renderLoop(){
+  // Only redraw canvas on resize; strokes are persistent
+  const cv=document.getElementById('paintCanvas');
+  if(cv&&cv.parentElement&&cv.width!==cv.parentElement.offsetWidth){
+    getPaintCtx(); // reinit on resize
+  }
+  _rafId=requestAnimationFrame(renderLoop);
+}
+
+function init(){
+  document.getElementById('scaleDisplay').textContent=getScale().name;
+  generateMotif();
+  generateLH();
+  updateMomUI();
+  updateContrastUI();
+  updateRhythmUI();
+  initMIDI();
+  renderLoop();
+}
+init();
+</script>
+</body>
+</html>

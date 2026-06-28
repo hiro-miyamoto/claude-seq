@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Keith Jarrett — Köln Concert Part IIb</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #0a0a0f;
+  --s0:    #0f0f18;
+  --s1:    #141420;
+  --bd:    #1e1e2e;
+  --bd2:   #2a2a3e;
+  --text:  #d0cee8;
+  --dim:   #5a587a;
+  --fog:   #3a384e;
+  --ivory: #e8e4d8;
+  --gold:  #c8a84a;
+  --gold2: #e4c86a;
+  --rose:  #c87898;
+  --sage:  #78a898;
+  --dawn:  #a888c8;
+  --ten:   #e86858;  /* ST+5 tension color */
+  --paper: #0c0c14;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;overflow-x:hidden;}
+
+/* Subtle grain */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  opacity:.4;}
+
+header{
+  padding:1rem 1.6rem .7rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:flex-end;gap:1.4rem;
+  background:var(--paper);position:relative;z-index:10;
+}
+.hdr-name{
+  font-family:'Cormorant Garamond',serif;font-size:1.9rem;
+  font-weight:300;font-style:italic;color:var(--ivory);line-height:1;
+}
+.hdr-sub{font-size:.4rem;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-top:.28rem;}
+.hdr-title{flex:1;}
+
+/* Phase arc indicator */
+.phase-arc{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;}
+.phase-label{font-size:.38rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.phase-name{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:var(--gold);}
+.phase-bar{width:120px;height:3px;background:var(--bd);border-radius:2px;overflow:hidden;}
+.phase-fill{height:100%;border-radius:2px;transition:width .6s ease,background .6s ease;width:0%;}
+
+/* Ascent meter */
+.ascent-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.22rem;}
+.ascent-label{font-size:.38rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.ascent-outer{width:8px;height:80px;background:var(--bd);border-radius:4px;overflow:hidden;position:relative;}
+.ascent-fill{position:absolute;bottom:0;left:0;right:0;border-radius:4px;transition:height .4s ease,background .4s ease;background:var(--gold);}
+.ascent-val{font-size:.38rem;color:var(--gold2);font-family:'Cormorant Garamond',serif;}
+
+.layout{display:grid;grid-template-columns:210px 1fr;min-height:calc(100vh - 148px);position:relative;z-index:1;}
+.left-panel{border-right:1px solid var(--bd);padding:.65rem;display:flex;flex-direction:column;gap:.45rem;overflow-y:auto;background:var(--paper);}
+.panel{background:var(--s0);border:1px solid var(--bd);border-radius:2px;padding:.5rem .6rem;}
+.panel-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:var(--dim);margin-bottom:.4rem;display:flex;align-items:center;gap:.3rem;}
+.panel-title::before{content:'';width:10px;height:1px;background:var(--gold);opacity:.4;flex-shrink:0;}
+.pr{display:flex;align-items:center;gap:.3rem;margin-bottom:.18rem;}
+.pr label{font-size:.38rem;color:var(--dim);width:58px;flex-shrink:0;}
+.pr-val{font-size:.38rem;width:22px;text-align:right;flex-shrink:0;color:var(--gold);}
+input[type=range]{height:2px;accent-color:var(--gold);cursor:pointer;flex:1;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.46rem;padding:.1rem .18rem;border-radius:1px;}
+.btn{padding:.16rem .5rem;border:1px solid var(--bd);border-radius:1px;background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.46rem;cursor:pointer;transition:all .12s;}
+.btn:hover{border-color:var(--gold);color:var(--gold);}
+.btn.active{border-color:var(--gold2);color:var(--gold2);background:rgba(200,168,74,.08);}
+.btn.ten{border-color:rgba(232,104,88,.4);color:var(--ten);}
+.midi-dot{width:6px;height:6px;border-radius:50%;background:var(--fog);flex-shrink:0;}
+.midi-dot.on{background:var(--sage);box-shadow:0 0 5px var(--sage);}
+
+.main-area{display:flex;flex-direction:column;background:var(--bg);}
+.transport{
+  padding:.45rem .9rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;gap:.55rem;
+  background:var(--paper);flex-wrap:wrap;
+}
+
+/* ── MOTIF DISPLAY ── */
+.motif-area{flex:1;padding:.75rem .9rem;overflow-y:auto;}
+
+/* Motif canvas — the "live painting" */
+.motif-canvas-wrap{
+  position:relative;margin-bottom:.9rem;
+  border:1px solid var(--bd);border-radius:2px;
+  background:var(--s0);overflow:hidden;
+}
+#motifCanvas{display:block;width:100%;}
+
+/* Phase buttons */
+.phase-strip{display:flex;gap:.4rem;margin-bottom:.7rem;flex-wrap:wrap;}
+.phase-btn{
+  padding:.22rem .55rem;border:1px solid var(--bd);border-radius:1px;
+  background:transparent;color:var(--dim);
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.7rem;
+  cursor:pointer;transition:all .15s;
+}
+.phase-btn:hover{border-color:var(--gold);color:var(--gold);}
+.phase-btn.active{border-color:var(--gold2);color:var(--gold2);background:rgba(200,168,74,.07);}
+.phase-btn.ten-active{border-color:var(--ten);color:var(--ten);background:rgba(232,104,88,.06);}
+
+/* Voice blocks */
+.voice-block{margin-bottom:.9rem;}
+.voice-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;}
+.voice-label{font-family:'Cormorant Garamond',serif;font-size:.85rem;font-style:italic;color:var(--dim);}
+.voice-info{font-size:.36rem;color:var(--fog);margin-left:auto;}
+
+/* Note grid — wider, breathier */
+.note-grid{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+.note-cell{
+  flex-shrink:0;min-width:36px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;border-radius:1px;padding:.1rem .06rem;
+  border:1px solid transparent;transition:all .1s;position:relative;
+}
+.note-cell:hover{border-color:var(--bd);}
+.note-cell.playing{border-color:var(--gold)!important;background:rgba(200,168,74,.06);}
+.note-cell.tension{background:rgba(232,104,88,.05);}
+.note-cell.tension.playing{border-color:var(--ten)!important;background:rgba(232,104,88,.1);}
+.note-name{font-family:'Cormorant Garamond',serif;font-size:.72rem;font-style:italic;color:var(--dim);line-height:1;}
+.note-name.on{color:var(--ivory);}
+.note-name.ten{color:var(--ten);}
+.note-bar{width:24px;border-radius:1px;min-height:2px;transition:height .2s;}
+/* Velocity indicator as opacity */
+.note-num{font-size:.26rem;color:var(--fog);}
+.note-vel{position:absolute;top:2px;right:2px;font-size:.2rem;color:var(--gold);opacity:.5;}
+
+/* Dock */
+.engine-dock{border-top:1px solid var(--bd);background:var(--paper);position:sticky;bottom:0;z-index:20;}
+.dock-tabbar{display:flex;align-items:stretch;border-bottom:1px solid var(--bd);overflow-x:auto;scrollbar-width:none;}
+.dock-tab{padding:.24rem .5rem;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.4rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.2rem;transition:all .12s;white-space:nowrap;}
+.dock-tab:hover{color:var(--text);}
+.dock-tab.active{color:var(--text);border-bottom-color:var(--gold);}
+.dock-tdot{width:4px;height:4px;border-radius:50%;opacity:.4;}
+.dock-tab.active .dock-tdot{opacity:1;}
+.dock-minibar{display:flex;align-items:center;gap:.38rem;padding:0 .6rem;margin-left:auto;flex-shrink:0;}
+.mini-lbl{font-size:.33rem;color:var(--dim);}
+.mini-bar{width:28px;height:2px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:1px;transition:width .4s;}
+.dock-panels{max-height:200px;overflow:hidden;transition:max-height .25s;}
+.dock-panels.collapsed{max-height:0!important;}
+.dock-panel{display:none;padding:.42rem .8rem .55rem;}
+.dock-panel.active{display:block;}
+.dpg{display:grid;gap:.42rem;}
+.dpg-3{grid-template-columns:1fr 1fr 1fr;}
+.dpg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dsub{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.38rem .45rem;}
+.dsub-t{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.78rem;color:var(--dim);margin-bottom:.22rem;padding-left:.22rem;border-left:1px solid var(--gold);opacity:.7;}
+.dg-row{display:flex;align-items:center;gap:.25rem;margin-bottom:.13rem;}
+.dg-lbl{font-size:.35rem;color:var(--dim);width:52px;flex-shrink:0;}
+.dg-track{flex:1;height:3px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.dg-fill{height:100%;border-radius:1px;transition:width .3s;}
+.dg-val{font-size:.35rem;width:20px;text-align:right;flex-shrink:0;color:var(--gold);}
+.dg-log{font-size:.36rem;color:var(--dim);line-height:1.9;max-height:60px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-title">
+    <div class="hdr-name">Keith Jarrett</div>
+    <div class="hdr-sub">Köln Concert · Part IIb · Ascent Engine · Motif Painting</div>
+  </div>
+  <!-- Ascent meter -->
+  <div class="ascent-wrap">
+    <span class="ascent-label">Ascent</span>
+    <div class="ascent-outer"><div class="ascent-fill" id="ascentFill"></div></div>
+    <span class="ascent-val" id="ascentVal">0</span>
+  </div>
+  <!-- Phase indicator -->
+  <div class="phase-arc">
+    <span class="phase-label">Phase</span>
+    <span class="phase-name" id="phaseName">Accumulation</span>
+    <div class="phase-bar"><div class="phase-fill" id="phaseFill"></div></div>
+  </div>
+</header>
+
+<div class="layout">
+<div class="left-panel">
+
+  <!-- Tuning -->
+  <div class="panel">
+    <div class="panel-title">Intonation</div>
+    <div class="pr"><label>Root</label>
+      <select id="rootSel" onchange="onRootChange()" style="flex:1">
+        <option value="58">B♭3</option><option value="60">C4</option>
+        <option value="61">C#4</option><option value="62">D4</option>
+        <option value="63">E♭4</option><option value="65" selected>F4</option>
+        <option value="67">G4</option><option value="69">A4</option>
+      </select>
+    </div>
+    <div class="pr"><label>Scale</label>
+      <select id="scaleSel" onchange="onScaleChange()" style="flex:1">
+        <option value="dorian" selected>Dorian</option>
+        <option value="lydian">Lydian</option>
+        <option value="mixolydian">Mixolydian</option>
+        <option value="aeolian">Aeolian</option>
+        <option value="lydianb7">Lydian ♭7</option>
+        <option value="dorianb2">Dorian ♭2</option>
+        <option value="wholetone">Whole Tone</option>
+        <option value="pentatonic">Pentatonic</option>
+        <option value="blues">Blues</option>
+      </select>
+    </div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="54" min="20" max="100"
+        style="width:46px;font-size:.5rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.08rem .18rem;border-radius:1px">
+      <button class="btn" onclick="tapTempo()" style="font-size:.38rem;padding:.07rem .25rem">TAP</button>
+    </div>
+    <div class="pr"><label>Rubato</label>
+      <input type="range" id="rubatoAmt" min="0" max="100" value="55">
+      <span class="pr-val" id="rubatoAmtV">55</span>
+    </div>
+  </div>
+
+  <!-- Motif engine -->
+  <div class="panel">
+    <div class="panel-title">Motif</div>
+    <div class="pr"><label>Length</label>
+      <select id="motifLen" onchange="generateMotif()" style="flex:1">
+        <option value="2">2 notes</option>
+        <option value="3" selected>3 notes</option>
+        <option value="4">4 notes</option>
+        <option value="5">5 notes</option>
+      </select>
+    </div>
+    <div class="pr"><label>Rhythm</label>
+      <select id="motifRhythm" style="flex:1">
+        <option value="free" selected>Free</option>
+        <option value="triplet">3連符</option>
+        <option value="dotted">付点</option>
+        <option value="mixed">Mixed</option>
+      </select>
+    </div>
+    <div class="pr"><label>Chord dens.</label>
+      <input type="range" id="chordDens" min="0" max="3" value="1" step="1">
+      <span class="pr-val" id="chordDensV">1</span>
+    </div>
+    <div class="pr"><label>ST+5 prob.</label>
+      <input type="range" id="tensionProb" min="0" max="100" value="22"
+        style="accent-color:var(--ten)">
+      <span class="pr-val" id="tensionProbV" style="color:var(--ten)">22</span>
+    </div>
+    <button class="btn" onclick="generateMotif()" style="width:100%;margin-top:.25rem;font-size:.44rem">↻ New Motif</button>
+  </div>
+
+  <!-- Arc phases -->
+  <div class="panel" style="border-color:rgba(200,168,74,.2)">
+    <div class="panel-title" style="color:var(--gold)">Arc Phases</div>
+    <div style="font-size:.38rem;color:var(--dim);line-height:1.8;margin-bottom:.28rem">昇天アーク制御</div>
+    <div class="pr"><label>Auto arc</label>
+      <select id="autoArcSel" style="flex:1">
+        <option value="1" selected>ON</option>
+        <option value="0">OFF (Manual)</option>
+      </select>
+    </div>
+    <div class="pr"><label>Arc speed</label>
+      <input type="range" id="arcSpeed" min="1" max="100" value="35">
+      <span class="pr-val" id="arcSpeedV">35</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.22rem;margin-top:.3rem">
+      <button class="phase-btn" id="pb0" onclick="setPhase(0)">Accumulation</button>
+      <button class="phase-btn" id="pb1" onclick="setPhase(1)">Ascent</button>
+      <button class="phase-btn" id="pb2" onclick="setPhase(2)">Descent</button>
+      <button class="phase-btn ten-active" id="pb3" onclick="setPhase(3)">Oblique ↗</button>
+    </div>
+  </div>
+
+  <!-- Velocity envelope -->
+  <div class="panel">
+    <div class="panel-title">Velocity</div>
+    <div class="pr"><label>Base vel.</label>
+      <input type="range" id="baseVel" min="20" max="100" value="55">
+      <span class="pr-val" id="baseVelV">55</span>
+    </div>
+    <div class="pr"><label>Contour</label>
+      <input type="range" id="velContour" min="0" max="100" value="60">
+      <span class="pr-val" id="velContourV">60</span>
+    </div>
+    <div class="pr"><label>Accent str.</label>
+      <input type="range" id="accentStr" min="0" max="100" value="70">
+      <span class="pr-val" id="accentStrV">70</span>
+    </div>
+  </div>
+
+  <!-- MIDI -->
+  <div class="panel">
+    <div class="panel-title">MIDI</div>
+    <div class="pr"><div class="midi-dot" id="midiDot"></div>
+      <span id="midiStatus" style="font-size:.42rem;color:var(--dim)">—</span></div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.2rem;font-size:.42rem">↻ Refresh</button>
+    <div class="pr"><label>Out</label>
+      <select id="midiDevSel" onchange="selectMidiOut(this.value)" style="flex:1;font-size:.4rem"></select></div>
+    <div class="pr"><label>RH Ch</label>
+      <select id="rhCh" style="flex:1;font-size:.4rem">
+        <option value="1" selected>Ch 1</option><option value="2">Ch 2</option>
+        <option value="3">Ch 3</option><option value="4">Ch 4</option></select></div>
+    <div class="pr"><label>LH Ch</label>
+      <select id="lhCh" style="flex:1;font-size:.4rem">
+        <option value="1">Ch 1</option><option value="2" selected>Ch 2</option>
+        <option value="3">Ch 3</option><option value="4">Ch 4</option></select></div>
+    <div class="pr"><label>Clock In</label>
+      <select id="clockInSel" onchange="selectClockIn(this.value)" style="flex:1;font-size:.4rem">
+        <option value="">—</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin:.18rem 0;font-size:.42rem">Slave: OFF</button>
+    <button class="btn active" onclick="exportMIDI()" style="width:100%;font-size:.42rem">↓ Export MIDI</button>
+  </div>
+
+</div>
+
+<div class="main-area">
+  <div class="transport">
+    <button class="btn active" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn" onclick="generateMotif()">↻ Motif</button>
+    <button class="btn" onclick="generateLH()">↻ LH</button>
+    <button class="btn ten" onclick="injectTension()" style="font-style:italic;font-family:'Cormorant Garamond',serif">ST+5</button>
+    <button class="btn" id="btnAutoArc" onclick="toggleAutoArc()" style="color:var(--gold)">Arc: AUTO</button>
+    <button class="btn" id="btnUndo" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnRedo" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="saveState()" style="color:var(--sage)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--dim)">↑ Load
+      <input type="file" accept=".json" onchange="loadState(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem">
+      <span style="font-size:.4rem;color:var(--dim)" id="stepDisplay">—</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:.52rem;font-style:italic;color:var(--gold2)" id="scaleDisplay">Dorian</span>
+      <div style="display:flex;align-items:center;gap:.28rem">
+        <span class="mini-lbl">変容</span>
+        <input type="range" id="mutAmt" min="0" max="100" value="30"
+          style="width:72px;height:2px;accent-color:var(--rose);cursor:pointer"
+          oninput="document.getElementById('mutAmtV').textContent=this.value">
+        <span id="mutAmtV" style="font-size:.38rem;color:var(--rose);width:18px">30</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="motif-area">
+
+    <!-- Live painting canvas -->
+    <div class="motif-canvas-wrap">
+      <canvas id="motifCanvas" height="100"></canvas>
+    </div>
+
+    <!-- Phase strip -->
+    <div class="phase-strip">
+      <span style="font-size:.38rem;color:var(--dim);align-self:center;margin-right:.2rem">Phase:</span>
+      <button class="phase-btn active" id="pb_acc" onclick="setPhase(0)">Accumulation</button>
+      <button class="phase-btn" id="pb_asc" onclick="setPhase(1)">Ascent →</button>
+      <button class="phase-btn" id="pb_des" onclick="setPhase(2)">Descent ↓</button>
+      <button class="phase-btn" id="pb_obl" onclick="setPhase(3)">Oblique ↗</button>
+    </div>
+
+    <!-- Right hand motif -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label">Right Hand</span>
+        <canvas id="rhCurve" width="130" height="20" style="background:var(--s0);border-radius:1px"></canvas>
+        <span class="voice-info" id="rhInfo">—</span>
+      </div>
+      <div class="note-grid" id="rhGrid"></div>
+    </div>
+
+    <!-- Left hand -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label">Left Hand</span>
+        <span style="font-size:.38rem;color:var(--dim);margin-left:.4rem" id="lhChordLabel">—</span>
+        <span class="voice-info" id="lhInfo">—</span>
+      </div>
+      <div class="note-grid" id="lhGrid"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Dock -->
+<div class="engine-dock">
+  <div class="dock-tabbar">
+    <button class="dock-tab active" data-panel="motif">
+      <span class="dock-tdot" style="background:var(--gold)"></span>Motif
+    </button>
+    <button class="dock-tab" data-panel="arc">
+      <span class="dock-tdot" style="background:var(--dawn)"></span>Arc
+    </button>
+    <button class="dock-tab" data-panel="vel">
+      <span class="dock-tdot" style="background:var(--rose)"></span>Velocity
+    </button>
+    <button class="dock-tab" data-panel="log">
+      <span class="dock-tdot" style="background:var(--fog)"></span>Log
+    </button>
+    <div class="dock-minibar">
+      <span class="mini-lbl">Ascent</span>
+      <div class="mini-bar"><div class="mini-fill" id="miniAscent" style="background:var(--gold)"></div></div>
+      <span class="mini-lbl">Ten.</span>
+      <div class="mini-bar"><div class="mini-fill" id="miniTen" style="background:var(--ten)"></div></div>
+      <button onclick="toggleDock()" id="dockColBtn"
+        style="background:transparent;border:none;color:var(--dim);font-size:.44rem;cursor:pointer;margin-left:.3rem">▲</button>
+    </div>
+  </div>
+  <div class="dock-panels" id="dockPanels">
+
+    <!-- Motif panel -->
+    <div class="dock-panel active" id="dp-motif">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t">現在のMotif</div>
+          <div class="dg-row"><span class="dg-lbl">Notes</span><span id="motifNotes" style="font-size:.38rem;color:var(--gold)">—</span></div>
+          <div class="dg-row"><span class="dg-lbl">Rhythm</span><span id="motifRhythmDisp" style="font-size:.38rem;color:var(--dim)">—</span></div>
+          <div class="dg-row"><span class="dg-lbl">Chord</span><div class="dg-track"><div class="dg-fill" id="chordF" style="background:var(--dawn)"></div></div><span class="dg-val" id="chordV">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">ST+5</span><div class="dg-track"><div class="dg-fill" id="tenF" style="background:var(--ten)"></div></div><span class="dg-val" id="tenV" style="color:var(--ten)">0</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">変容履歴</div>
+          <canvas id="mutCanvas" height="52" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">変容操作</div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;margin-top:.15rem">
+            <button onclick="mutateMotif()" style="border:1px solid rgba(200,168,74,.3);color:var(--gold);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.46rem;padding:.18rem;border-radius:1px;cursor:pointer;font-style:italic">≈ Mutate</button>
+            <button onclick="addChordLayer()" style="border:1px solid rgba(168,136,200,.3);color:var(--dawn);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.46rem;padding:.18rem;border-radius:1px;cursor:pointer;font-style:italic">+ Chord Layer</button>
+            <button onclick="stripChordLayer()" style="border:1px solid rgba(90,88,122,.4);color:var(--dim);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.46rem;padding:.18rem;border-radius:1px;cursor:pointer;font-style:italic">- Strip Layer</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ログ</div>
+          <div id="motifLog" class="dg-log"><span style="color:rgba(200,168,74,.3)">— waiting —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arc panel -->
+    <div class="dock-panel" id="dp-arc">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t">Ascent Engine</div>
+          <div class="dg-row"><span class="dg-lbl">Phase</span><span id="arcPhaseDisp" style="font-size:.4rem;color:var(--gold);font-family:'Cormorant Garamond',serif;font-style:italic">Accumulation</span></div>
+          <div class="dg-row"><span class="dg-lbl">Ascent</span><div class="dg-track"><div class="dg-fill" id="arcAscentF" style="background:var(--gold)"></div></div><span class="dg-val" id="arcAscentV" style="color:var(--gold)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Density</span><div class="dg-track"><div class="dg-fill" id="arcDensF" style="background:var(--dawn)"></div></div><span class="dg-val" id="arcDensV">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Octave</span><span id="arcOctDisp" style="font-size:.4rem;color:var(--dim)">0</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Arc Curve</div>
+          <canvas id="arcCanvas" height="52" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">フェーズ遷移</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem;margin-top:.1rem">
+            <button onclick="setPhase(0)" style="border:1px solid rgba(200,168,74,.3);color:var(--gold);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Accumulation</button>
+            <button onclick="setPhase(1)" style="border:1px solid rgba(200,168,74,.3);color:var(--gold2);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Ascent →</button>
+            <button onclick="setPhase(2)" style="border:1px solid rgba(90,88,122,.4);color:var(--dim);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Descent ↓</button>
+            <button onclick="setPhase(3)" style="border:1px solid rgba(232,104,88,.4);color:var(--ten);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Oblique ↗</button>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ログ</div>
+          <div id="arcLog" class="dg-log"><span style="color:rgba(200,168,74,.3)">— waiting —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Velocity panel -->
+    <div class="dock-panel" id="dp-vel">
+      <div class="dpg dpg-3">
+        <div class="dsub">
+          <div class="dsub-t">Velocity Contour</div>
+          <div class="dg-row"><span class="dg-lbl">Current</span><div class="dg-track"><div class="dg-fill" id="velF" style="background:var(--rose)"></div></div><span class="dg-val" id="velV" style="color:var(--rose)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Peak</span><div class="dg-track"><div class="dg-fill" id="velPeakF" style="background:var(--rose)"></div></div><span class="dg-val" id="velPeakV">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Shape</span><span id="velShape" style="font-size:.38rem;color:var(--dim);font-family:'Cormorant Garamond',serif;font-style:italic">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Velocity Curve</div>
+          <canvas id="velCanvas" height="52" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Envelope Shapes</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem;margin-top:.1rem">
+            <button onclick="setVelShape('swell')" style="border:1px solid rgba(200,120,152,.3);color:var(--rose);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Swell ∿</button>
+            <button onclick="setVelShape('sudden')" style="border:1px solid rgba(200,120,152,.3);color:var(--rose);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Sudden ↑</button>
+            <button onclick="setVelShape('decay')" style="border:1px solid rgba(90,88,122,.4);color:var(--dim);background:transparent;font-family:'Cormorant Garamond',serif;font-size:.44rem;padding:.16rem;border-radius:1px;cursor:pointer;font-style:italic">Decay ↘</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log panel -->
+    <div class="dock-panel" id="dp-log">
+      <div class="dsub" style="max-height:160px;overflow-y:auto">
+        <div class="dsub-t">Event Log</div>
+        <div id="mainLog" class="dg-log" style="max-height:130px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  SCALES — Jarrett's palette
+// ══════════════════════════════════════════════════════
+const SCALES = {
+  dorian:     {name:'Dorian',      degs:[0,2,3,5,7,9,10]},
+  lydian:     {name:'Lydian',      degs:[0,2,4,6,7,9,11]},
+  mixolydian: {name:'Mixolydian',  degs:[0,2,4,5,7,9,10]},
+  aeolian:    {name:'Aeolian',     degs:[0,2,3,5,7,8,10]},
+  lydianb7:   {name:'Lydian ♭7',   degs:[0,2,4,6,7,9,10]},
+  dorianb2:   {name:'Dorian ♭2',   degs:[0,1,3,5,7,9,10]},
+  wholetone:  {name:'Whole Tone',  degs:[0,2,4,6,8,10]},
+  pentatonic: {name:'Pentatonic',  degs:[0,2,4,7,9]},
+  blues:      {name:'Blues',       degs:[0,3,5,6,7,10]},
+};
+const NOTE_NAMES = ['C','C#','D','E♭','E','F','F#','G','A♭','A','B♭','B'];
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let currentScale = 'dorian';
+let playing = false;
+let midiOut = null, midiAccess = null;
+
+// Motif: the living core
+let MOTIF = {
+  notes:    [],   // array of {midi, deg, isTension}
+  rhythm:   [],   // array of note duration ratios (sum ~= stepCount)
+  chordLayers: 0, // how many chord tones added
+  velCurve: [],   // per-note velocity 0-1
+  loopCount: 0,
+};
+let LH = {
+  notes: [],      // left hand sustain/chord notes
+  chordType: 'pedal',
+};
+
+// Arc engine
+const ARC = {
+  phase:     0,
+  ascent:    0,    // 0-1 continuous
+  octTarget: 0,    // target octave shift (continuous semitones)
+  octShift:  0,    // smoothed current octave shift (continuous)
+  density:   0,
+  history:   [],
+  loopCount: 0,
+  autoArc:   true,
+  // Rubato state: "溜め→解放" pattern
+  rubatoPhase: 0,  // 0-2π sinusoidal cycle
+  rubatoAccum: 1.0, // current time multiplier (0.8-1.3)
+  prevStepMs:  500,
+};
+const PHASE_NAMES = ['Accumulation','Ascent','Descent','Oblique ↗'];
+
+// Velocity envelope
+const VEL = {
+  shape: 'swell',
+  current: 0.5,
+  peak: 0.5,
+  history: [],
+};
+
+// Playback
+let rhIdx = 0, lhIdx = 0;
+let playTimer = null;
+let barCount = 0;
+let mutHistory = [];
+
+// MIDI Slave
+const SLAVE = {
+  active:false, running:false, clockInPort:null,
+  ppqn:24, pulsesPerStep:6, pulseCount:0,
+  bpmSmoothed:54, bpmAlpha:0.15, lastPulseTime:0,
+};
+let audioCtx = null;
+let _keepNode = null;
+let autoArc = true;
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function getRoot()  { return parseInt(document.getElementById('rootSel').value)||65; }
+function getBpm()   { return parseInt(document.getElementById('bpmIn').value)||54; }
+function getScale() { return SCALES[currentScale]||SCALES.dorian; }
+
+function getScalePool(loOff, hiOff) {
+  const root=getRoot(), scale=getScale();
+  const lo=root+(loOff||(-12)), hi=root+(hiOff||24);
+  const pool=[];
+  for(let o=-2;o<=3;o++) scale.degs.forEach(d=>{
+    const m=root+d+o*12;
+    if(m>=lo&&m<=hi) pool.push(m);
+  });
+  return [...new Set(pool)].sort((a,b)=>a-b);
+}
+
+function getTensionNote() {
+  // ST+5 from current root: the "dangerous" note
+  return getRoot()+5;
+}
+
+function isTension(midi) {
+  const tn = getTensionNote();
+  return (midi%12) === (tn%12);
+}
+
+function snapToScale(midi) {
+  const root=getRoot(), degs=getScale().degs;
+  const scalePCs=degs.map(d=>(root+d)%12);
+  const pc=midi%12;
+  let best=scalePCs[0], bd=12;
+  scalePCs.forEach(sp=>{
+    const d=Math.min(Math.abs(sp-pc),12-Math.abs(sp-pc));
+    if(d<bd){bd=d;best=sp;}
+  });
+  let nm=Math.floor(midi/12)*12+best;
+  if(Math.abs(nm-midi)>6) nm+=midi>nm?12:-12;
+  return Math.max(24,Math.min(108,nm));
+}
+
+function midiName(m) { return NOTE_NAMES[m%12]+(Math.floor(m/12)-1); }
+
+// ══════════════════════════════════════════════════════
+//  MOTIF GENERATION
+// ══════════════════════════════════════════════════════
+function generateMotif() {
+  pushUndo();
+  const len = parseInt(document.getElementById('motifLen').value)||3;
+  const rhythmType = document.getElementById('motifRhythm').value;
+  const tensionProb = parseInt(document.getElementById('tensionProb').value)/100;
+  const pool = getScalePool(-2, 14); // mid-upper register for RH
+  const root = getRoot();
+
+  // Start in mid register
+  let pos = pool.findIndex(m=>m>=root+7);
+  if(pos<0) pos=Math.floor(pool.length*0.55);
+
+  const notes=[], velCurve=[];
+  for(let i=0;i<len;i++){
+    // Stepwise motion with occasional leaps
+    const leap = Math.random()<0.2;
+    const dir = Math.random()<0.55?1:-1;
+    const step = leap?(Math.floor(Math.random()*3)+2):1;
+    pos = Math.max(0,Math.min(pool.length-1, pos+dir*step));
+
+    let midi = pool[pos];
+    // Tension injection
+    if(Math.random()<tensionProb) {
+      const tn=getTensionNote();
+      // Find nearest tension note in pool
+      const tnMidi=pool.reduce((best,m)=>((m%12===tn%12&&Math.abs(m-midi)<Math.abs(best-midi))?m:best), midi);
+      midi=tnMidi;
+    }
+
+    // Velocity: smooth per-note curve using sinusoidal contour
+    // Jarrett: notes within a phrase swell and recede like breathing
+    const vBase = parseInt(document.getElementById('baseVel').value)/100;
+    const vContour = parseInt(document.getElementById('velContour').value)/100;
+    const t = len > 1 ? i/(len-1) : 0.5;
+    // Primary swell: peaks around 60-70% of phrase
+    const swell = Math.sin(t * Math.PI * 0.9 + 0.2);
+    // Secondary accent on first note
+    const firstAccent = i===0 ? 0.08 : 0;
+    // Tension notes get a slight push
+    const tensionBoost = (Math.random() < tensionProb && i>0) ? 0.12 : 0;
+    const v = Math.max(0.12, Math.min(0.98,
+      vBase + swell * vContour * 0.45 + firstAccent + tensionBoost
+      + (Math.random()-0.5)*0.04  // tiny natural variation
+    ));
+
+    notes.push({midi, deg:(midi-root+120)%12, isTension:isTension(midi)});
+    velCurve.push(v);
+  }
+
+  // Rhythm ratios
+  const rhythm = generateRhythm(len, rhythmType);
+
+  MOTIF.notes = notes;
+  MOTIF.rhythm = rhythm;
+  MOTIF.velCurve = velCurve;
+  MOTIF.chordLayers = parseInt(document.getElementById('chordDens').value)||1;
+  MOTIF.loopCount = 0;
+
+  // Expand motif to RH steps based on chord density
+  expandMotifToSteps();
+  buildGrid('rh');
+  drawRHCurve();
+  updateMotifUI();
+  mLog('↻ New motif: '+notes.map(n=>midiName(n.midi)).join(' '));
+}
+
+function generateRhythm(len, type) {
+  const r=[];
+  for(let i=0;i<len;i++){
+    if(type==='triplet') r.push([2,2,2,3,3,4][Math.floor(Math.random()*6)]);
+    else if(type==='dotted') r.push([3,3,2][Math.floor(Math.random()*3)]);
+    else if(type==='mixed') r.push([2,2,3,3,4,4,6][Math.floor(Math.random()*7)]);
+    else r.push([2,3,3,4,4,6][Math.floor(Math.random()*6)]); // free
+  }
+  return r;
+}
+
+function expandMotifToSteps() {
+  // Build rhSteps from MOTIF, applying arc octave shift and chord density
+  const pool = getScalePool(-5, 20);
+  const chordDens = MOTIF.chordLayers + Math.round(ARC.density*2);
+  const octShift = ARC.octShift;
+
+  rhSteps = [];
+  MOTIF.notes.forEach((n,i)=>{
+    // Continuous octShift: round to nearest semitone for MIDI, but keep smoothness
+    const baseMidi = Math.max(24,Math.min(108, n.midi+Math.round(octShift)));
+    // Smooth velocity: interpolate between notes for chord layers
+    const posT = MOTIF.notes.length>1 ? i/(MOTIF.notes.length-1) : 0.5;
+    const velMult = getVelMultiplier();
+    // Add subtle phrase-position shaping on top of stored curve
+    const phraseShape = 0.85 + 0.15*Math.sin(posT*Math.PI);
+    const vel = MOTIF.velCurve[i] * velMult * phraseShape;
+    const dur = MOTIF.rhythm[i]||4;
+
+    // Base note
+    rhSteps.push({midi:baseMidi, active:true, vel:Math.min(1,vel), dur, isTension:n.isTension, isChord:false, mutDelta:0});
+
+    // Chord layers: diatonic 3rd and 5th above base note
+    // Use semitone intervals based on current scale degrees
+    const scaleDegs = getScale().degs;
+    // Find base note's degree in scale
+    const basePC = (baseMidi - getRoot() % 12 + 120) % 12;
+    const degIdx = scaleDegs.reduce((best,d,i)=>{
+      const dist=Math.min(Math.abs(d-basePC),12-Math.abs(d-basePC));
+      return dist<best.dist?{i,dist}:best;
+    },{i:0,dist:12}).i;
+    const third = scaleDegs[(degIdx+2) % scaleDegs.length];
+    const fifth  = scaleDegs[(degIdx+4) % scaleDegs.length];
+    const intervals = [third, fifth];
+    for(let ci=0;ci<Math.min(chordDens,2);ci++){
+      // Find the interval semitones above baseMidi
+      const targetPC = (getRoot() + intervals[ci]) % 12;
+      // Find nearest pool note with that pitch class, just above baseMidi
+      const chordMidi = pool.find(m=>m>baseMidi && m%12===targetPC)
+        || pool.find(m=>m%12===targetPC)
+        || null;
+      if(chordMidi && chordMidi!==baseMidi && !isNaN(chordMidi)){
+        rhSteps.push({midi:chordMidi, active:Math.random()<0.8, vel:Math.min(1,vel*0.72), dur, isTension:isTension(chordMidi), isChord:true, mutDelta:0});
+      }
+    }
+  });
+}
+
+let rhSteps = [], lhSteps = [];
+
+// ══════════════════════════════════════════════════════
+//  LEFT HAND GENERATION
+// ══════════════════════════════════════════════════════
+function generateLH() {
+  pushUndo();
+  const root=getRoot(), pool=getScalePool(-18,-2); // low register
+  const scaleDegs=getScale().degs;
+
+  lhSteps=[];
+  // Jarrett LH: pedal point + occasional chord movement
+  // 4 groups of 3 beats (= 12 steps to match typical motif)
+  const lhLen = Math.max(4, Math.min(12, rhSteps.length||6));
+
+  let bassNote = pool.find(m=>m>=root-14&&m<=root-8)||pool[0];
+
+  for(let i=0;i<lhLen;i++){
+    const beat=i%3;
+    let midi, vel, dur;
+    if(beat===0){
+      // Bass note: mostly stable, occasionally moves
+      if(Math.random()<0.2){
+        const candidates=pool.filter(m=>Math.abs(m-bassNote)<=5);
+        bassNote=candidates.length?candidates[Math.floor(Math.random()*candidates.length)]:bassNote;
+      }
+      midi=bassNote; vel=0.55+Math.random()*0.2; dur=6;
+    } else {
+      // Inner chord tone: diatonic 3rd or 5th above bass
+      const scaleDegs2 = getScale().degs;
+      const bassPC = (bassNote - getRoot() + 120) % 12;
+      const di = scaleDegs2.reduce((best,d,i)=>{
+        const dist=Math.min(Math.abs(d-bassPC),12-Math.abs(d-bassPC));
+        return dist<best.dist?{i,dist}:best;
+      },{i:0,dist:12}).i;
+      const interval = beat===1
+        ? scaleDegs2[(di+2) % scaleDegs2.length]
+        : scaleDegs2[(di+4) % scaleDegs2.length];
+      const targetPC2 = (getRoot() + interval) % 12;
+      // Find note in pool above bass
+      const foundMidi = pool.find(m=>m>bassNote && m%12===targetPC2)
+          || pool.find(m=>m%12===targetPC2);
+      midi = (foundMidi && !isNaN(foundMidi)) ? foundMidi : bassNote+7;
+      vel=0.3+Math.random()*0.18; dur=4;
+    }
+    lhSteps.push({midi:Math.max(24,Math.min(84,midi)), active:true, vel, dur, isTension:false, isChord:beat>0, mutDelta:0});
+  }
+
+  buildGrid('lh');
+  document.getElementById('lhChordLabel').textContent = midiName(bassNote)+' pedal';
+  document.getElementById('lhInfo').textContent = lhSteps.length+' steps';
+  mLog('↻ LH generated');
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD GRID
+// ══════════════════════════════════════════════════════
+function buildGrid(voice) {
+  const el=document.getElementById(voice+'Grid'); if(!el) return;
+  const steps=voice==='rh'?rhSteps:lhSteps;
+  el.innerHTML='';
+  steps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='note-cell'+(s.isTension?' tension':'')+(s.isChord?' chord':'');
+    d.id=`${voice}Step${i}`;
+    const h=s.active?3+Math.round(s.vel*30):2;
+    const col=s.isTension?'var(--ten)':voice==='rh'?'var(--gold)':'var(--sage)';
+    const c=s.active?col:'rgba(255,255,255,.04)';
+    const name=NOTE_NAMES[s.midi%12];
+    d.innerHTML=`<span class="note-name${s.active?' on':''}${s.isTension?' ten':''}">${name}</span>
+      <div class="note-bar" style="height:${h}px;background:${c};opacity:${0.4+s.vel*0.6};width:${s.isChord?'18':'24'}px"></div>
+      <span class="note-num">${i+1}</span>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;buildGrid(voice);});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.vel=Math.max(0.05,s.vel-0.08);buildGrid(voice);});
+    el.appendChild(d);
+  });
+  if(voice==='rh'){
+    document.getElementById('rhInfo').textContent=steps.length+' steps · '+steps.filter(s=>s.active).length+' active';
+  }
+}
+
+function drawRHCurve(){
+  const cv=document.getElementById('rhCurve'); if(!cv||!cv.getContext)return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const act=rhSteps.filter(s=>s.active&&!s.isChord);
+  if(act.length<2)return;
+  const mids=act.map(s=>s.midi),mn=Math.min(...mids)-1,mx=Math.max(...mids)+1;
+  ctx.beginPath();
+  act.forEach((s,i)=>{
+    const x=(i/(act.length-1))*W,y=H-((s.midi-mn)/(mx-mn))*(H-4)-2;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle=`rgba(200,168,74,.6)`;ctx.lineWidth=1.3;ctx.stroke();
+}
+
+function onRootChange(){ if(rhSteps.length||lhSteps.length) remapToScale(); }
+function onScaleChange(){
+  currentScale=document.getElementById('scaleSel').value;
+  document.getElementById('scaleDisplay').textContent=getScale().name;
+  if(rhSteps.length||lhSteps.length) remapToScale();
+}
+function remapToScale(){
+  [rhSteps,lhSteps].forEach(steps=>steps.forEach(s=>{
+    if(s.midi) s.midi=snapToScale(s.midi);
+    s.isTension=isTension(s.midi);
+  }));
+  buildGrid('rh');buildGrid('lh');drawRHCurve();
+}
+
+// ══════════════════════════════════════════════════════
+//  ARC ENGINE — Part 2b: 積み上げ→昇天→下降→斜め抜け昇天
+// ══════════════════════════════════════════════════════
+function setPhase(p){
+  ARC.phase=p;
+  updateArcUI();
+  arcLog('→ '+PHASE_NAMES[p]);
+
+  // Phase-specific behavior
+  if(p===0){ // Accumulation: reset ascent
+    // don't reset octave
+  } else if(p===1){ // Ascent: start climbing
+    ARC.octShift=Math.max(0,ARC.octShift);
+  } else if(p===2){ // Descent: drop
+    ARC.octShift=Math.max(0,ARC.octShift-12);
+    expandMotifToSteps();buildGrid('rh');
+  } else if(p===3){ // Oblique: scale shift + tension
+    // Shift to a surprising related scale
+    const obliques=['lydianb7','lydian','wholetone','dorianb2'];
+    const newScale=obliques[Math.floor(Math.random()*obliques.length)];
+    currentScale=newScale;
+    document.getElementById('scaleSel').value=newScale;
+    document.getElementById('scaleDisplay').textContent=getScale().name;
+    injectTension();
+    arcLog('↗ Oblique: '+getScale().name);
+  }
+}
+
+function arcTick() {
+  if(!playing||!autoArc) return;
+  const speed = parseInt(document.getElementById('arcSpeed').value)/100;
+
+  if(ARC.phase===0){
+    ARC.ascent = Math.min(1, ARC.ascent + speed*0.008);
+    ARC.density = ARC.ascent*0.7;
+    ARC.octTarget = ARC.ascent * 7;  // up to ~half octave in accumulation
+    if(ARC.ascent>0.85) setPhase(1);
+
+  } else if(ARC.phase===1){
+    ARC.ascent = Math.min(1, ARC.ascent + speed*0.015);
+    ARC.density = 0.6+ARC.ascent*0.4;
+    ARC.octTarget = ARC.ascent * 24;  // up to 2 octaves, continuously
+    if(ARC.ascent>=1) setPhase(Math.random()<0.6?2:3);
+
+  } else if(ARC.phase===2){
+    ARC.ascent = Math.max(0, ARC.ascent - speed*0.018);
+    ARC.density = ARC.ascent*0.5;
+    ARC.octTarget = ARC.ascent * 12;  // gravity pulls down
+    if(ARC.ascent<=0.08) setPhase(Math.random()<0.5?0:3);
+
+  } else if(ARC.phase===3){
+    ARC.ascent = Math.min(1, ARC.ascent + speed*0.012);
+    ARC.density = 0.5+ARC.ascent*0.4;
+    ARC.octTarget = 7 + ARC.ascent * 14; // oblique: unexpected register
+    if(ARC.ascent>=0.9) setPhase(1);
+  }
+
+  // Smooth octave interpolation — approach target like a spring
+  // alpha = how fast we approach (lower = smoother/lazier)
+  const octAlpha = 0.04 + speed * 0.06;
+  const prevOct = ARC.octShift;
+  ARC.octShift = ARC.octShift * (1-octAlpha) + ARC.octTarget * octAlpha;
+
+  // Only rebuild grid when octave changes enough to affect MIDI notes
+  if(Math.abs(ARC.octShift - prevOct) > 0.8) {
+    expandMotifToSteps();
+    buildGrid('rh');
+  }
+
+  // Rubato: sinusoidal "溜め→解放"
+  const rubatoAmt = parseInt(document.getElementById('rubatoAmt').value)/100;
+  ARC.rubatoPhase += 0.03 * (0.5 + speed);
+  // Multiple sine waves at different frequencies = organic breathing
+  ARC.rubatoAccum = 1.0
+    + Math.sin(ARC.rubatoPhase) * 0.10 * rubatoAmt
+    + Math.sin(ARC.rubatoPhase * 1.7 + 1.2) * 0.05 * rubatoAmt
+    + Math.sin(ARC.rubatoPhase * 0.3) * 0.08 * rubatoAmt;
+  ARC.rubatoAccum = Math.max(0.6, Math.min(1.5, ARC.rubatoAccum));
+
+  ARC.history.push(ARC.ascent);
+  if(ARC.history.length>150) ARC.history.shift();
+}
+
+// ══════════════════════════════════════════════════════
+//  VELOCITY ENGINE
+// ══════════════════════════════════════════════════════
+function getVelMultiplier(){
+  const base=parseInt(document.getElementById('baseVel').value)/100;
+  const accentStr=parseInt(document.getElementById('accentStr').value)/100;
+  // Arc phase affects velocity
+  if(ARC.phase===1) return base + ARC.ascent*accentStr*0.5;
+  if(ARC.phase===2) return base * (0.5+ARC.ascent*0.5);
+  if(ARC.phase===3) return base + 0.2;
+  return base + ARC.ascent*accentStr*0.25;
+}
+
+function setVelShape(shape){
+  VEL.shape=shape;
+  document.getElementById('velShape').textContent=shape;
+  applyVelShape();
+}
+
+function applyVelShape(){
+  if(!rhSteps.length)return;
+  const base=parseInt(document.getElementById('baseVel').value)/100;
+  const str=parseInt(document.getElementById('velContour').value)/100;
+  rhSteps.forEach((s,i)=>{
+    if(s.isChord)return;
+    const t=i/Math.max(1,rhSteps.filter(x=>!x.isChord).length-1);
+    if(VEL.shape==='swell') s.vel=Math.min(1,base+Math.sin(t*Math.PI)*str*0.5);
+    else if(VEL.shape==='sudden') s.vel=Math.min(1,base+(t<0.3?str*0.8:str*0.2));
+    else if(VEL.shape==='decay') s.vel=Math.min(1,base+str*(1-t)*0.5);
+  });
+  buildGrid('rh');
+}
+
+// ══════════════════════════════════════════════════════
+//  MOTIF OPERATIONS
+// ══════════════════════════════════════════════════════
+function mutateMotif(){
+  pushUndo();
+  const mut=parseInt(document.getElementById('mutAmt').value)/100;
+  const pool=getScalePool(-2,16);
+  let changed=0;
+  MOTIF.notes.forEach((n,i)=>{
+    if(Math.random()<mut*0.5){
+      const cur=pool.findIndex(m=>m>=n.midi);
+      const dir=Math.random()<0.5?1:-1;
+      const ni=Math.max(0,Math.min(pool.length-1,cur+dir));
+      if(ni!==cur){n.midi=pool[ni];n.isTension=isTension(n.midi);changed++;}
+    }
+    if(Math.random()<mut*0.4){
+      n.midi=Math.max(24,Math.min(108,n.midi+(Math.random()<0.5?12:-12)));
+      n.midi=snapToScale(n.midi);
+      n.isTension=isTension(n.midi);
+    }
+    // Velocity mutation
+    MOTIF.velCurve[i]=Math.max(0.1,Math.min(1,MOTIF.velCurve[i]+(Math.random()-0.5)*mut*0.3));
+  });
+  mutHistory.push(changed);
+  if(mutHistory.length>120)mutHistory.shift();
+  expandMotifToSteps();buildGrid('rh');drawRHCurve();drawMutCanvas();
+  updateMotifUI();
+  mLog('≈ Mutated: '+changed+' note(s)');
+}
+
+function addChordLayer(){
+  MOTIF.chordLayers=Math.min(3,MOTIF.chordLayers+1);
+  document.getElementById('chordDens').value=MOTIF.chordLayers;
+  document.getElementById('chordDensV').textContent=MOTIF.chordLayers;
+  expandMotifToSteps();buildGrid('rh');
+  mLog('+ Chord layer: '+MOTIF.chordLayers);
+}
+
+function stripChordLayer(){
+  MOTIF.chordLayers=Math.max(0,MOTIF.chordLayers-1);
+  document.getElementById('chordDens').value=MOTIF.chordLayers;
+  document.getElementById('chordDensV').textContent=MOTIF.chordLayers;
+  expandMotifToSteps();buildGrid('rh');
+  mLog('- Chord layer: '+MOTIF.chordLayers);
+}
+
+function injectTension(){
+  pushUndo();
+  const tn=getTensionNote();
+  const pool=getScalePool(-2,16);
+  // Find a note to replace with tension note
+  const nonTension=MOTIF.notes.filter(n=>!n.isTension);
+  if(nonTension.length>0){
+    const target=nonTension[Math.floor(Math.random()*nonTension.length)];
+    // Find tension note near target
+    const tnMidi=pool.reduce((best,m)=>((m%12===tn%12&&Math.abs(m-target.midi)<Math.abs(best-target.midi))?m:best), target.midi);
+    target.midi=tnMidi;target.isTension=true;
+  }
+  expandMotifToSteps();buildGrid('rh');
+  mLog('⚡ ST+5 injected');
+}
+
+function toggleAutoArc(){
+  autoArc=!autoArc;
+  const btn=document.getElementById('btnAutoArc');
+  if(btn){btn.textContent=autoArc?'Arc: AUTO':'Arc: LOCK';btn.style.color=autoArc?'var(--gold)':'var(--ten)';}
+}
+
+// ══════════════════════════════════════════════════════
+//  PLAYBACK
+// ══════════════════════════════════════════════════════
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function startKeepAlive(){
+  const ctx=getAudioCtx();if(_keepNode)return;
+  _keepNode=ctx.createOscillator();
+  const g=ctx.createGain();g.gain.value=0;
+  _keepNode.connect(g);g.connect(ctx.destination);_keepNode.start();
+}
+
+// Web Worker timer
+const _wC=`const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type==='set'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wC],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){_tw=null;}return _tw;}
+function bgTimeout(fn,ms){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  const w=getTW();
+  if(w){const id=_tn++;const dl=ctx.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-ctx.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancelled:false,cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}
+  const dl=ctx.currentTime+ms/1000;const tid={cancelled:false};let t=null;
+  function check(){if(tid.cancelled)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(check,rem<25?1:Math.max(1,rem-20));}}
+  t=setTimeout(check,Math.max(1,ms-20));
+  tid.cancel=()=>{tid.cancelled=true;if(t)clearTimeout(t);};
+  return tid;
+}
+
+document.addEventListener('visibilitychange',()=>{
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  if(!document.hidden&&midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);
+});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  startKeepAlive();
+  playing=true;rhIdx=0;lhIdx=0;barCount=0;
+  document.getElementById('btnPlay').textContent='■ Stop';
+  if(SLAVE.active&&SLAVE.running)return;
+  tick();
+}
+function stopAll(){
+  playing=false;
+  if(playTimer){playTimer.cancelled=true;playTimer=null;}
+  document.getElementById('btnPlay').textContent='▶ Play';
+  document.getElementById('stepDisplay').textContent='—';
+  rhIdx=0;lhIdx=0;
+  if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);
+  document.querySelectorAll('.note-cell.playing').forEach(e=>e.classList.remove('playing'));
+}
+
+let _arcTickCount=0;
+function tick(){
+  if(!playing)return;
+  if(SLAVE.active&&SLAVE.running){playing=true;return;}
+  const bpm=getBpm();
+  // Step duration: smooth rubato via ARC.rubatoAccum (sinusoidal breathing)
+  const curStep=rhSteps[rhIdx%Math.max(1,rhSteps.length)];
+  const ratio=curStep?curStep.dur:4;
+  const baseQuarter=60000/bpm;
+  const baseStepMs=Math.max(40, baseQuarter*(ratio/4));
+  // Apply smooth rubato multiplier — no sharp random jumps
+  const stepMs = baseStepMs * ARC.rubatoAccum;
+  // Tiny additional micro-variation (much smaller than before)
+  const microJitter=(Math.random()-0.5)*baseStepMs*0.03;
+  ARC.prevStepMs=stepMs;
+
+  // Highlight
+  document.querySelectorAll('#rhGrid .note-cell').forEach((e,i)=>e.classList.toggle('playing',i===rhIdx%Math.max(1,rhSteps.length)));
+  document.querySelectorAll('#lhGrid .note-cell').forEach((e,i)=>e.classList.toggle('playing',i===lhIdx%Math.max(1,lhSteps.length)));
+
+  // Send MIDI
+  sendStep(rhSteps, rhIdx, 'rhCh', 0, stepMs);
+  sendStep(lhSteps, lhIdx, 'lhCh', 0, stepMs*1.6);
+
+  document.getElementById('stepDisplay').textContent=`${barCount+1}:${(rhIdx%3)+1}`;
+
+  rhIdx++;
+  if(rhIdx>=rhSteps.length){
+    rhIdx=0;barCount++;
+    MOTIF.loopCount++;
+    onLoopEnd();
+  }
+  lhIdx++;
+  if(lhIdx>=Math.max(1,lhSteps.length)) lhIdx=0;
+
+  _arcTickCount++;
+  arcTick();
+  if(_arcTickCount%3===0){updateArcUI();updateVelUI();}
+  if(_arcTickCount%8===0){drawArcCanvas();drawVelCanvas();}
+
+  playTimer=bgTimeout(tick,stepMs+microJitter);
+}
+
+function onLoopEnd(){
+  ARC.loopCount++;
+  // Auto-mutate based on phase
+  const mutProb = ARC.phase===0?0.3:ARC.phase===1?0.5:ARC.phase===3?0.6:0.2;
+  if(Math.random()<mutProb) mutateMotif();
+  // Chord density follows arc
+  MOTIF.chordLayers=Math.round(ARC.density*2.5);
+  expandMotifToSteps();buildGrid('rh');
+}
+
+function sendStep(steps, idx, chId, octOff, durMs){
+  if(!steps.length||!midiOut)return;
+  const s=steps[idx%steps.length];
+  if(!s||!s.active)return;
+  const ch=(parseInt(document.getElementById(chId)?.value||1)-1);
+  const m=Math.max(0,Math.min(127,s.midi+octOff));
+  const v=Math.round(s.vel*100+15);
+  const dur=durMs*(s.dur/4)*0.82;
+  midiOut.send([0x90|ch,m,Math.min(115,v)]);
+  // CC11 expression decay
+  const ds=4;
+  for(let k=1;k<=ds;k++){
+    const expr=Math.round(127*(1-k/ds)*0.38+60);
+    setTimeout(()=>{if(midiOut)midiOut.send([0xB0|ch,11,expr]);},dur*k/ds);
+  }
+  setTimeout(()=>{if(midiOut){midiOut.send([0x80|ch,m,0]);midiOut.send([0xB0|ch,11,127]);}},dur);
+}
+
+// ══════════════════════════════════════════════════════
+//  MIDI
+// ══════════════════════════════════════════════════════
+function initMIDI(){if(!navigator.requestMIDIAccess){setMidiStatus(false,'N/A');return;}navigator.requestMIDIAccess().then(ma=>{midiAccess=ma;ma.onstatechange=()=>{populatePorts();populateInPorts();};populatePorts();populateInPorts();}).catch(()=>setMidiStatus(false,'denied'));}
+function populatePorts(){const sel=document.getElementById('midiDevSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectMidiOut(sel.value);}});}
+function populateInPorts(){const sel=document.getElementById('clockInSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;}
+function selectMidiOut(id){if(!id){midiOut=null;setMidiStatus(false,'—');return;}midiOut=midiAccess?.outputs.get(id);if(midiOut)setMidiStatus(true,midiOut.name);}
+function setMidiStatus(ok,name){const dot=document.getElementById('midiDot'),stat=document.getElementById('midiStatus');if(dot)dot.classList.toggle('on',ok);if(stat){stat.textContent=ok?'✓ '+name:name;stat.style.color=ok?'var(--sage)':'var(--dim)';}}
+function selectClockIn(id){if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.clockInPort=midiAccess.inputs.get(id);if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=onClockMsg;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const btn=document.getElementById('btnSlave');if(btn){btn.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';btn.style.color=SLAVE.active?'var(--sage)':'';}if(SLAVE.active){if(playTimer){playTimer.cancelled=true;playTimer=null;}}else if(playing)tick();}
+function onClockMsg(e){const d=e.data[0];if(d===0xFA){SLAVE.running=true;SLAVE.pulseCount=0;if(playTimer){playTimer.cancelled=true;playTimer=null;}playing=true;rhIdx=0;lhIdx=0;barCount=0;startKeepAlive();const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();document.getElementById('btnPlay').textContent='■ Stop';return;}if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;startKeepAlive();document.getElementById('btnPlay').textContent='■ Stop';}return;}if(d===0xFC){SLAVE.running=false;playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}document.getElementById('btnPlay').textContent='▶ Play';if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);return;}if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;const now=e.timeStamp||performance.now();if(SLAVE.lastPulseTime>0){const iv=now-SLAVE.lastPulseTime;const ibpm=60000/(iv*SLAVE.ppqn);if(ibpm>20&&ibpm<160)SLAVE.bpmSmoothed=SLAVE.bpmSmoothed*(1-SLAVE.bpmAlpha)+ibpm*SLAVE.bpmAlpha;}SLAVE.lastPulseTime=now;SLAVE.pulseCount++;if(SLAVE.pulseCount>=SLAVE.pulsesPerStep){SLAVE.pulseCount=0;if(playing)slaveStep();}if(SLAVE.pulseCount===0)document.getElementById('bpmIn').value=Math.round(SLAVE.bpmSmoothed);}
+function slaveStep(){if(!playing||!rhSteps.length)return;const sMs=60000/SLAVE.bpmSmoothed/4;sendStep(rhSteps,rhIdx,'rhCh',0,sMs);sendStep(lhSteps,lhIdx,'lhCh',0,sMs*1.6);rhIdx++;if(rhIdx>=rhSteps.length){rhIdx=0;barCount++;MOTIF.loopCount++;onLoopEnd();}lhIdx++;if(lhIdx>=Math.max(1,lhSteps.length))lhIdx=0;arcTick();}
+
+// Export MIDI
+function exportMIDI(){
+  if(!rhSteps.length)return;
+  const bpm=getBpm();const tpb=480;const µs=Math.round(60000000/bpm);
+  function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}
+  function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}
+  function i16(v){return[(v>>8)&0xFF,v&0xFF];}
+  const ch=(parseInt(document.getElementById('rhCh')?.value||1)-1);
+  const ev=[];let t=0;
+  rhSteps.forEach(s=>{if(!s.active||!s.midi)return;const stk=Math.round(tpb*(s.dur/4));ev.push([t,[0x90|ch,s.midi,Math.round(s.vel*100+15)]]);ev.push([t+Math.round(stk*.82),[0x80|ch,s.midi,0]]);t+=stk;});
+  ev.sort((a,b)=>a[0]-b[0]);let lt=0;const td=[];
+  td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);
+  ev.forEach(([t2,msg])=>{td.push(...wv(t2-lt),...msg);lt=t2;});
+  td.push(0,0xFF,0x2F,0);
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,...i16(tpb)];
+  const bytes=new Uint8Array([...hdr,0x4D,0x54,0x72,0x6B,...i32(td.length),...td]);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'audio/midi'}));
+  a.download=`jarrett_part2b_${currentScale}.mid`;a.click();
+}
+
+// ══════════════════════════════════════════════════════
+//  UI UPDATES
+// ══════════════════════════════════════════════════════
+function updateArcUI(){
+  const pct=(ARC.ascent*100).toFixed(0)+'%';
+  const af=document.getElementById('ascentFill');if(af)af.style.height=pct;
+  const av=document.getElementById('ascentVal');if(av)av.textContent=(ARC.ascent*100).toFixed(0);
+  const pf=document.getElementById('phaseFill');
+  const phaseColors=['var(--gold)','var(--gold2)','var(--fog)','var(--ten)'];
+  if(pf){pf.style.width=(ARC.loopCount%20)*5+'%';pf.style.background=phaseColors[ARC.phase];}
+  const pn=document.getElementById('phaseName');if(pn){pn.textContent=PHASE_NAMES[ARC.phase];pn.style.color=phaseColors[ARC.phase];}
+  // Phase buttons
+  ['pb_acc','pb_asc','pb_des','pb_obl'].forEach((id,i)=>{
+    const b=document.getElementById(id); if(!b)return;
+    b.classList.toggle('active',i===ARC.phase);
+    b.classList.toggle('ten-active',i===3&&ARC.phase===3);
+  });
+  const aaf=document.getElementById('arcAscentF');if(aaf)aaf.style.width=(ARC.ascent*100).toFixed(0)+'%';
+  const aav=document.getElementById('arcAscentV');if(aav)aav.textContent=(ARC.ascent*100).toFixed(0);
+  const adf=document.getElementById('arcDensF');if(adf)adf.style.width=(ARC.density*100).toFixed(0)+'%';
+  const adv=document.getElementById('arcDensV');if(adv)adv.textContent=(ARC.density*100).toFixed(0);
+  const aod=document.getElementById('arcOctDisp');if(aod)aod.textContent=(ARC.octShift>0?'+':'')+ARC.octShift;
+  const apd=document.getElementById('arcPhaseDisp');if(apd)apd.textContent=PHASE_NAMES[ARC.phase];
+  const ma=document.getElementById('miniAscent');if(ma)ma.style.width=(ARC.ascent*100).toFixed(0)+'%';
+  // ST+5 tension meter
+  const tenCount=rhSteps.filter(s=>s.isTension&&s.active).length;
+  const tenPct=rhSteps.length?tenCount/rhSteps.length:0;
+  const mt=document.getElementById('miniTen');if(mt)mt.style.width=(tenPct*100).toFixed(0)+'%';
+  const tenF=document.getElementById('tenF');if(tenF)tenF.style.width=(tenPct*100).toFixed(0)+'%';
+  const tenV=document.getElementById('tenV');if(tenV)tenV.textContent=(tenPct*100).toFixed(0);
+}
+
+function updateMotifUI(){
+  const mn=document.getElementById('motifNotes');
+  if(mn)mn.textContent=MOTIF.notes.map(n=>NOTE_NAMES[n.midi%12]).join(' → ');
+  const mr=document.getElementById('motifRhythmDisp');
+  if(mr)mr.textContent=MOTIF.rhythm.join(':');
+  const cd=parseInt(document.getElementById('chordDens').value)||0;
+  const cf=document.getElementById('chordF');if(cf)cf.style.width=(cd/3*100)+'%';
+  const cv=document.getElementById('chordV');if(cv)cv.textContent=cd;
+}
+
+function updateVelUI(){
+  const vel=getVelMultiplier();
+  VEL.current=vel;VEL.peak=Math.max(VEL.peak*0.98,vel);
+  VEL.history.push(vel);if(VEL.history.length>100)VEL.history.shift();
+  const vf=document.getElementById('velF');if(vf)vf.style.width=(vel*100).toFixed(0)+'%';
+  const vv=document.getElementById('velV');if(vv)vv.textContent=(vel*100).toFixed(0);
+  const vpf=document.getElementById('velPeakF');if(vpf)vpf.style.width=(VEL.peak*100).toFixed(0)+'%';
+  const vpv=document.getElementById('velPeakV');if(vpv)vpv.textContent=(VEL.peak*100).toFixed(0);
+}
+
+// Canvas draws
+function drawMotifCanvas(){
+  const cv=document.getElementById('motifCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||600;cv.width=W;cv.height=100;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,100);
+  if(!rhSteps.length)return;
+  const act=rhSteps.filter(s=>!s.isChord&&s.active);if(act.length<2)return;
+  const mids=act.map(s=>s.midi+ARC.octShift*0);
+  const mn=Math.min(...mids)-2,mx=Math.max(...mids)+2;
+  // Draw filled area
+  ctx.beginPath();
+  act.forEach((s,i)=>{
+    const x=(i/(act.length-1))*(W-20)+10;
+    const y=98-((s.midi-mn)/(mx-mn))*90;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  const grad=ctx.createLinearGradient(0,0,0,100);
+  grad.addColorStop(0,'rgba(200,168,74,.25)');
+  grad.addColorStop(1,'rgba(200,168,74,.02)');
+  ctx.lineTo(W-10,98);ctx.lineTo(10,98);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  // Draw line
+  ctx.beginPath();
+  act.forEach((s,i)=>{
+    const x=(i/(act.length-1))*(W-20)+10;
+    const y=98-((s.midi-mn)/(mx-mn))*90;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(200,168,74,.7)';ctx.lineWidth=1.5;ctx.stroke();
+  // Tension notes
+  act.forEach((s,i)=>{
+    if(!s.isTension)return;
+    const x=(i/(act.length-1))*(W-20)+10;
+    const y=98-((s.midi-mn)/(mx-mn))*90;
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle='var(--ten)';ctx.globalAlpha=.7;ctx.fill();
+    ctx.globalAlpha=1;
+  });
+  // Playing cursor
+  if(playing&&rhIdx<rhSteps.length){
+    const pi=rhSteps.slice(0,rhIdx).filter(s=>!s.isChord).length;
+    if(pi<act.length){
+      const x=(pi/Math.max(1,act.length-1))*(W-20)+10;
+      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,100);
+      ctx.strokeStyle='rgba(200,168,74,.25)';ctx.lineWidth=1;ctx.stroke();
+    }
+  }
+}
+
+function drawArcCanvas(){
+  const cv=document.getElementById('arcCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=52;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,52);
+  const h=ARC.history;if(h.length<2)return;
+  ctx.beginPath();
+  h.forEach((v,i)=>{const x=(i/h.length)*W,y=50-v*46;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(200,168,74,.6)';ctx.lineWidth=1.2;ctx.stroke();
+  const g=ctx.createLinearGradient(0,0,0,52);g.addColorStop(0,'rgba(200,168,74,.18)');g.addColorStop(1,'rgba(200,168,74,.01)');
+  ctx.lineTo(W,52);ctx.lineTo(0,52);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+}
+
+function drawMutCanvas(){
+  const cv=document.getElementById('mutCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=52;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,52);
+  const h=mutHistory;if(h.length<2)return;
+  const mx=Math.max(...h,1);
+  ctx.beginPath();
+  h.forEach((v,i)=>{const x=(i/h.length)*W,y=50-(v/mx)*46;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(168,136,200,.6)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+function drawVelCanvas(){
+  const cv=document.getElementById('velCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||180;cv.width=W;cv.height=52;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,52);
+  const h=VEL.history;if(h.length<2)return;
+  ctx.beginPath();
+  h.forEach((v,i)=>{const x=(i/h.length)*W,y=50-v*46;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(200,120,152,.6)';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+// ══════════════════════════════════════════════════════
+//  UNDO / REDO / SAVE / LOAD
+// ══════════════════════════════════════════════════════
+const UMAX=30;let _us=[],_rs=[];
+function captureState(){return{rhSteps:JSON.parse(JSON.stringify(rhSteps)),lhSteps:JSON.parse(JSON.stringify(lhSteps)),MOTIF:JSON.parse(JSON.stringify(MOTIF)),currentScale,root:document.getElementById('rootSel').value,bpm:getBpm(),arcPhase:ARC.phase};}
+function pushUndo(){_us.push(captureState());if(_us.length>UMAX)_us.shift();_rs=[];updateUndoBtns();}
+function applyState(s){rhSteps=JSON.parse(JSON.stringify(s.rhSteps));lhSteps=JSON.parse(JSON.stringify(s.lhSteps));MOTIF=JSON.parse(JSON.stringify(s.MOTIF));currentScale=s.currentScale||'dorian';const rs=document.getElementById('rootSel');if(rs)rs.value=s.root;const bi=document.getElementById('bpmIn');if(bi)bi.value=s.bpm||54;document.getElementById('scaleSel').value=currentScale;document.getElementById('scaleDisplay').textContent=getScale().name;buildGrid('rh');buildGrid('lh');drawRHCurve();updateMotifUI();updateUndoBtns();}
+function undo(){if(!_us.length)return;_rs.push(captureState());applyState(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(captureState());applyState(_rs.pop());}
+function updateUndoBtns(){const u=document.getElementById('btnUndo'),r=document.getElementById('btnRedo');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function saveState(){const s=captureState();s._tool='JarrettPart2b';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download=`jarrett_part2b_${currentScale}.json`;a.click();}
+function loadState(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const s=JSON.parse(ev.target.result);pushUndo();applyState(s);}catch(err){alert('Load error: '+err.message);}};r.readAsText(f);e.target.value='';}
+
+// Tap tempo
+let _taps=[];
+function tapTempo(){const now=Date.now();_taps.push(now);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gaps=_taps.slice(1).map((t,i)=>t-_taps[i]);const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;const bpm=Math.round(60000/avg);if(bpm>20&&bpm<120)document.getElementById('bpmIn').value=bpm;}}
+
+// Log helpers
+function mLog(msg){const log=document.getElementById('motifLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(200,168,74,.7);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>5)log.removeChild(log.lastChild);}
+function arcLog(msg){const log=document.getElementById('arcLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(200,168,74,.65);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>5)log.removeChild(log.lastChild);}
+
+// Slider auto-labels
+document.querySelectorAll('input[type=range]').forEach(el=>{
+  const vid=el.id+'V';
+  el.addEventListener('input',()=>{const v=document.getElementById(vid);if(v)v.textContent=el.value;});
+});
+
+// Dock tabs
+(function(){document.querySelectorAll('.dock-tab[data-panel]').forEach(tab=>{tab.addEventListener('click',()=>{const p=tab.dataset.panel;if(tab.classList.contains('active')){toggleDock();return;}document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.querySelectorAll('.dock-panel').forEach(p2=>p2.classList.remove('active'));const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');const panels=document.getElementById('dockPanels');if(panels){panels.classList.remove('collapsed');document.getElementById('dockColBtn').textContent='▲';}});});})();
+let _dockOpen=true;
+function toggleDock(){_dockOpen=!_dockOpen;const p=document.getElementById('dockPanels'),b=document.getElementById('dockColBtn');if(p)p.classList.toggle('collapsed',!_dockOpen);if(b)b.textContent=_dockOpen?'▲':'▼';}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();if(e.shiftKey)redo();else undo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();generateMotif();}
+  if(e.code==='KeyL'&&e.target.tagName!=='INPUT'){e.preventDefault();generateLH();}
+  if(e.code==='KeyT'&&e.target.tagName!=='INPUT'){e.preventDefault();injectTension();}
+  if(e.code==='KeyM'&&e.target.tagName!=='INPUT'){e.preventDefault();mutateMotif();}
+  if(e.code==='Digit1'&&e.target.tagName!=='INPUT') setPhase(0);
+  if(e.code==='Digit2'&&e.target.tagName!=='INPUT') setPhase(1);
+  if(e.code==='Digit3'&&e.target.tagName!=='INPUT') setPhase(2);
+  if(e.code==='Digit4'&&e.target.tagName!=='INPUT') setPhase(3);
+});
+
+// Animation loop for canvas
+let _rafId=null;
+function renderLoop(){
+  drawMotifCanvas();
+  _rafId=requestAnimationFrame(renderLoop);
+}
+
+function init(){
+  document.getElementById('scaleDisplay').textContent=getScale().name;
+  generateMotif();
+  generateLH();
+  updateArcUI();
+  updateMotifUI();
+  initMIDI();
+  renderLoop();
+}
+init();
+</script>
+</body>
+</html>

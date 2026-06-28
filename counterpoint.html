@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COUNTERPOINT — 対位法による音楽発見装置</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070609; --s0:#0b0a0f; --s1:#100e15; --bd:#191720; --bd2:#262230;
+  --text:#c8c4ce; --dim:#56525e; --fog:#201d28;
+  --c1:#e0b870; --c2:#90b4d4; --c3:#c890a8; --c4:#84b496; --c5:#b49ad8; --c6:#d09478;
+  --bone:#dcd6cc; --paper:#050409; --hot:#ff5a40;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;min-height:100vh;overflow-x:hidden;}
+
+header{padding:.85rem 1.4rem .6rem;border-bottom:1px solid var(--bd);display:flex;align-items:flex-end;gap:1.4rem;background:var(--paper);position:relative;z-index:10;}
+.hname{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;letter-spacing:.06em;color:var(--bone);line-height:1;}
+.hsub{font-size:.58rem;color:var(--dim);letter-spacing:.34em;text-transform:uppercase;margin-top:.3rem;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:.5rem;}
+
+.transport{padding:.45rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.5rem;background:var(--paper);flex-wrap:wrap;}
+select,input[type=number]{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.7rem;padding:.16rem .28rem;}
+input[type=number]{width:46px;}
+.btn{padding:.26rem .66rem;border:1px solid var(--bd);background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.7rem;cursor:pointer;transition:all .1s;letter-spacing:.02em;}
+.btn:hover{border-color:var(--c1);color:var(--c1);}
+.btn.hi{border-color:var(--c1);color:var(--c1);background:rgba(224,184,112,.08);}
+.btn.play{border-color:var(--c1);color:var(--c1);font-size:.78rem;padding:.28rem .9rem;}
+.sep{width:1px;height:16px;background:var(--bd);margin:0 .15rem;}
+.tl{font-size:.62rem;color:var(--dim);}
+.midi-dot{width:7px;height:7px;border-radius:50%;background:var(--fog);}
+.midi-dot.on{background:var(--c4);box-shadow:0 0 5px var(--c4);}
+
+.modebar{padding:.4rem 1rem;border-bottom:1px solid var(--bd);background:var(--s0);display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.modebar .mlabel{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.95rem;color:var(--c5);margin-right:.3rem;}
+.sense-btn{padding:.3rem .7rem;border:1px solid var(--bd);background:transparent;color:var(--dim);font-size:.66rem;cursor:pointer;letter-spacing:.04em;transition:all .12s;}
+.sense-btn:hover{color:var(--text);border-color:var(--bd2);}
+
+.layout{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 150px);}
+.scoreCol{display:flex;flex-direction:column;border-right:1px solid var(--bd);overflow:hidden;}
+.score-wrap{flex:1;overflow:auto;padding:.8rem 1rem;}
+#score{display:block;width:100%;}
+.info{padding:.6rem 1rem;border-top:1px solid var(--bd);background:var(--s0);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.92rem;color:var(--text);line-height:1.55;min-height:2.4rem;}
+.info .k{color:var(--c1);font-style:normal;font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+
+.voicesCol{overflow-y:auto;background:var(--paper);}
+.voice{border-bottom:1px solid var(--bd);padding:.55rem .8rem;position:relative;}
+.voice.muted{opacity:.4;}
+.vhead{display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem;}
+.vdot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+.vname{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1rem;flex:1;}
+.vbtn{padding:.1rem .4rem;border:1px solid var(--bd);background:transparent;color:var(--dim);font-size:.58rem;cursor:pointer;font-family:'JetBrains Mono',monospace;}
+.vbtn.on{border-color:var(--hot);color:var(--hot);}
+.vbtn.solo.on{border-color:var(--c1);color:var(--c1);}
+.vrow{display:flex;align-items:center;gap:.35rem;margin-bottom:.25rem;}
+.vrow label{font-size:.6rem;color:var(--dim);width:54px;flex-shrink:0;}
+.vrow select{flex:1;font-size:.62rem;}
+.vrow .vsmall{width:44px;flex:none;}
+.vperiod{color:var(--c1);font-size:.64rem;width:24px;text-align:center;}
+.lcm{padding:.5rem 1rem;background:var(--s0);border-bottom:1px solid var(--bd);font-size:.66rem;color:var(--dim);}
+.lcm b{color:var(--c1);font-family:'JetBrains Mono',monospace;}
+optgroup{color:var(--dim);font-style:normal;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hname">COUNTERPOINT</div>
+    <div class="hsub">対位法による音楽発見装置 · Bach's four logics, infinite music</div>
+  </div>
+  <div class="hr">
+    <div class="midi-dot" id="midiDot"></div>
+    <span id="midiStat" style="font-size:.62rem;color:var(--dim);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+    <select id="midiOut" onchange="selectOut(this.value)" style="max-width:150px"></select>
+    <button class="btn" onclick="initMIDI()" style="font-size:.58rem">↻</button>
+  </div>
+</header>
+
+<div class="transport">
+  <button class="btn play" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+  <button class="btn" onclick="regenerateAll()">↻ 全生成</button>
+  <button class="btn" onclick="exportMIDI()">⬇ MIDI</button>
+  <div class="sep"></div>
+  <label class="tl">BPM</label><input type="number" id="bpm" value="96" min="40" max="220">
+  <button class="btn" onclick="tapTempo()" style="font-size:.56rem">TAP</button>
+  <div class="sep"></div>
+  <label class="tl">Root</label>
+  <select id="root" onchange="redraw()">
+    <option value="0">C</option><option value="1">C#</option><option value="2">D</option>
+    <option value="3">Eb</option><option value="4">E</option><option value="5">F</option>
+    <option value="6">F#</option><option value="7">G</option><option value="8">Ab</option>
+    <option value="9" selected>A</option><option value="10">Bb</option><option value="11">B</option>
+  </select>
+  <div class="sep"></div>
+  <label class="tl">基準周期</label>
+  <select id="baseBeats" onchange="regenerateAll()">
+    <option value="8">8拍</option><option value="12">12拍</option>
+    <option value="16" selected>16拍</option><option value="24">24拍</option><option value="32">32拍</option>
+  </select>
+</div>
+
+<div class="modebar">
+  <span class="mlabel">Sense ⟶</span>
+  <button class="sense-btn" onclick="applySense('techno')">Techno</button>
+  <button class="sense-btn" onclick="applySense('ecm')">ECM / 叙情</button>
+  <button class="sense-btn" onclick="applySense('raregroove')">Rare Groove</button>
+  <button class="sense-btn" onclick="applySense('chorale')">Chorale 合唱</button>
+  <button class="sense-btn" onclick="applySense('fugue')">Fugue 追走</button>
+  <button class="sense-btn" onclick="applySense('unknown')">未知 / 発掘</button>
+  <span style="margin-left:auto;font-size:.6rem;color:var(--dim)">↓ 各声部は右で手彫り(Customize)できる</span>
+</div>
+
+<div class="layout">
+  <div class="scoreCol">
+    <div class="score-wrap"><canvas id="score"></canvas></div>
+    <div class="info" id="info">Sense で全体の方向を選ぶ。または右で6声部を手で組む。弾けば、6つの独立した引力が同時に走る。</div>
+  </div>
+  <div class="voicesCol">
+    <div class="lcm" id="lcmInfo"></div>
+    <div id="voicePanels"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  COUNTERPOINT — Stage 1
+//  6 independent voices, each driven by one of Bach's four logics,
+//  on independent periods (polyrhythm), over a huge scale library.
+//  Each voice → its own MIDI channel. Gravity (引力) is visualized.
+// ════════════════════════════════════════════════════════════
+
+const NOTE=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const VOICE_COLORS=['#e0b870','#90b4d4','#c890a8','#84b496','#b49ad8','#d09478'];
+
+// ── SCALE LIBRARY (膨大) ──
+const SCALES={
+  // Western modes
+  ionian:{n:'Ionian (Major)',d:[0,2,4,5,7,9,11]}, dorian:{n:'Dorian',d:[0,2,3,5,7,9,10]},
+  phrygian:{n:'Phrygian',d:[0,1,3,5,7,8,10]}, lydian:{n:'Lydian',d:[0,2,4,6,7,9,11]},
+  mixolydian:{n:'Mixolydian',d:[0,2,4,5,7,9,10]}, aeolian:{n:'Aeolian (minor)',d:[0,2,3,5,7,8,10]},
+  locrian:{n:'Locrian',d:[0,1,3,5,6,8,10]},
+  // minor systems
+  mel_minor:{n:'Melodic Minor',d:[0,2,3,5,7,9,11]}, har_minor:{n:'Harmonic Minor',d:[0,2,3,5,7,8,11]},
+  har_major:{n:'Harmonic Major',d:[0,2,4,5,7,8,11]}, lydian_dom:{n:'Lydian Dominant',d:[0,2,4,6,7,9,10]},
+  altered:{n:'Altered',d:[0,1,3,4,6,8,10]}, lydian_aug:{n:'Lydian Augmented',d:[0,2,4,6,8,9,11]},
+  dorian_b2:{n:'Dorian b2',d:[0,1,3,5,7,9,10]}, mixo_b6:{n:'Mixolydian b6',d:[0,2,4,5,7,8,10]},
+  // symmetric
+  wholetone:{n:'Whole Tone',d:[0,2,4,6,8,10]}, dim_wh:{n:'Diminished W-H',d:[0,2,3,5,6,8,9,11]},
+  dim_hw:{n:'Diminished H-W',d:[0,1,3,4,6,7,9,10]}, augmented:{n:'Augmented',d:[0,3,4,7,8,11]},
+  // pentatonic & Japan
+  maj_pent:{n:'Major Pentatonic',d:[0,2,4,7,9]}, min_pent:{n:'Minor Pentatonic',d:[0,3,5,7,10]},
+  blues:{n:'Blues',d:[0,3,5,6,7,10]}, in_sen:{n:'In Sen 陰旋',d:[0,1,5,7,8]},
+  hirajoshi:{n:'Hirajoshi 平調子',d:[0,2,3,7,8]}, iwato:{n:'Iwato 岩戸',d:[0,1,5,6,10]},
+  kumoi:{n:'Kumoi 雲井',d:[0,2,3,7,9]},
+  // Spanish / Middle-Eastern
+  spanish:{n:'Spanish Phrygian',d:[0,1,4,5,7,8,10]}, double_har:{n:'Double Harmonic',d:[0,1,4,5,7,8,11]},
+  hungarian:{n:'Hungarian Minor',d:[0,2,3,6,7,8,11]}, byzantine:{n:'Byzantine',d:[0,1,4,5,7,8,11]},
+  // Indian raags
+  bhairav:{n:'Bhairav राग',d:[0,1,4,5,7,8,11]}, yaman:{n:'Yaman राग',d:[0,2,4,6,7,9,11]},
+  kafi:{n:'Kafi राग',d:[0,2,3,5,7,9,10]}, bhairavi:{n:'Bhairavi राग',d:[0,1,3,5,7,8,10]},
+  todi:{n:'Todi राग',d:[0,1,3,6,7,8,11]}, marwa:{n:'Marwa राग',d:[0,1,4,6,7,9,11]},
+  purvi:{n:'Purvi राग',d:[0,1,4,6,7,8,11]}, des:{n:'Des राग',d:[0,2,4,5,7,9,10]},
+  malkauns:{n:'Malkauns राग',d:[0,3,5,8,10]}, bhoopali:{n:'Bhoopali राग',d:[0,2,4,7,9]},
+  darbari:{n:'Darbari राग',d:[0,2,3,5,7,8,10]}, charukeshi:{n:'Charukeshi राग',d:[0,2,4,5,7,8,10]},
+  chromatic:{n:'Chromatic',d:[0,1,2,3,4,5,6,7,8,9,10,11]},
+};
+const SCALE_KEYS=Object.keys(SCALES);
+
+// ── the four Bach logics ──
+const LOGICS={
+  free:    {n:'Free 自由'},
+  compound:{n:'Compound 一本に複数声部'},
+  chorale: {n:'Chorale 和声同期'},
+  fugue:   {n:'Fugue 主題追走'},
+  goldberg:{n:'Goldberg 変奏'},
+};
+
+// ── scale helpers ──
+function degIndexIn(off, degs){
+  const pc=((off%12)+12)%12; let bi=0,bd=99;
+  degs.forEach(function(d,i){ const dist=Math.abs(d-pc); if(dist<bd){bd=dist;bi=i;} });
+  return bi;
+}
+function scaleStepIn(off, n, degs){
+  let idx=degIndexIn(off,degs)+n;
+  const len=degs.length;
+  const baseOct=12*Math.floor(off/12);
+  const oct=Math.floor(idx/len);
+  idx=((idx%len)+len)%len;
+  return degs[idx]+oct*12+baseOct;
+}
+function tensionOf(off){
+  const pc=((off%12)+12)%12;
+  const t={0:0.0,7:0.15,4:0.25,3:0.25,5:0.4,9:0.5,8:0.5,2:0.55,10:0.6,11:0.9,6:0.95,1:0.85};
+  return t[pc]!=null?t[pc]:0.5;
+}
+
+// ── voice state ──
+// each voice: {logic, scaleKey, period(steps), octave, density, gravity, mute, solo, ch, notes:[]}
+let VOICES=[];
+function defaultVoices(){
+  return [
+    {name:'Voice 1',logic:'compound',scaleKey:'dorian',  period:16,octave:0, density:2,gravity:0.5,mute:false,solo:false,ch:0,notes:[]},
+    {name:'Voice 2',logic:'free',    scaleKey:'dorian',  period:12,octave:-1,density:1,gravity:0.7,mute:false,solo:false,ch:1,notes:[]},
+    {name:'Voice 3',logic:'free',    scaleKey:'dorian',  period:8, octave:1, density:1,gravity:0.4,mute:false,solo:false,ch:2,notes:[]},
+    {name:'Voice 4',logic:'chorale', scaleKey:'dorian',  period:16,octave:0, density:1,gravity:0.5,mute:true, solo:false,ch:3,notes:[]},
+    {name:'Voice 5',logic:'free',    scaleKey:'dorian',  period:7, octave:0, density:1,gravity:0.6,mute:true, solo:false,ch:4,notes:[]},
+    {name:'Voice 6',logic:'free',    scaleKey:'dorian',  period:5, octave:-2,density:1,gravity:0.8,mute:true, solo:false,ch:5,notes:[]},
+  ];
+}
+
+function getRoot(){return parseInt(document.getElementById('root').value)||0;}
+function getBPM(){return parseInt(document.getElementById('bpm').value)||96;}
+function getBaseBeats(){return parseInt(document.getElementById('baseBeats').value)||16;}
+
+// ════════════════════════════════════════════════════════════
+//  GENERATION — each voice generates its own note line per its logic
+// ════════════════════════════════════════════════════════════
+function genVoice(v){
+  const degs=SCALES[v.scaleKey].d;
+  const steps=v.period;
+  const notes=[];
+  const baseOff=v.octave*12;
+  if(v.logic==='compound'){
+    // alternate high/low strata within one line
+    let up=baseOff+12, lo=baseOff;
+    for(let i=0;i<steps;i++){
+      if(i%2===0){ up=scaleStepIn(up,(Math.random()<0.7?0:(Math.random()<0.5?1:-1)),degs);
+        if(up>baseOff+22)up=scaleStepIn(up,-2,degs); if(up<baseOff+10)up=scaleStepIn(up,2,degs);
+        notes.push({off:up,step:i,dur:0.9,tension:tensionOf(up)});
+      } else { lo=scaleStepIn(lo,(lo>baseOff?-1:(Math.random()<0.4?1:0)),degs);
+        if(lo<baseOff-7)lo=baseOff;
+        notes.push({off:lo,step:i,dur:0.9,tension:tensionOf(lo)});
+      }
+    }
+  } else if(v.logic==='chorale'){
+    // one sustained harmony tone per beat group — slow, stable
+    let cur=baseOff;
+    const prog=[0,3,4,0,5,4,4,0];
+    for(let i=0;i<steps;i++){
+      const deg=prog[i%prog.length];
+      cur=scaleStepIn(baseOff,deg,degs);
+      notes.push({off:cur,step:i,dur:1.6,tension:tensionOf(cur)});
+    }
+  } else if(v.logic==='fugue'){
+    // a subject motif, repeated/transposed across the period
+    const subj=[0,2,4,2,1,0];
+    for(let i=0;i<steps;i++){
+      const m=subj[i%subj.length];
+      const off=scaleStepIn(baseOff,m,degs);
+      notes.push({off:off,step:i,dur:0.85,tension:tensionOf(off)});
+    }
+  } else if(v.logic==='goldberg'){
+    // a ground line that descends and cadences
+    const ground=[0,-1,-2,-3,-4,-3,4,0];
+    for(let i=0;i<steps;i++){
+      const off=scaleStepIn(baseOff,ground[i%ground.length],degs);
+      notes.push({off:off,step:i,dur:1.0,tension:tensionOf(off)});
+    }
+  } else {
+    // free: a gravity-aware walk. higher gravity → returns to stable tones more often.
+    let cur=baseOff;
+    for(let i=0;i<steps;i++){
+      const pull=Math.random()<v.gravity;
+      if(pull && tensionOf(cur)>0.4){ cur=scaleStepIn(cur,(Math.random()<0.5?-1:1),degs); }
+      else { cur=scaleStepIn(cur,[-2,-1,0,1,2][Math.floor(Math.random()*5)],degs); }
+      if(cur>baseOff+19)cur=scaleStepIn(cur,-3,degs); if(cur<baseOff-12)cur=scaleStepIn(cur,3,degs);
+      notes.push({off:cur,step:i,dur:0.9,tension:tensionOf(cur)});
+    }
+  }
+  // apply density: thin out notes if density<... (density 1=every step,2=denser via subdivisions)
+  v.notes=notes;
+}
+
+function regenerateAll(){
+  VOICES.forEach(genVoice);
+  buildVoicePanels();
+  updateLCM();
+  redraw();
+  setInfo('6声部を生成した。各声部が独立した周期で回り、長い周期で交差する。<span class="k">▶ Play</span> で同時に走らせる。');
+}
+
+// ════════════════════════════════════════════════════════════
+//  SENSE MODE — preset directions that configure all 6 voices
+// ════════════════════════════════════════════════════════════
+const SENSE={
+  techno:{
+    info:'Techno — 反復するグルーヴの上で、複数の引力が同時に回る。短い周期の声部がリズムを刻み、長い声部が旋律を歌う。',
+    voices:[
+      {logic:'free',scaleKey:'phrygian',period:16,octave:0, density:2,gravity:0.5,mute:false},
+      {logic:'free',scaleKey:'phrygian',period:8, octave:-2,density:1,gravity:0.9,mute:false},
+      {logic:'fugue',scaleKey:'phrygian',period:12,octave:1,density:1,gravity:0.4,mute:false},
+      {logic:'free',scaleKey:'phrygian',period:3, octave:0, density:1,gravity:0.7,mute:false},
+      {logic:'free',scaleKey:'phrygian',period:5, octave:2, density:1,gravity:0.6,mute:true},
+      {logic:'free',scaleKey:'phrygian',period:16,octave:-1,density:1,gravity:0.8,mute:true},
+    ]},
+  ecm:{
+    info:'ECM / 叙情 — Compound Line の旋律が一本で複数声を描き、和声的内声と低い引力のベースが支える。Gismonti/Jarrett の空気。',
+    voices:[
+      {logic:'compound',scaleKey:'lydian',period:16,octave:1,density:2,gravity:0.4,mute:false},
+      {logic:'chorale',scaleKey:'lydian',period:12,octave:0,density:1,gravity:0.6,mute:false},
+      {logic:'free',scaleKey:'lydian',period:8,octave:0,density:1,gravity:0.5,mute:false},
+      {logic:'goldberg',scaleKey:'lydian',period:16,octave:-2,density:1,gravity:0.7,mute:false},
+      {logic:'free',scaleKey:'lydian',period:5,octave:2,density:1,gravity:0.3,mute:true},
+      {logic:'free',scaleKey:'lydian',period:7,octave:-1,density:1,gravity:0.6,mute:true},
+    ]},
+  raregroove:{
+    info:'Rare Groove — ファンクの粘りと多声。ベースが pocket に沈み、内声が裏で動き、旋律が前に出る。Beginning of the End 的な躍動。',
+    voices:[
+      {logic:'free',scaleKey:'dorian',period:16,octave:0,density:2,gravity:0.5,mute:false},
+      {logic:'free',scaleKey:'dorian',period:8,octave:-2,density:1,gravity:0.8,mute:false},
+      {logic:'free',scaleKey:'mixolydian',period:12,octave:1,density:2,gravity:0.4,mute:false},
+      {logic:'fugue',scaleKey:'dorian',period:6,octave:0,density:1,gravity:0.6,mute:false},
+      {logic:'free',scaleKey:'blues',period:4,octave:1,density:1,gravity:0.7,mute:true},
+      {logic:'free',scaleKey:'dorian',period:16,octave:-1,density:1,gravity:0.6,mute:true},
+    ]},
+  chorale:{
+    info:'Chorale 合唱 — 四声が和声的に同期して動く。Bach のコラール。引力の土台を低音が動かし、上声が乗る。',
+    voices:[
+      {logic:'chorale',scaleKey:'ionian',period:8,octave:1,density:1,gravity:0.5,mute:false},
+      {logic:'chorale',scaleKey:'ionian',period:8,octave:0,density:1,gravity:0.5,mute:false},
+      {logic:'chorale',scaleKey:'ionian',period:8,octave:0,density:1,gravity:0.5,mute:false},
+      {logic:'chorale',scaleKey:'ionian',period:8,octave:-2,density:1,gravity:0.6,mute:false},
+      {logic:'free',scaleKey:'ionian',period:8,octave:2,density:1,gravity:0.4,mute:true},
+      {logic:'free',scaleKey:'ionian',period:8,octave:-1,density:1,gravity:0.6,mute:true},
+    ]},
+  fugue:{
+    info:'Fugue 追走 — 一つの主題が声部間を時間差で追いかける。複数の引力が同時に走り、重なり、交差する。',
+    voices:[
+      {logic:'fugue',scaleKey:'har_minor',period:12,octave:1,density:1,gravity:0.5,mute:false},
+      {logic:'fugue',scaleKey:'har_minor',period:12,octave:0,density:1,gravity:0.5,mute:false},
+      {logic:'fugue',scaleKey:'har_minor',period:12,octave:-1,density:1,gravity:0.5,mute:false},
+      {logic:'fugue',scaleKey:'har_minor',period:12,octave:-2,density:1,gravity:0.6,mute:false},
+      {logic:'free',scaleKey:'har_minor',period:16,octave:0,density:1,gravity:0.5,mute:true},
+      {logic:'free',scaleKey:'har_minor',period:8,octave:1,density:1,gravity:0.4,mute:true},
+    ]},
+  unknown:{
+    info:'未知 / 発掘 — 異なるスケール・異なるロジック・素数の周期が混在する。まだ名前のない音楽を探すモード。',
+    voices:[
+      {logic:'compound',scaleKey:'byzantine',period:13,octave:1,density:2,gravity:0.4,mute:false},
+      {logic:'free',scaleKey:'wholetone',period:7,octave:0,density:1,gravity:0.5,mute:false},
+      {logic:'fugue',scaleKey:'in_sen',period:11,octave:0,density:1,gravity:0.5,mute:false},
+      {logic:'goldberg',scaleKey:'marwa',period:17,octave:-2,density:1,gravity:0.7,mute:false},
+      {logic:'free',scaleKey:'dim_wh',period:5,octave:2,density:1,gravity:0.3,mute:true},
+      {logic:'free',scaleKey:'todi',period:19,octave:-1,density:1,gravity:0.6,mute:true},
+    ]},
+};
+function applySense(key){
+  const s=SENSE[key]; if(!s) return;
+  s.voices.forEach(function(cfg,i){
+    if(!VOICES[i]) return;
+    Object.assign(VOICES[i], cfg);
+  });
+  regenerateAll();
+  setInfo(s.info);
+}
+
+// ════════════════════════════════════════════════════════════
+//  POLYRHYTHM — LCM of all active voice periods
+// ════════════════════════════════════════════════════════════
+function gcd(a,b){return b?gcd(b,a%b):a;}
+function lcm2(a,b){return a*b/gcd(a,b);}
+function updateLCM(){
+  const active=VOICES.filter(function(v){return !v.mute;});
+  const periods=active.map(function(v){return v.period;});
+  let l=periods.length?periods.reduce(lcm2):0;
+  const el=document.getElementById('lcmInfo');
+  if(!periods.length){ el.innerHTML='（全声部 mute）'; return; }
+  el.innerHTML='ポリリズム: <b>'+periods.join(' : ')+'</b> ／ 全体が一巡するまで <b>'+l+'</b> ステップ';
+}
+
+// ════════════════════════════════════════════════════════════
+//  VOICE PANELS (Customize)
+// ════════════════════════════════════════════════════════════
+function buildVoicePanels(){
+  const wrap=document.getElementById('voicePanels');
+  let html='';
+  VOICES.forEach(function(v,i){
+    const col=VOICE_COLORS[i];
+    html+='<div class="voice'+(v.mute?' muted':'')+'" id="vp'+i+'">';
+    html+='<div class="vhead"><div class="vdot" style="background:'+col+'"></div>'
+       +'<span class="vname" style="color:'+col+'">'+v.name+'</span>'
+       +'<span style="font-size:.56rem;color:var(--dim)">ch'+(v.ch+1)+'</span>'
+       +'<button class="vbtn mute'+(v.mute?' on':'')+'" onclick="toggleMute('+i+')">M</button>'
+       +'<button class="vbtn solo'+(v.solo?' on':'')+'" onclick="toggleSolo('+i+')">S</button></div>';
+    // logic
+    html+='<div class="vrow"><label>ロジック</label><select onchange="setVLogic('+i+',this.value)">';
+    Object.keys(LOGICS).forEach(function(k){ html+='<option value="'+k+'"'+(v.logic===k?' selected':'')+'>'+LOGICS[k].n+'</option>'; });
+    html+='</select></div>';
+    // scale
+    html+='<div class="vrow"><label>スケール</label><select onchange="setVScale('+i+',this.value)">';
+    SCALE_KEYS.forEach(function(k){ html+='<option value="'+k+'"'+(v.scaleKey===k?' selected':'')+'>'+SCALES[k].n+'</option>'; });
+    html+='</select></div>';
+    // period + octave
+    html+='<div class="vrow"><label>周期</label>'
+       +'<input type="number" class="vsmall" min="2" max="32" value="'+v.period+'" onchange="setVPeriod('+i+',this.value)">'
+       +'<label style="width:auto;margin-left:.4rem">8va</label>'
+       +'<input type="number" class="vsmall" min="-3" max="3" value="'+v.octave+'" onchange="setVOctave('+i+',this.value)"></div>';
+    // gravity
+    html+='<div class="vrow"><label>引力</label>'
+       +'<input type="range" min="0" max="100" value="'+Math.round(v.gravity*100)+'" oninput="setVGravity('+i+',this.value)" style="flex:1;accent-color:'+col+'">'
+       +'<span class="vperiod">'+Math.round(v.gravity*100)+'</span></div>';
+    html+='</div>';
+  });
+  wrap.innerHTML=html;
+}
+function setV(i,key,val){
+  VOICES[i][key]=val;
+  genVoice(VOICES[i]);
+  if(key==='period'||key==='mute') updateLCM();
+  redraw();
+  // light refresh of the gravity number
+  if(key==='gravity'){ const p=document.querySelector('#vp'+i+' .vperiod'); if(p)p.textContent=Math.round(val*100); }
+}
+function setVLogic(i,val){ setV(i,'logic',val); }
+function setVScale(i,val){ setV(i,'scaleKey',val); }
+function setVPeriod(i,val){ setV(i,'period',parseInt(val)); }
+function setVOctave(i,val){ setV(i,'octave',parseInt(val)); }
+function setVGravity(i,val){ setV(i,'gravity',val/100); }
+function toggleMute(i){ VOICES[i].mute=!VOICES[i].mute; buildVoicePanels(); updateLCM(); redraw(); }
+function toggleSolo(i){
+  VOICES[i].solo=!VOICES[i].solo;
+  const anySolo=VOICES.some(function(v){return v.solo;});
+  VOICES.forEach(function(v){ v.mute = anySolo ? !v.solo : v.mute; });
+  buildVoicePanels(); updateLCM(); redraw();
+}
+
+// ════════════════════════════════════════════════════════════
+//  VISUALIZATION — 6 gravity lines
+// ════════════════════════════════════════════════════════════
+let playStep=-1;
+function redraw(){ drawScore(playStep); }
+function setInfo(html){ document.getElementById('info').innerHTML=html; }
+function drawScore(curStep){
+  const cv=document.getElementById('score'); if(!cv) return;
+  const wrap=cv.parentElement;
+  const W=Math.max(500,wrap.clientWidth-32), H=380;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const padL=34,padR=14,padT=14,padB=24;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const active=VOICES.filter(function(v){return !v.mute;});
+  if(!active.length){ ctx.fillStyle='#555'; ctx.font='12px JetBrains Mono'; ctx.fillText('全声部 mute',padL,padT+20); return; }
+  // pitch range
+  let lo=99,hi=-99;
+  active.forEach(function(v){ v.notes.forEach(function(n){ lo=Math.min(lo,n.off); hi=Math.max(hi,n.off); }); });
+  lo-=2;hi+=2; const span=Math.max(1,hi-lo);
+  // LCM window for x-axis
+  const periods=active.map(function(v){return v.period;});
+  const L=periods.reduce(lcm2);
+  function ny(off){return padT+(1-(off-lo)/span)*plotH;}
+  function nx(step){return padL+(step/L)*plotW;}
+  // octave gridlines
+  ctx.strokeStyle='rgba(255,255,255,.04)';
+  for(let o=Math.floor(lo/12)*12;o<=hi;o+=12){ const y=ny(o); ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.16)';ctx.font='8px JetBrains Mono';ctx.fillText((o>=0?'+':'')+o,4,y+3); }
+  // each voice's period boundary marks
+  active.forEach(function(v,vi){
+    const col=VOICE_COLORS[VOICES.indexOf(v)];
+    // draw the voice looped across the LCM window
+    const reps=L/v.period;
+    ctx.strokeStyle=col+'44';ctx.lineWidth=1.4;ctx.beginPath();
+    let started=false;
+    for(let rep=0;rep<reps;rep++){
+      v.notes.forEach(function(n,k){
+        const gstep=rep*v.period+n.step;
+        const x=nx(gstep),y=ny(n.off);
+        if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+      });
+    }
+    ctx.stroke();
+    // dots
+    for(let rep=0;rep<reps;rep++){
+      v.notes.forEach(function(n){
+        const gstep=rep*v.period+n.step;
+        const x=nx(gstep),y=ny(n.off);
+        const r=2.5+n.dur*2;
+        const activeNow=(curStep>=0 && Math.floor(curStep)%L===gstep);
+        if(n.tension>=0.8){ ctx.strokeStyle=col;ctx.lineWidth=activeNow?2.4:1.4;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();
+          ctx.fillStyle='#ff5a40';ctx.font='8px JetBrains Mono';ctx.fillText('⚡',x+r,y-r);
+        } else { ctx.fillStyle=col;ctx.globalAlpha=activeNow?1:0.5+n.tension*0.3;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.globalAlpha=1; }
+        if(activeNow){ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r+2,0,7);ctx.stroke();}
+      });
+    }
+  });
+  // playhead
+  if(curStep>=0){ const x=nx(Math.floor(curStep)%L); ctx.strokeStyle='rgba(224,184,112,.5)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,H-padB);ctx.stroke(); }
+}
+
+// ════════════════════════════════════════════════════════════
+//  PLAYBACK — each voice on its own channel, its own period
+// ════════════════════════════════════════════════════════════
+let playing=false, simpleTimer=null, audioCtx=null, keepNode=null, globalStep=0;
+function getACtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function keepAlive(){const c=getACtx();if(keepNode)return;keepNode=c.createOscillator();const g=c.createGain();g.gain.value=0;keepNode.connect(g);g.connect(c.destination);keepNode.start();}
+function togglePlay(){ playing?stopPlay():startPlay(); }
+function startPlay(){
+  playing=true; document.getElementById('btnPlay').textContent='■ Stop';
+  keepAlive(); const c=getACtx(); if(c.state==='suspended')c.resume();
+  globalStep=0;
+  const stepMs=(60000/getBPM())/2;   // 8th-note grid
+  if(simpleTimer)clearInterval(simpleTimer.id);
+  const t={id:null}; simpleTimer=t;
+  t.id=setInterval(function(){
+    if(!playing){clearInterval(t.id);return;}
+    const root=getRoot();
+    VOICES.forEach(function(v){
+      if(v.mute) return;
+      const idx=globalStep%v.period;
+      const n=v.notes[idx];
+      if(!n) return;
+      const midi=root+60+n.off;
+      const vel=Math.round(44+(1-n.tension)*50+(v.ch===0?12:0));
+      if(midiOutPort){
+        try{
+          midiOutPort.send([0x90|(v.ch&0x0f),midi,vel]);
+          const offMs=Math.max(50,n.dur*stepMs*2);
+          setTimeout(function(){ if(midiOutPort)try{midiOutPort.send([0x80|(v.ch&0x0f),midi,0]);}catch(e){} },offMs);
+        }catch(e){}
+      }
+    });
+    drawScore(globalStep);
+    globalStep++;
+  }, stepMs);
+}
+function stopPlay(){
+  playing=false; if(simpleTimer){clearInterval(simpleTimer.id);simpleTimer=null;}
+  document.getElementById('btnPlay').textContent='▶ Play';
+  if(midiOutPort){for(let c=0;c<6;c++)try{midiOutPort.send([0xB0|c,123,0]);}catch(e){}}
+  playStep=-1; drawScore(-1);
+}
+
+// ════════════════════════════════════════════════════════════
+//  MIDI
+// ════════════════════════════════════════════════════════════
+let midiAccess=null, midiOutPort=null;
+function initMIDI(){
+  if(!navigator.requestMIDIAccess){setMStat(false,'N/A');return;}
+  navigator.requestMIDIAccess().then(function(ma){midiAccess=ma;ma.onstatechange=function(){popPorts();};popPorts();})
+    .catch(function(){setMStat(false,'denied');});
+}
+function popPorts(){
+  const sel=document.getElementById('midiOut'); if(!sel||!midiAccess)return;
+  const prev=sel.value; sel.innerHTML='<option value="">—</option>';
+  midiAccess.outputs.forEach(function(p,id){const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});
+  if(prev)sel.value=prev;
+  [...sel.options].forEach(function(o){if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectOut(sel.value);}});
+}
+function selectOut(id){if(!id){midiOutPort=null;setMStat(false,'—');return;}midiOutPort=midiAccess?midiAccess.outputs.get(id):null;if(midiOutPort)setMStat(true,midiOutPort.name);}
+function setMStat(ok,n){const d=document.getElementById('midiDot'),s=document.getElementById('midiStat');if(d)d.classList.toggle('on',ok);if(s){s.textContent=ok?'✓ '+n:n;s.style.color=ok?'var(--c4)':'var(--dim)';}}
+
+let _taps=[];
+function tapTempo(){const n=Date.now();_taps.push(n);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const g=_taps.slice(1).map(function(t,i){return t-_taps[i];});const a=g.reduce(function(x,y){return x+y;},0)/g.length;const b=Math.round(60000/a);if(b>40&&b<220){document.getElementById('bpm').value=b;}}}
+
+// ── MIDI file export (all voices, one LCM cycle) ──
+function exportMIDI(){
+  const active=VOICES.filter(function(v){return !v.mute;});
+  if(!active.length){ setInfo('全声部 mute のため書き出せません。'); return; }
+  const PPQ=480;
+  const root=getRoot();
+  const tracks=[];
+  active.forEach(function(v){
+    const evs=[]; // {tick,on,midi,vel}
+    const L=v.period;   // export one full loop of this voice
+    const reps=Math.max(1, Math.round(getBaseBeats()*4/L)); // a few reps to fill
+    for(let r=0;r<reps;r++){
+      v.notes.forEach(function(n){
+        const startTick=Math.round((r*L+n.step)*(PPQ/2));
+        const durTick=Math.max(60,Math.round(n.dur*(PPQ/2)));
+        const midi=root+60+n.off;
+        evs.push({tick:startTick,on:true,midi:midi,vel:Math.round(44+(1-n.tension)*50)});
+        evs.push({tick:startTick+durTick,on:false,midi:midi,vel:0});
+      });
+    }
+    evs.sort(function(a,b){return a.tick-b.tick||(a.on?1:-1);});
+    tracks.push({ch:v.ch,evs:evs});
+  });
+  const bytes=buildSMF(tracks,PPQ,getBPM());
+  const blob=new Blob([bytes],{type:'audio/midi'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='counterpoint.mid'; a.click();
+  URL.revokeObjectURL(url);
+  setInfo('MIDI を書き出した。各声部が別チャンネル(1–6)。Ableton で開いて、Pianoteq/音源を割り当てて仕上げて。');
+}
+function buildSMF(tracks,PPQ,bpm){
+  function vlq(n){const b=[n&0x7f];n>>=7;while(n>0){b.unshift((n&0x7f)|0x80);n>>=7;}return b;}
+  function u32(n){return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255];}
+  function u16(n){return [(n>>8)&255,n&255];}
+  const out=[];
+  // header: format 1, ntrks = tracks+1 (tempo track), division=PPQ
+  out.push(0x4d,0x54,0x68,0x64); out.push.apply(out,u32(6)); out.push.apply(out,u16(1));
+  out.push.apply(out,u16(tracks.length+1)); out.push.apply(out,u16(PPQ));
+  // tempo track
+  let tt=[]; const mpqn=Math.round(60000000/bpm);
+  tt.push.apply(tt,vlq(0)); tt.push(0xff,0x51,0x03,(mpqn>>16)&255,(mpqn>>8)&255,mpqn&255);
+  tt.push.apply(tt,vlq(0)); tt.push(0xff,0x2f,0x00);
+  out.push(0x4d,0x54,0x72,0x6b); out.push.apply(out,u32(tt.length)); out.push.apply(out,tt);
+  // each voice track
+  tracks.forEach(function(tr){
+    let td=[]; let last=0;
+    tr.evs.forEach(function(e){
+      const delta=e.tick-last; last=e.tick;
+      td.push.apply(td,vlq(delta));
+      if(e.on) td.push(0x90|(tr.ch&0x0f),e.midi&0x7f,e.vel&0x7f);
+      else td.push(0x80|(tr.ch&0x0f),e.midi&0x7f,0);
+    });
+    td.push.apply(td,vlq(0)); td.push(0xff,0x2f,0x00);
+    out.push(0x4d,0x54,0x72,0x6b); out.push.apply(out,u32(td.length)); out.push.apply(out,td);
+  });
+  return new Uint8Array(out);
+}
+
+// ── init ──
+window.addEventListener('resize',function(){drawScore(playing?globalStep:-1);});
+VOICES=defaultVoices();
+buildVoicePanels();
+VOICES.forEach(genVoice);
+updateLCM();
+redraw();
+initMIDI();
+</script>
+</body>
+</html>

@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hisaishi</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Fira+Code:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #050608;
+  --bg2:   #080a10;
+  --bg3:   #0c0f1a;
+  --bd:    #14182a;
+  --bd2:   #1c2238;
+  --text:  #c8cce0;
+  --dim:   #303850;
+  --home:  #c8b878;  /* home note — warm gold */
+  --home2: #e8d898;
+  --far:   #8878c8;  /* Lydian #4 — the furthest point */
+  --far2:  #b0a8f0;
+  --piano: #b8c8e8;  /* piano — cool light */
+  --str:   #9888c0;  /* strings — violet */
+  --str2:  #c0b0e8;
+  --dawn:  #e09858;  /* emotional dawn-light */
+  --dusk:  #5868a0;
+  --ivory: #f0ece0;
+  --re-c:  #ff6b35;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Cinema light — single source from above */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 50% 35% at 50% 0%, rgba(200,184,120,.05) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 80% at 50% 130%, rgba(136,120,200,.03) 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 1.2rem 1.6rem .8rem;
+  border-bottom: 1px solid var(--bd);
+  display: flex; align-items: flex-end; gap: 1.8rem;
+  position: relative; z-index: 10;
+}
+.h-name {
+  font-family: 'Crimson Pro', serif;
+  font-size: 2.3rem;
+  font-weight: 300;
+  color: var(--ivory);
+  line-height: 1;
+  letter-spacing: .05em;
+}
+.h-sub { font-size:.38rem; color:var(--dim); letter-spacing:.28em; text-transform:uppercase; margin-top:.28rem; }
+
+/* Home/Far indicator — shows the tension between root and Lydian #4 */
+.homefar {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: .6rem;
+}
+.hf-home {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: .82rem;
+  color: var(--home);
+}
+.hf-track {
+  width: 120px; height: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--bd);
+  border-radius: 3px;
+  position: relative;
+  overflow: visible;
+}
+/* The journey: cursor moves from home toward #4 */
+.hf-cursor {
+  position: absolute;
+  width: 4px; height: 12px;
+  background: var(--home2);
+  top: -3px; border-radius: 2px;
+  transition: left .25s, background .3s;
+}
+.hf-far-mark {
+  position: absolute; right: 0; top: -3px;
+  width: 2px; height: 12px;
+  background: rgba(136,120,200,.4);
+  border-radius: 1px;
+}
+.hf-far {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: .82rem;
+  color: var(--far);
+}
+
+/* Breath arc display */
+.breath-block { flex-shrink:0; }
+.breath-label { font-size:.36rem; color:var(--dim); letter-spacing:.25em; text-transform:uppercase; margin-bottom:.2rem; }
+.breath-segs { display:flex; gap:2px; }
+.bseg { width:7px; height:12px; border-radius:1px; background:var(--bg3); border:1px solid var(--bd); transition:all .25s; }
+.bseg.on { background:var(--piano); }
+.bseg.peak { background:var(--far2); box-shadow:0 0 4px var(--far); }
+
+/* ── LAYOUT ── */
+.layout { display:grid; grid-template-columns:205px 1fr; min-height:calc(100vh - 85px); position:relative; z-index:1; }
+
+/* ── SIDEBAR ── */
+.side { border-right:1px solid var(--bd); padding:.7rem; display:flex; flex-direction:column; gap:.44rem; overflow-y:auto; background:rgba(5,6,8,.65); }
+.panel { background:rgba(8,10,16,.7); border:1px solid var(--bd); border-radius:2px; padding:.5rem .58rem; }
+.pt { font-size:.35rem; letter-spacing:.26em; text-transform:uppercase; color:var(--dim); margin-bottom:.38rem; }
+.row { display:flex; align-items:center; gap:.24rem; margin-bottom:.16rem; }
+.lbl { font-size:.38rem; color:var(--dim); width:58px; flex-shrink:0; }
+.val { font-size:.38rem; width:20px; text-align:right; flex-shrink:0; }
+input[type=range] { flex:1; height:2px; accent-color:var(--home); cursor:pointer; }
+select, input[type=number] { background:var(--bg3); border:1px solid var(--bd); color:var(--text); font-family:'Fira Code',monospace; font-size:.47rem; padding:.1rem .2rem; border-radius:2px; }
+.btn { padding:.16rem .42rem; border:1px solid var(--bd2); border-radius:2px; background:transparent; color:var(--text); font-family:'Fira Code',monospace; font-size:.45rem; cursor:pointer; transition:all .1s; }
+.btn:hover { border-color:var(--home); color:var(--home2); }
+.btn.gold { border-color:rgba(200,184,120,.5); color:var(--home2); background:rgba(200,184,120,.05); }
+.btn.lyd { border-color:rgba(136,120,200,.5); color:var(--far2); background:rgba(136,120,200,.05); }
+.mdot { width:6px; height:6px; border-radius:50%; background:var(--dim); flex-shrink:0; transition:all .3s; }
+.mdot.on { background:var(--dusk); box-shadow:0 0 5px var(--dusk); }
+
+/* ── MAIN ── */
+.main { display:flex; flex-direction:column; overflow:hidden; }
+.tbar { display:flex; align-items:center; gap:.5rem; padding:.4rem .85rem; border-bottom:1px solid var(--bd); background:rgba(5,6,8,.9); flex-wrap:wrap; }
+
+/* 5 cinematic scenes */
+.scenes {
+  display:flex; gap:1px;
+  padding:.25rem .85rem;
+  border-bottom:1px solid var(--bd);
+  background:rgba(8,10,16,.6);
+}
+.scn {
+  flex:1; padding:.2rem .28rem;
+  background:transparent; border:1px solid transparent;
+  border-radius:2px; cursor:pointer;
+  text-align:center; transition:all .18s;
+  color:var(--dim);
+}
+.scn:hover { color:var(--home); }
+.scn.on { color:var(--home2); border-color:rgba(200,184,120,.25); background:rgba(200,184,120,.04); }
+.scn-name {
+  display:block; font-family:'Crimson Pro',serif;
+  font-style:italic; font-size:.82rem; line-height:1;
+}
+.scn-desc { display:block; font-family:'Fira Code',monospace; font-size:.27rem; letter-spacing:.06em; opacity:.35; margin-top:.05rem; }
+
+/* Journey strip — home → far → home arc */
+.journey {
+  padding:.2rem .85rem;
+  border-bottom:1px solid var(--bd);
+  background:rgba(5,6,8,.4);
+  display:flex; align-items:center; gap:.6rem;
+}
+.j-label { font-size:.34rem; color:var(--dim); }
+.j-home { font-family:'Crimson Pro',serif; font-style:italic; font-size:.7rem; color:var(--home); }
+.j-arrow { font-size:.38rem; color:var(--bd2); }
+.j-far { font-family:'Crimson Pro',serif; font-style:italic; font-size:.7rem; color:var(--far); }
+.j-dist { font-size:.34rem; margin-left:.3rem; }
+.j-moment { font-family:'Crimson Pro',serif; font-style:italic; font-size:.72rem; color:var(--far2); margin-left:auto; opacity:0; transition:opacity .3s; }
+.j-moment.show { opacity:1; }
+
+/* Voice grids */
+.voices { flex:1; padding:.6rem .85rem; overflow-y:auto; display:flex; flex-direction:column; gap:.7rem; }
+.voice-block {}
+.vh { display:flex; align-items:center; gap:.4rem; margin-bottom:.18rem; }
+.vname { font-size:.34rem; letter-spacing:.22em; text-transform:uppercase; }
+.vdesc { font-family:'Crimson Pro',serif; font-style:italic; font-size:.56rem; color:var(--dim); }
+.vi { font-size:.36rem; color:var(--dim); margin-left:auto; }
+
+.grid { display:flex; gap:2px; overflow-x:auto; padding-bottom:2px; scrollbar-width:thin; scrollbar-color:var(--bd) transparent; }
+.step { flex-shrink:0; width:36px; height:60px; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:.12rem .06rem .1rem; border-radius:2px; cursor:pointer; border:1px solid transparent; transition:all .08s; position:relative; user-select:none; }
+.step:hover { border-color:var(--bd2); }
+.step.cur { border-color:var(--home) !important; background:rgba(200,184,120,.05); }
+.step.str-cur { border-color:var(--str) !important; background:rgba(152,136,192,.04); }
+.step.bar { border-left:1px solid rgba(20,24,42,.9) !important; }
+/* Lydian #4 step — glows */
+.step.lyd4 {
+  box-shadow: inset 0 0 0 1px rgba(136,120,200,.35),
+              0 0 6px rgba(136,120,200,.08);
+}
+/* Home note — warm border */
+.step.homenote { box-shadow:inset 0 0 0 1px rgba(200,184,120,.25); }
+/* Breath arc — velocity gradient at bottom */
+.step-breath { position:absolute; bottom:0; left:0; right:0; height:2px; border-radius:0 0 2px 2px; }
+
+.s-note { font-family:'Crimson Pro',serif; font-style:italic; font-size:.72rem; color:var(--dim); line-height:1; }
+.s-note.on { color:var(--ivory); }
+.s-bar { width:26px; min-height:2px; border-radius:1px; }
+.s-num { font-size:.27rem; color:rgba(48,56,80,.45); }
+.s-lyd { position:absolute; top:1px; right:2px; font-size:.25rem; color:var(--far2); opacity:0; }
+.s-lyd.show { opacity:.9; }
+
+/* ── DOCK ── */
+.dock { border-top:1px solid var(--bd); background:rgba(5,6,8,.96); position:sticky; bottom:0; z-index:20; }
+.dtabs { display:flex; border-bottom:1px solid var(--bd); overflow-x:auto; scrollbar-width:none; }
+.dtab { padding:.22rem .5rem; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--dim); font-family:'Fira Code',monospace; font-size:.37rem; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; transition:all .12s; white-space:nowrap; display:flex; align-items:center; gap:.18rem; }
+.dtab:hover { color:var(--text); }
+.dtab.on { color:var(--text); border-bottom-color:var(--tc,var(--home)); }
+.dtdot { width:4px; height:4px; border-radius:50%; opacity:.4; }
+.dtab.on .dtdot { opacity:1; }
+.dmini { display:flex; align-items:center; gap:.35rem; padding:0 .6rem; margin-left:auto; flex-shrink:0; }
+.mb { width:22px; height:3px; background:var(--bg3); border-radius:1px; overflow:hidden; }
+.mf { height:100%; border-radius:1px; transition:width .15s; width:0%; }
+#dtag { font-size:.33rem; color:var(--dim); padding-left:.25rem; }
+.dbody { max-height:190px; overflow:hidden; transition:max-height .2s ease; }
+.dbody.closed { max-height:0 !important; }
+.dp { display:none; padding:.4rem .7rem .5rem; }
+.dp.on { display:block; }
+.dg { display:grid; gap:.35rem; }
+.dg3 { grid-template-columns:1fr 1fr 1fr; }
+.dg4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+.db { background:rgba(255,255,255,.012); border:1px solid var(--bd); border-radius:2px; padding:.35rem .44rem; }
+.dbt { font-size:.33rem; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.22rem; padding-left:.2rem; border-left:2px solid currentColor; }
+.dr { display:flex; align-items:center; gap:.22rem; margin-bottom:.14rem; }
+.dl { font-size:.33rem; color:var(--dim); width:50px; flex-shrink:0; }
+.dbar { flex:1; height:3px; background:var(--bg3); border-radius:1px; overflow:hidden; }
+.df { height:100%; border-radius:1px; transition:width .12s; width:0%; }
+.dval { font-size:.33rem; width:18px; text-align:right; flex-shrink:0; }
+.dlog { font-size:.33rem; color:var(--dim); line-height:1.85; max-height:56px; overflow:hidden; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="flex:1">
+    <div class="h-name">Joe Hisaishi</div>
+    <div class="h-sub">Always returning home · Lydian #4 as the furthest point · Long breath · Piano &amp; Strings</div>
+  </div>
+
+  <!-- Home ↔ Far journey meter -->
+  <div class="homefar">
+    <span class="hf-home">home</span>
+    <div class="hf-track">
+      <div class="hf-cursor" id="hfCursor" style="left:5%"></div>
+      <div class="hf-far-mark"></div>
+    </div>
+    <span class="hf-far">#4</span>
+  </div>
+
+  <!-- Phrase breath arc -->
+  <div class="breath-block">
+    <div class="breath-label">phrase breath</div>
+    <div class="breath-segs" id="breathSegs">
+      <div class="bseg"></div><div class="bseg"></div><div class="bseg"></div>
+      <div class="bseg"></div><div class="bseg"></div><div class="bseg"></div>
+      <div class="bseg"></div><div class="bseg"></div><div class="bseg"></div>
+      <div class="bseg"></div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<div class="side">
+
+  <div class="panel">
+    <div class="pt">Key · Scale</div>
+    <div class="row"><span class="lbl">Root</span>
+      <select id="rootSel" onchange="rebuild()" style="flex:1">
+        <option value="60">C</option><option value="62">D</option><option value="64">E</option>
+        <option value="65">F</option><option value="67">G</option><option value="69" selected>A</option>
+        <option value="71">B</option><option value="61">C#</option><option value="63">Eb</option>
+        <option value="66">F#</option><option value="68">Ab</option><option value="70">Bb</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Scale</span>
+      <select id="scaleSel" onchange="rebuild()" style="flex:1">
+        <option value="lydian" selected>Lydian (#4)</option>
+        <option value="major">Major</option>
+        <option value="penta_M">Pentatonic Maj</option>
+        <option value="dorian">Dorian</option>
+        <option value="mixo">Mixolydian</option>
+        <option value="sus">Suspended</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- The core: home and the journey away -->
+  <div class="panel" style="border-color:rgba(200,184,120,.2)">
+    <div class="pt" style="color:var(--home)">Home · Return</div>
+    <div style="font-size:.37rem;color:var(--dim);line-height:1.75;margin-bottom:.26rem">
+      Every phrase departs and returns.<br>
+      The further it travels, the greater<br>the joy of coming home.
+    </div>
+    <div class="row"><span class="lbl">Journey far</span>
+      <input type="range" id="journeyFar" min="0" max="100" value="60" oninput="$('journeyFarV').textContent=this.value">
+      <span class="val" id="journeyFarV" style="color:var(--home2)">60</span>
+    </div>
+    <div class="row"><span class="lbl">Return pull</span>
+      <input type="range" id="returnPull" min="0" max="100" value="55" oninput="$('returnPullV').textContent=this.value">
+      <span class="val" id="returnPullV" style="color:var(--home)">55</span>
+    </div>
+    <div class="row"><span class="lbl">Breath len</span>
+      <input type="range" id="breathLen" min="3" max="16" value="8" oninput="onBreathLen(this.value)">
+      <span class="val" id="breathLenV" style="color:var(--piano)">8</span>
+    </div>
+  </div>
+
+  <div class="panel" style="border-color:rgba(136,120,200,.2)">
+    <div class="pt" style="color:var(--far)">Lydian #4</div>
+    <div style="font-size:.37rem;color:var(--dim);line-height:1.75;margin-bottom:.26rem">
+      The augmented 4th — the note that<br>opens the sky. Always resolves<br>back to root in the end.
+    </div>
+    <div class="row"><span class="lbl">#4 gravity</span>
+      <input type="range" id="lyd4amt" min="0" max="100" value="65" oninput="$('lyd4amtV').textContent=this.value">
+      <span class="val" id="lyd4amtV" style="color:var(--far2)">65</span>
+    </div>
+    <div class="row"><span class="lbl">Frequency</span>
+      <input type="range" id="lyd4freq" min="0" max="100" value="28" oninput="$('lyd4freqV').textContent=this.value+'%'">
+      <span class="val" id="lyd4freqV" style="color:var(--far)">28%</span>
+    </div>
+    <button class="btn lyd" onclick="insertLydMoment()" style="width:100%;margin-top:.25rem;font-family:'Crimson Pro',serif;font-style:italic">✦ open the sky</button>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Piano ↔ Strings</div>
+    <div style="font-size:.37rem;color:var(--dim);line-height:1.75;margin-bottom:.22rem">
+      Piano asks. Strings remember.<br>
+      At the peak: they become one.
+    </div>
+    <div class="row"><span class="lbl">Piano steps</span>
+      <select id="pianoLen" onchange="onPLen(this.value)" style="flex:1">
+        <option value="11">11</option><option value="13">13</option>
+        <option value="16" selected>16</option><option value="17">17</option><option value="19">19</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Str steps</span>
+      <select id="strLen" onchange="onSLen(this.value)" style="flex:1">
+        <option value="7">7</option><option value="11" selected>11</option><option value="13">13</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Mode</span>
+      <select id="interMode" style="flex:1">
+        <option value="response" selected>Call &amp; Response</option>
+        <option value="shadow">Shadow (−7st)</option>
+        <option value="echo">Echo (delay)</option>
+        <option value="free">Independent</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Unison at</span>
+      <select id="unisonAt" style="flex:1">
+        <option value="peak" selected>Peak only</option>
+        <option value="always">Always</option>
+        <option value="never">Never</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Tempo</div>
+    <div class="row"><span class="lbl">BPM</span>
+      <input type="number" id="bpmIn" value="76" min="30" max="200" style="width:46px">
+      <button class="btn" onclick="tap()" style="padding:.09rem .25rem;font-size:.4rem">tap</button>
+    </div>
+    <div class="row"><span class="lbl">Rubato</span>
+      <input type="range" id="rubato" min="0" max="100" value="38" oninput="$('rubatoV').textContent=this.value">
+      <span class="val" id="rubatoV" style="color:var(--str)">38</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">MIDI</div>
+    <div class="row" style="margin-bottom:.2rem">
+      <div class="mdot" id="midiDot"></div>
+      <span id="midiStat" style="font-size:.42rem;color:var(--dim)">—</span>
+    </div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;font-size:.42rem;margin-bottom:.18rem">⟳ refresh</button>
+    <div class="row"><span class="lbl">Out</span><select id="midiOut" onchange="selOut(this.value)" style="flex:1;font-size:.4rem"></select></div>
+    <div class="row"><span class="lbl">Piano ch</span>
+      <select id="pianoCh" style="flex:1;font-size:.42rem">
+        <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Strings ch</span>
+      <select id="strCh" style="flex:1;font-size:.42rem">
+        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Clock in</span><select id="clockIn" onchange="selClockIn(this.value)" style="flex:1;font-size:.4rem"><option value="">—</option></select></div>
+    <button id="slaveBtn" class="btn" onclick="toggleSlave()" style="width:100%;margin:.16rem 0;font-size:.42rem">Slave: OFF</button>
+    <button class="btn gold" onclick="exportSCL()" style="width:100%;font-size:.42rem">↓ SCL</button>
+    <button class="btn" onclick="exportMIDI()" style="width:100%;margin-top:.12rem;font-size:.42rem">↓ MIDI</button>
+  </div>
+
+</div>
+
+<div class="main">
+
+  <div class="tbar">
+    <button id="btnPlay" class="btn" onclick="togglePlay()" style="border-color:rgba(200,184,120,.4);color:var(--home2)">▶ play</button>
+    <button class="btn" onclick="stopAll()">■ stop</button>
+    <button class="btn" onclick="gen()">⟳ gen</button>
+    <button class="btn lyd" onclick="insertLydMoment()" style="font-family:'Crimson Pro',serif;font-style:italic">✦ Lydian</button>
+    <button id="undoBtn" class="btn" onclick="undo()" style="opacity:.3">↩</button>
+    <button id="redoBtn" class="btn" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="save()" style="color:var(--home)">↓</button>
+    <label class="btn" style="cursor:pointer;color:var(--str)">↑<input type="file" accept=".json" onchange="load(event)" style="display:none"></label>
+    <div style="margin-left:auto;font-size:.38rem;color:var(--dim)">
+      LCM <span id="lcmDisp" style="color:var(--far2)">—</span>
+      &nbsp;·&nbsp;<span id="sceneLabel" style="font-family:'Crimson Pro',serif;font-style:italic;color:var(--home)">夜明け前</span>
+    </div>
+  </div>
+
+  <!-- 5 cinematic scenes -->
+  <div class="scenes">
+    <button class="scn on" id="sc0" onclick="setScene(0)">
+      <span class="scn-name">夜明け前</span>
+      <span class="scn-desc">before dawn · sparse</span>
+    </button>
+    <button class="scn" id="sc1" onclick="setScene(1)">
+      <span class="scn-name">問い</span>
+      <span class="scn-desc">the question</span>
+    </button>
+    <button class="scn" id="sc2" onclick="setScene(2)">
+      <span class="scn-name">旅</span>
+      <span class="scn-desc">journey · building</span>
+    </button>
+    <button class="scn" id="sc3" onclick="setScene(3)">
+      <span class="scn-name">頂点</span>
+      <span class="scn-desc">peak · Lydian</span>
+    </button>
+    <button class="scn" id="sc4" onclick="setScene(4)">
+      <span class="scn-name">帰還</span>
+      <span class="scn-desc">homecoming · dissolve</span>
+    </button>
+  </div>
+
+  <!-- Journey strip -->
+  <div class="journey">
+    <span class="j-label">journey:</span>
+    <span class="j-home" id="j-home-note">—</span>
+    <span class="j-arrow">→</span>
+    <span class="j-dist" id="j-dist" style="color:var(--dim)">—</span>
+    <span class="j-arrow">→</span>
+    <span class="j-far" id="j-far-note">✦</span>
+    <div class="j-moment" id="jMoment">✦ Lydian moment</div>
+  </div>
+
+  <div class="voices">
+
+    <!-- Piano — asks the question -->
+    <div class="voice-block">
+      <div class="vh">
+        <span class="vname" style="color:var(--piano)">Piano</span>
+        <span class="vdesc">the question · long breath · Lydian horizon</span>
+        <canvas id="pcv" width="100" height="16" style="background:rgba(0,0,0,.2);border-radius:1px"></canvas>
+        <span class="vi" id="pinfo">—</span>
+      </div>
+      <div class="grid" id="pgrid"></div>
+    </div>
+
+    <!-- Strings — answers, remembers -->
+    <div class="voice-block">
+      <div class="vh">
+        <span class="vname" style="color:var(--str2)">Strings</span>
+        <span class="vdesc">the answer · sustained · becomes one at the peak</span>
+        <canvas id="scv" width="100" height="16" style="background:rgba(0,0,0,.2);border-radius:1px"></canvas>
+        <span class="vi" id="sinfo">—</span>
+      </div>
+      <div class="grid" id="sgrid"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Dock -->
+<div class="dock">
+  <div class="dtabs">
+    <button class="dtab on" data-pane="journey" style="--tc:var(--home)"><span class="dtdot" style="background:var(--home)"></span>journey</button>
+    <button class="dtab" data-pane="lyd" style="--tc:var(--far)"><span class="dtdot" style="background:var(--far)"></span>Lydian #4</button>
+    <button class="dtab" data-pane="reflect" style="--tc:var(--re-c)"><span class="dtdot" style="background:var(--re-c)"></span>反射性</button>
+    <button class="dtab" data-pane="arc" style="--tc:var(--str2)"><span class="dtdot" style="background:var(--str2)"></span>arc</button>
+    <div class="dmini">
+      <span style="font-size:.32rem;color:var(--dim)">J</span><div class="mb"><div class="mf" id="m-j" style="background:var(--home)"></div></div>
+      <span style="font-size:.32rem;color:var(--dim)">L</span><div class="mb"><div class="mf" id="m-l" style="background:var(--far)"></div></div>
+      <span style="font-size:.32rem;color:var(--dim)">T</span><div class="mb"><div class="mf" id="m-t" style="background:var(--re-c)"></div></div>
+      <span id="dtag">—</span>
+      <button onclick="toggleDock()" id="dockToggle" style="background:none;border:none;color:var(--dim);font-size:.44rem;cursor:pointer;padding:0 .2rem">▲</button>
+    </div>
+  </div>
+  <div class="dbody" id="dockBody">
+
+    <!-- Journey Engine -->
+    <div class="dp on" id="dp-journey">
+      <div class="dg dg4">
+        <div class="db">
+          <div class="dbt" style="color:var(--home)">journey state</div>
+          <div class="dr"><span class="dl">distance</span><div class="dbar"><div class="df" id="d-dist" style="background:linear-gradient(90deg,var(--home),var(--far))"></div></div><span class="dval" id="dv-dist" style="color:var(--far2)">0</span></div>
+          <div class="dr"><span class="dl">return pull</span><div class="dbar"><div class="df" id="d-ret" style="background:var(--home)"></div></div><span class="dval" id="dv-ret" style="color:var(--home)">0</span></div>
+          <div class="dr"><span class="dl">breath pos</span><div class="dbar"><div class="df" id="d-br" style="background:var(--piano)"></div></div><span class="dval" id="dv-br" style="color:var(--piano)">0</span></div>
+          <div style="font-family:'Crimson Pro',serif;font-style:italic;font-size:.8rem;color:var(--home);margin-top:.15rem" id="d-jstate">—</div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--home)">history</div>
+          <canvas id="d-jhist" height="42" style="width:100%;display:block;background:rgba(0,0,0,.22);border-radius:1px"></canvas>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--home)">phrase now</div>
+          <div id="d-phrase" style="font-size:.38rem;color:var(--piano);line-height:2;font-family:'Crimson Pro',serif;font-style:italic">—</div>
+          <div style="font-size:.34rem;color:var(--dim);margin-top:.15rem" id="d-breath">breath: —</div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--home)">controls</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem">
+            <button onclick="insertLydMoment()" style="border:1px solid rgba(136,120,200,.4);color:var(--far2);background:transparent;font-family:'Crimson Pro',serif;font-style:italic;font-size:.43rem;padding:.16rem;border-radius:2px;cursor:pointer">✦ Lydian sky</button>
+            <button onclick="snapHome()" style="border:1px solid rgba(200,184,120,.3);color:var(--home2);background:transparent;font-family:'Fira Code',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">⌂ snap home</button>
+            <button onclick="setScene(3)" style="border:1px solid rgba(224,152,88,.3);color:var(--dawn);background:transparent;font-family:'Fira Code',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">▲ peak now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lydian -->
+    <div class="dp" id="dp-lyd">
+      <div class="dg dg3">
+        <div class="db">
+          <div class="dbt" style="color:var(--far)">Lydian #4 state</div>
+          <div class="dr"><span class="dl">#4 tension</span><div class="dbar"><div class="df" id="d-lyd" style="background:linear-gradient(90deg,var(--str),var(--far))"></div></div><span class="dval" id="dv-lyd" style="color:var(--far2)">0</span></div>
+          <div class="dr"><span class="dl">#4 density</span><div class="dbar"><div class="df" id="d-lyd4" style="background:var(--far)"></div></div><span class="dval" id="dv-lyd4" style="color:var(--far)">0</span></div>
+          <div style="font-size:.36rem;color:var(--dim);margin-top:.18rem;font-family:'Crimson Pro',serif;font-style:italic" id="d-lstate">—</div>
+          <canvas id="d-lhist" height="40" style="width:100%;display:block;background:rgba(0,0,0,.2);border-radius:1px;margin-top:.2rem"></canvas>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--far)">active #4 notes</div>
+          <div id="d-lyd-notes" style="font-size:.38rem;color:var(--far2);line-height:2;font-family:'Crimson Pro',serif;font-style:italic">—</div>
+          <div id="d-lydlog" class="dlog" style="margin-top:.18rem"><span style="color:rgba(136,120,200,.35)">— waiting —</span></div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--far)">about Lydian #4</div>
+          <div style="font-size:.36rem;color:var(--dim);line-height:1.9">
+            The augmented 4th sits<br>
+            6 semitones above root.<br>
+            In Lydian mode it replaces<br>
+            the perfect 4th.<br><br>
+            It creates expansion where<br>
+            Major would close.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reflexivity -->
+    <div class="dp" id="dp-reflect">
+      <div class="dg dg4">
+        <div class="db"><div class="dbt" style="color:var(--re-c)">observer</div>
+          <div class="dr"><span class="dl">tension</span><div class="dbar"><div class="df" id="re-t" style="background:var(--re-c)"></div></div><span class="dval" id="re-tv" style="color:var(--re-c)">0</span></div>
+          <div class="dr"><span class="dl">boredom</span><div class="dbar"><div class="df" id="re-b" style="background:#ff3d7f"></div></div><span class="dval" id="re-bv" style="color:#ff3d7f">0</span></div>
+          <div class="dr"><span class="dl">momentum</span><div class="dbar"><div class="df" id="re-m" style="background:#9b59b6"></div></div><span class="dval" id="re-mv" style="color:#9b59b6">0</span></div>
+          <div style="font-size:.33rem;color:var(--dim);margin-top:.15rem">will: <span id="re-will" style="color:var(--re-c)">—</span></div>
+        </div>
+        <div class="db"><div class="dbt" style="color:var(--re-c)">sensitivity</div>
+          <div class="dr"><span class="dl">sens</span><input type="range" id="reSens" min="1" max="100" value="50" oninput="$('reSensV').textContent=this.value" style="flex:1"><span class="dval" id="reSensV" style="color:var(--re-c)">50</span></div>
+          <div class="dr"><span class="dl">auto</span><input type="range" id="reAuto" min="0" max="100" value="40" oninput="$('reAutoV').textContent=this.value" style="flex:1"><span class="dval" id="reAutoV" style="color:#9b59b6">40</span></div>
+          <canvas id="re-hist" height="42" style="width:100%;display:block;background:rgba(0,0,0,.2);border-radius:1px;margin-top:.2rem"></canvas>
+        </div>
+        <div class="db"><div class="dbt" style="color:var(--re-c)">override</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem">
+            <button id="re-freeze" onclick="reCmd('freeze')" style="border:1px solid rgba(255,107,53,.35);color:var(--re-c);background:transparent;font-family:'Fira Code',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">❄ freeze</button>
+            <button onclick="reCmd('crisis')" style="border:1px solid rgba(255,61,127,.35);color:#ff3d7f;background:transparent;font-family:'Fira Code',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">⚡ crisis</button>
+            <button onclick="reCmd('peak')" style="border:1px solid rgba(136,120,200,.35);color:var(--far2);background:transparent;font-family:'Fira Code',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">✦ peak</button>
+          </div>
+        </div>
+        <div class="db"><div class="dbt" style="color:var(--re-c)">log</div><div id="re-log" class="dlog"><span style="color:rgba(255,107,53,.3)">— waiting —</span></div></div>
+      </div>
+    </div>
+
+    <!-- Arc -->
+    <div class="dp" id="dp-arc">
+      <div class="dg dg3">
+        <div class="db">
+          <div class="dbt" style="color:var(--str2)">shadow arc</div>
+          <div style="display:flex;gap:1px;height:14px;border-radius:2px;overflow:hidden;margin-bottom:.2rem">
+            <div id="sa0" onclick="arcJump(0)" style="flex:2;background:rgba(48,56,80,.12);color:var(--dim);font-family:'Crimson Pro',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">夜明け前</div>
+            <div id="sa1" onclick="arcJump(1)" style="flex:2;background:rgba(184,200,232,.05);color:var(--piano);font-family:'Crimson Pro',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">問い</div>
+            <div id="sa2" onclick="arcJump(2)" style="flex:2;background:rgba(152,136,192,.07);color:var(--str);font-family:'Crimson Pro',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">旅</div>
+            <div id="sa3" onclick="arcJump(3)" style="flex:1;background:rgba(136,120,200,.1);color:var(--far);font-family:'Crimson Pro',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">頂点</div>
+            <div id="sa4" onclick="arcJump(4)" style="flex:2;background:rgba(200,184,120,.06);color:var(--home);font-family:'Crimson Pro',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">帰還</div>
+          </div>
+          <div style="font-size:.36rem;color:var(--dim)">now: <span id="arc-now" style="color:var(--str2);font-family:'Crimson Pro',serif;font-style:italic">夜明け前</span></div>
+          <canvas id="arc-cv" height="36" style="width:100%;display:block;background:rgba(0,0,0,.2);border-radius:1px;margin-top:.2rem"></canvas>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--str2)">gravity</div>
+          <div class="dr"><span class="dl">pull</span><div class="dbar"><div class="df" id="arc-pf" style="background:var(--str2)"></div></div><span class="dval" id="arc-pv" style="color:var(--str2)">0</span></div>
+          <div class="dr"><span class="dl">drift</span><div class="dbar"><div class="df" id="arc-df" style="background:#b39ddb"></div></div><span class="dval" id="arc-dv" style="color:#b39ddb">0</span></div>
+          <div class="dr" style="margin-top:.18rem"><span class="dl">strength</span><input type="range" id="arcStr" min="0" max="100" value="50" oninput="$('arcStrV').textContent=this.value" style="flex:1"><span class="dval" id="arcStrV" style="color:var(--str2)">50</span></div>
+          <div class="dr"><span class="dl">auto-adv</span><input type="range" id="arcAdv" min="0" max="100" value="55" oninput="$('arcAdvV').textContent=this.value" style="flex:1"><span class="dval" id="arcAdvV" style="color:#b39ddb">55</span></div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--str2)">control</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem">
+            <button onclick="arcCmd('pull')" style="border:1px solid rgba(192,176,232,.3);color:var(--str2);background:transparent;font-family:'Fira Code',monospace;font-size:.38rem;padding:.14rem;border-radius:2px;cursor:pointer">⬤ pull</button>
+            <button onclick="arcCmd('skip')" style="border:1px solid rgba(200,184,120,.28);color:var(--home);background:transparent;font-family:'Fira Code',monospace;font-size:.38rem;padding:.14rem;border-radius:2px;cursor:pointer">⟶ skip</button>
+            <button onclick="arcCmd('home')" style="border:1px solid rgba(200,184,120,.35);color:var(--home2);background:transparent;font-family:'Fira Code',monospace;font-size:.38rem;padding:.14rem;border-radius:2px;cursor:pointer">⌂ home</button>
+          </div>
+          <div id="arc-log" style="font-size:.33rem;color:rgba(192,176,232,.65);margin-top:.22rem;line-height:1.8">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ── SCALES ──────────────────────────────────────────────
+const SCALES = {
+  lydian: [0,2,4,6,7,9,11],    // #4 = 6
+  major:  [0,2,4,5,7,9,11],
+  penta_M:[0,2,4,7,9],
+  dorian: [0,2,3,5,7,9,10],
+  mixo:   [0,2,4,5,7,9,10],
+  sus:    [0,2,5,7,9,10],
+};
+const PC = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+
+// 5 cinematic scenes
+const SCENES = [
+  { name:'夜明け前', dens:[.16,.34], lyd4:.10, tempoM:.68, breathLen:5,  strD:.18 },
+  { name:'問い',     dens:[.35,.52], lyd4:.30, tempoM:.83, breathLen:7,  strD:.33 },
+  { name:'旅',       dens:[.52,.70], lyd4:.55, tempoM:.98, breathLen:10, strD:.52 },
+  { name:'頂点',     dens:[.68,.86], lyd4:.90, tempoM:1.08,breathLen:12, strD:.70 },
+  { name:'帰還',     dens:[.22,.42], lyd4:.20, tempoM:.75, breathLen:8,  strD:.28 },
+];
+let curScene = 0;
+
+// Journey state — the emotional distance from home
+const JRN = {
+  distance: 0,    // 0=home, 1=Lydian #4
+  retPull:  0,    // force pulling back home
+  lyd4Dens: 0,    // density of #4 notes
+  lyd4Tens: 0,    // accumulated Lydian tension
+  inMoment: false,
+  momentTimer: 0,
+  breathPos: 0,
+  breathLen: 8,
+  hist: [],
+};
+
+let pianoSteps=[], strSteps=[];
+let pianoLen=16, strLen=11;
+let pianoIdx=0, strIdx=0;
+let playing=false, masterStep=0;
+let mOut=null, mAccess=null;
+const SL={on:false,port:null,bpm:76,alpha:.15,running:false,lp:0,pc:0};
+
+function getRoot(){ return parseInt($('rootSel').value)||69; }
+function getBpm(){  return parseInt($('bpmIn').value)||76; }
+function getScale(){ return SCALES[$('scaleSel').value]||SCALES.lydian; }
+function gcd(a,b){ return b?gcd(b,a%b):a; }
+function lcm(a,b){ return a/gcd(a,b)*b; }
+
+function lyd4Notes(root){
+  // All instances of the augmented 4th (6 semitones above root) across octaves
+  const p=[];
+  for(let o=-2;o<=2;o++){const m=root+6+o*12;if(m>=24&&m<=108)p.push(m);}
+  return p;
+}
+function homeNotes(root){
+  // Root and octaves
+  const p=[];
+  for(let o=-2;o<=2;o++){const m=root+o*12;if(m>=24&&m<=108)p.push(m);}
+  return p;
+}
+
+function pool(oLo,oHi){
+  const r=getRoot(),sc=getScale(),p=[];
+  for(let o=oLo;o<=oHi;o++)sc.forEach(d=>{const m=r+d+o*12;if(m>=24&&m<=108)p.push(m);});
+  return p.sort((a,b)=>a-b);
+}
+
+// ── GENERATE ─────────────────────────────────────────────
+function gen(){
+  pushUndo();
+  const sc=SCENES[curScene];
+  const journeyFar=parseInt($('journeyFar').value)/100;
+  const lyd4amt=parseInt($('lyd4amt').value)/100;
+  const lyd4freq=parseInt($('lyd4freq').value)/100;
+  const breathLen=parseInt($('breathLen').value)||8;
+  const dens=sc.dens[0]+Math.random()*(sc.dens[1]-sc.dens[0]);
+
+  pianoSteps=makePiano(pool(-1,2), pianoLen, dens, lyd4amt*sc.lyd4, lyd4freq*sc.lyd4, breathLen, journeyFar);
+  strSteps=makeStrings(pool(-2,0), strLen, sc.strD, pianoSteps);
+
+  drawPiano(); drawStr(); updLCM();
+}
+
+function makePiano(p,len,dens,lyd4amt,lyd4freq,breathLen,journeyFar){
+  if(!p.length)return[];
+  const root=getRoot();
+  const l4s=lyd4Notes(root);
+  const homes=homeNotes(root);
+  const arc=buildBreathArc(len, breathLen);
+  const steps=[];
+  let pos=Math.floor(p.length*.45);
+
+  for(let i=0;i<len;i++){
+    const t=i/len;
+    const arcV=arc[i];
+    const active=Math.random()<dens*(arcV>.2?1:.6);
+    let midi=p[pos];
+    let isLyd4=false;
+    let isHome=false;
+
+    // Journey logic:
+    // Rising part of phrase: lean toward #4
+    // Falling/return: lean toward home
+    const rising=arcV>(i>0?arc[i-1]:0);
+    const isClimaxZone=t>.35&&t<.75;
+    const isReturnZone=t>.7||curScene===4;
+
+    if(isClimaxZone&&Math.random()<lyd4freq*lyd4amt&&active){
+      // Lydian #4 moment
+      const nearest=l4s.reduce((b,m)=>Math.abs(m-p[pos])<Math.abs(b-p[pos])?m:b,l4s[0]);
+      midi=nearest; isLyd4=true;
+    } else if(isReturnZone&&Math.random()<(parseInt($('returnPull').value)/100)*.4&&active){
+      // Pull toward home
+      const nearest=homes.reduce((b,m)=>Math.abs(m-p[pos])<Math.abs(b-p[pos])?m:b,homes[0]);
+      midi=nearest; isHome=true;
+    } else {
+      // Long breath stepwise movement — follow the arc
+      const dir=rising?1:-1;
+      const stepw=Math.random()<.72;
+      const move=stepw?dir:dir*(Math.floor(Math.random()*3)+2);
+      pos=Math.max(0,Math.min(p.length-1,pos+move));
+      midi=p[pos];
+    }
+
+    const vel=arcV*.72+.22;
+    steps.push({midi,active,vel,isLyd4,isHome,arcV,durMult:1.1+arcV*.6});
+  }
+  return steps;
+}
+
+function buildBreathArc(len, breathLen){
+  // Long breath: smooth arc over breathLen steps, repeated
+  const arc=new Array(len).fill(0);
+  for(let i=0;i<len;i++){
+    const bp=i%breathLen;
+    const t=bp/breathLen;
+    arc[i]=Math.sin(t*Math.PI);  // rises to midpoint, falls back
+    arc[i]=Math.max(.08,arc[i]);
+  }
+  return arc;
+}
+
+function makeStrings(p,len,dens,pianoRef){
+  if(!p.length)return[];
+  const mode=$('interMode').value;
+  const uniAt=$('unisonAt').value;
+  const isPeak=curScene===3;
+  const steps=[];
+  let pos=Math.floor(p.length*.3);
+
+  for(let i=0;i<len;i++){
+    const active=Math.random()<dens*(i%2===0?1.2:.7);
+    const pRef=pianoRef[Math.min(pianoRef.length-1,Math.round(i*pianoLen/len))];
+    let midi=p[pos];
+    let isLyd4=false;
+
+    if(pRef?.active){
+      if(mode==='response'){
+        // A third or sixth below piano
+        midi=Math.max(24,Math.min(108,pRef.midi-Math.random()<.6?7:4));
+        isLyd4=pRef.isLyd4;
+      } else if(mode==='shadow'){
+        midi=Math.max(24,pRef.midi-7);
+        isLyd4=pRef.isLyd4;
+      } else if(mode==='echo'){
+        const pi2=pianoRef[Math.max(0,Math.round(i*pianoLen/len)-2)];
+        midi=Math.max(24,Math.min(108,(pi2?.midi||pRef.midi)-12));
+      } else {
+        const d=i%4<2?1:-1;
+        pos=Math.max(0,Math.min(p.length-1,pos+d));
+        midi=p[pos];
+      }
+      // Unison at peak
+      if((isPeak&&uniAt==='peak'||uniAt==='always')&&pRef.isLyd4){
+        midi=Math.max(24,pRef.midi-12);
+        isLyd4=true;
+      }
+    }
+
+    const vel=.35+Math.random()*.42;
+    steps.push({midi,active,vel,isLyd4,durMult:2.2+Math.random()*.8});
+  }
+  return steps;
+}
+
+// ── LYDIAN MOMENT ─────────────────────────────────────────
+function insertLydMoment(){
+  pushUndo();
+  const root=getRoot();
+  const l4s=lyd4Notes(root);
+  const n=Math.max(2,Math.round(pianoLen*.25));
+  const start=pianoIdx%pianoLen;
+  pianoSteps.slice(start,Math.min(pianoLen,start+n)).forEach((s,i)=>{
+    const nn=l4s.reduce((b,m)=>Math.abs(m-(s.midi||60))<Math.abs(b-(s.midi||60))?m:b,l4s[0]);
+    s.midi=nn; s.isLyd4=true; s.active=true;
+    s.vel=.6+i/n*.32;
+  });
+  JRN.inMoment=true; JRN.momentTimer=n*4;
+  lydLog('✦ Lydian sky opens');
+  drawPiano();
+}
+
+function snapHome(){
+  pushUndo();
+  const root=getRoot();
+  const homes=homeNotes(root);
+  pianoSteps.forEach(s=>{
+    if(s.isLyd4&&Math.random()<.65){
+      const nn=homes.reduce((b,m)=>Math.abs(m-s.midi)<Math.abs(b-s.midi)?m:b,homes[0]);
+      s.midi=nn; s.isLyd4=false; s.isHome=true;
+    }
+  });
+  JRN.inMoment=false;
+  lydLog('⌂ Returned home');
+  drawPiano();
+}
+
+// ── DRAW ─────────────────────────────────────────────────
+function drawPiano(){
+  const el=$('pgrid');if(!el)return;
+  el.innerHTML='';
+  pianoSteps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    const bm=i%4===0&&i?' bar':'';
+    d.className='step'+bm+(s.isLyd4?' lyd4':'')+(s.isHome?' homenote':'');
+    d.id=`ps${i}`;
+    const h=s.active?4+Math.round(s.vel*30):2;
+    const c=s.active?(s.isLyd4?'var(--far2)':s.isHome?'var(--home2)':'var(--piano)'):'rgba(255,255,255,.02)';
+    const n=PC[s.midi%12];
+    const lm=s.isLyd4?`<span class="s-lyd show">#4</span>`:'';
+    const bm2=s.arcV?`<span class="step-breath" style="background:rgba(136,120,200,${(s.arcV||0)*.25})"></span>`:'';
+    d.innerHTML=`${lm}<span class="s-note${s.active?' on':''}">${n}</span><div class="s-bar" style="height:${h}px;background:${c}"></div><span class="s-num">${i+1}</span>${bm2}`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;drawPiano();});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.vel=Math.max(.1,s.vel-.1);drawPiano();});
+    el.appendChild(d);
+  });
+  $('pinfo').textContent=`${pianoLen} · ${pianoSteps.filter(s=>s.active).length}on · ${pianoSteps.filter(s=>s.isLyd4&&s.active).length}#4`;
+  drawCurve('p');
+}
+
+function drawStr(){
+  const el=$('sgrid');if(!el)return;
+  el.innerHTML='';
+  strSteps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='step'+(i%3===0&&i?' bar':'')+(s.isLyd4?' lyd4':'');
+    d.id=`ss${i}`;
+    const h=s.active?4+Math.round(s.vel*28):2;
+    const c=s.active?(s.isLyd4?'var(--far2)':'var(--str2)'):'rgba(255,255,255,.02)';
+    const n=PC[s.midi%12];
+    d.innerHTML=`<span class="s-note${s.active?' on':''}">${n}</span><div class="s-bar" style="height:${h}px;background:${c}"></div><span class="s-num">${i+1}</span>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;drawStr();});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.vel=Math.max(.1,s.vel-.1);drawStr();});
+    el.appendChild(d);
+  });
+  $('sinfo').textContent=`${strLen} · ${strSteps.filter(s=>s.active).length}on`;
+  drawCurve('s');
+}
+
+function drawCurve(v){
+  const cv=$(v==='p'?'pcv':'scv');if(!cv)return;
+  const steps=v==='p'?pianoSteps:strSteps;
+  const W=cv.width,H=cv.height;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H);
+  const act=steps.filter(s=>s.active);if(act.length<2)return;
+  const mids=act.map(s=>s.midi),mn=Math.min(...mids)-1,mx=Math.max(...mids)+1;
+  ctx.beginPath();
+  act.forEach((s,i)=>{
+    const x=i/(act.length-1)*W,y=H-((s.midi-mn)/(mx-mn))*(H-3)-1.5;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    if(s.isLyd4){ctx.fillStyle='rgba(136,120,200,.6)';ctx.fillRect(x-1,y-1,3,3);}
+    if(s.isHome){ctx.fillStyle='rgba(200,184,120,.5)';ctx.fillRect(x-1,y-1,3,3);}
+  });
+  ctx.strokeStyle=v==='p'?'rgba(184,200,232,.6)':'rgba(152,136,192,.55)';ctx.lineWidth=1.5;ctx.stroke();
+}
+
+function updLCM(){ $('lcmDisp').textContent=lcm(pianoLen,strLen); }
+
+function rebuild(){ gen(); }
+function onPLen(v){ pianoLen=parseInt(v);pianoIdx=0;pianoSteps=[];gen(); }
+function onSLen(v){ strLen=parseInt(v);strIdx=0;strSteps=[];gen(); }
+function onBreathLen(v){ $('breathLenV').textContent=v;gen(); }
+
+function setScene(i){
+  curScene=i;
+  [0,1,2,3,4].forEach(j=>$('sc'+j)?.classList.toggle('on',j===i));
+  $('sceneLabel').textContent=SCENES[i].name;
+  gen();
+}
+
+// ── JOURNEY ENGINE ────────────────────────────────────────
+let _jtick=0;
+function journeyTick(){
+  if(!playing)return;
+  _jtick++;
+  const sc=SCENES[curScene];
+  const lyd4amt=parseInt($('lyd4amt').value)/100;
+  const retPull=parseInt($('returnPull').value)/100;
+
+  // Count Lydian #4 notes in current window
+  const win=pianoSteps.slice(Math.max(0,pianoIdx-5),pianoIdx+1);
+  const l4count=win.filter(s=>s.active&&s.isLyd4).length;
+  JRN.lyd4Dens=JRN.lyd4Dens*.82+(l4count/Math.max(1,win.length))*.18;
+
+  // Distance from home: increases with #4 density, pulled back by return
+  JRN.distance=JRN.distance*.9+JRN.lyd4Dens*lyd4amt*sc.lyd4*2*.1;
+  JRN.distance=Math.max(0,Math.min(1,JRN.distance));
+
+  // Return pull increases when far from home (homecoming arc)
+  JRN.retPull=JRN.distance*retPull*(curScene===4?.5:1);
+  // Scene 帰還: actively pull back
+  if(curScene===4&&JRN.distance>.2){JRN.distance-=.025;}
+
+  // Lydian tension
+  const lydt=JRN.lyd4Dens*lyd4amt*sc.lyd4*3;
+  JRN.lyd4Tens=JRN.lyd4Tens*.88+lydt*.12;
+  JRN.lyd4Tens=Math.max(0,Math.min(1,JRN.lyd4Tens));
+
+  // Moment timer
+  if(JRN.inMoment){JRN.momentTimer--;if(JRN.momentTimer<=0){JRN.inMoment=false;lydLog('✦ fades');}}
+
+  // Breath position
+  const bl=parseInt($('breathLen').value)||8;
+  JRN.breathPos=pianoIdx%bl;
+  JRN.breathLen=bl;
+
+  JRN.hist.push(JRN.distance);if(JRN.hist.length>220)JRN.hist.shift();
+
+  if(_jtick%5===0){jUI();drawJHist();drawLydHist();}
+}
+
+function jUI(){
+  const root=getRoot();
+  $('hfCursor').style.left=(3+JRN.distance*90).toFixed(0)+'%';
+  $('hfCursor').style.background=JRN.distance>.65?'var(--far2)':'var(--home2)';
+  $('d-dist').style.width=(JRN.distance*100).toFixed(0)+'%';
+  $('dv-dist').textContent=(JRN.distance*100).toFixed(0);
+  $('d-ret').style.width=(JRN.retPull*100).toFixed(0)+'%';
+  $('dv-ret').textContent=(JRN.retPull*100).toFixed(0);
+  const bpct=JRN.breathPos/Math.max(1,JRN.breathLen);
+  $('d-br').style.width=(bpct*100).toFixed(0)+'%';
+  $('dv-br').textContent=(bpct*100).toFixed(0);
+  const states=['home','wandering','searching','so far…','✦ Lydian sky'];
+  const si=Math.floor(JRN.distance*4.99);
+  $('d-jstate').textContent=states[si]||'—';
+  $('m-j').style.width=(JRN.distance*100).toFixed(0)+'%';
+
+  // Lydian tension
+  $('d-lyd').style.width=(JRN.lyd4Tens*100).toFixed(0)+'%';
+  $('dv-lyd').textContent=(JRN.lyd4Tens*100).toFixed(0);
+  $('d-lyd4').style.width=(JRN.lyd4Dens*100).toFixed(0)+'%';
+  $('dv-lyd4').textContent=(JRN.lyd4Dens*100).toFixed(0);
+  const lstates=['—','stirring','rising…','✦ open!','✦✦ peak'];
+  $('d-lstate').textContent=lstates[Math.floor(JRN.lyd4Tens*4.99)]||'—';
+  $('m-l').style.width=(JRN.lyd4Tens*100).toFixed(0)+'%';
+  $('dtag').textContent=JRN.inMoment?'✦':JRN.distance>.6?'far':'○';
+
+  // Journey strip
+  const homeNote=PC[root%12];
+  const farNote=PC[(root+6)%12]+'(#4)';
+  $('j-home-note').textContent=homeNote;
+  $('j-far-note').textContent=farNote;
+  $('j-dist').textContent=JRN.distance<.2?'near home':JRN.distance<.6?'midway':JRN.distance>.85?'at horizon':'far';
+  $('j-dist').style.color=JRN.distance>.5?'var(--far2)':'var(--home)';
+  $('jMoment').classList.toggle('show',JRN.inMoment||JRN.lyd4Tens>.8);
+
+  // Lyd4 active notes
+  const lact=pianoSteps.slice(pianoIdx,Math.min(pianoLen,pianoIdx+6)).filter(s=>s.active&&s.isLyd4);
+  $('d-lyd-notes').textContent=lact.length?lact.map(s=>PC[s.midi%12]).join(' · '):'— scale tones —';
+
+  // Phrase display
+  const pnow=pianoSteps.slice(pianoIdx,Math.min(pianoLen,pianoIdx+8));
+  $('d-phrase').textContent=pnow.filter(s=>s.active).map(s=>PC[s.midi%12]+(s.isLyd4?'*':'')).join(' ');
+  $('d-breath').textContent=`breath: ${JRN.breathPos+1}/${JRN.breathLen}`;
+
+  // Breath segs
+  const segs=document.querySelectorAll('.bseg');
+  segs.forEach((seg,i)=>{
+    const pct=i/segs.length;
+    const arcV=Math.sin(pct*Math.PI);
+    seg.classList.toggle('on',i/segs.length<(JRN.breathPos+1)/JRN.breathLen);
+    seg.classList.toggle('peak',JRN.inMoment&&i>segs.length*.35&&i<segs.length*.75);
+  });
+}
+
+function drawJHist(){
+  const cv=$('d-jhist');if(!cv)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=42;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,42);
+  const h=JRN.hist;if(h.length<2)return;
+  ctx.beginPath();h.forEach((v,i)=>{const x=i/h.length*W,y=42-v*38-2;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle='rgba(200,184,120,.7)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.lineTo(W,42);ctx.lineTo(0,42);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,42);g.addColorStop(0,'rgba(136,120,200,.15)');g.addColorStop(.5,'rgba(200,184,120,.12)');g.addColorStop(1,'rgba(200,184,120,.02)');
+  ctx.fillStyle=g;ctx.fill();
+  if(JRN.inMoment){ctx.fillStyle=`rgba(136,120,200,${JRN.lyd4Tens*.2})`;ctx.fillRect(0,0,W,42);}
+}
+
+function drawLydHist(){
+  const cv=$('d-lhist');if(!cv)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=40;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,40);
+  const h=JRN.hist.map(v=>v);if(h.length<2)return;
+  ctx.beginPath();h.forEach((v,i)=>{const x=i/h.length*W,y=40-v*36-2;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle='rgba(136,120,200,.7)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.lineTo(W,40);ctx.lineTo(0,40);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,40);g.addColorStop(0,'rgba(136,120,200,.2)');g.addColorStop(1,'rgba(136,120,200,.01)');
+  ctx.fillStyle=g;ctx.fill();
+}
+function lydLog(msg){const l=$('d-lydlog');if(!l)return;const s=document.createElement('span');s.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;s.style.cssText='color:rgba(136,120,200,.8);display:block';l.insertBefore(s,l.firstChild);while(l.children.length>4)l.removeChild(l.lastChild);}
+
+// ── REFLEXIVITY ───────────────────────────────────────────
+const RE={t:0,b:0,m:0,will:'○',ov:null,ovt:0,freeze:false,fsteps:0,press:0,ash:false,ashn:0,ashi:0,ph:[],th:[],hash:[]};
+let _retick=0;
+function reTick(){
+  if(!playing)return;_retick++;
+  const cur=pianoSteps[pianoIdx%pianoLen];
+  if(cur?.active){RE.ph.push(cur.midi);if(RE.ph.length>32)RE.ph.shift();}
+  if(RE.ph.length>1)RE.m=RE.m*.8+Math.min(1,Math.abs(RE.ph.at(-1)-RE.ph.at(-2))/24)*.2;
+  RE.t=RE.t*.85+JRN.lyd4Tens*.15;
+  if(pianoIdx===0){const h=pianoSteps.map(s=>s.active?s.midi:0).join(',');RE.hash.push(h);if(RE.hash.length>5)RE.hash.shift();const r=RE.hash.slice(-4).filter(x=>x===h).length;RE.b=RE.b*.7+Math.min(1,(r-1)/3)*.3;}
+  const sens=parseInt($('reSens').value)/100;
+  if(RE.freeze){RE.fsteps--;RE.press=Math.min(1,RE.press+(RE.t*.6+RE.b*.4)*.04);if(RE.press>=.85||RE.fsteps<=0){reTrigRel();return;}RE.will='frozen';return;}
+  if(RE.ash){RE.ashn--;if(RE.ashn<=0){RE.ash=false;RE.will='○';}else RE.will='aftershock';return;}
+  if(RE.ov){if(RE.ovt-->0)return;RE.ov=null;}
+  if(RE.t>.9*sens)RE.will='escape';
+  else if(RE.b>.7*sens)RE.will='crisis';
+  else if(RE.t>.6*sens)RE.will='peak';
+  else RE.will='○';
+  const auto=parseInt($('reAuto').value)/100;
+  if(RE.will==='crisis'&&Math.random()<auto){gen();reLog('⚡ crisis');RE.b*=.4;}
+  else if(RE.will==='peak'&&Math.random()<auto*.55){insertLydMoment();reLog('✦ RE→Lydian');}
+  else if(RE.will==='escape'&&Math.random()<auto*.4){setScene((curScene+1)%5);reLog('→ scene adv');}
+  else if(RE.will==='aftershock'&&Math.random()<auto*RE.ashi*.3){const p=pool(-1,2);if(p.length){pianoSteps[Math.floor(Math.random()*pianoLen)].midi=p[Math.floor(Math.random()*p.length)];drawPiano();}}
+  RE.th.push(RE.t);if(RE.th.length>200)RE.th.shift();
+  if(_retick%10===0){reUI();reDrawHist();}
+}
+function reTrigRel(){RE.freeze=false;const p=RE.press;RE.press=0;gen();reLog(`💥 rel(${(p*100).toFixed(0)}%)`);RE.ash=true;RE.ashn=Math.round(2+p*5);RE.ashi=p;RE.will='aftershock';const b=$('re-freeze');if(b){b.style.borderColor='rgba(255,107,53,.35)';b.textContent='❄ freeze';}}
+function reCmd(c){if(c==='freeze'){if(RE.freeze){reTrigRel();return;}RE.freeze=true;RE.fsteps=24;RE.press=0;RE.will='frozen';const b=$('re-freeze');if(b){b.style.borderColor='rgba(255,107,53,.7)';b.textContent='❄';}reLog('❄ freeze');}else if(c==='crisis'){RE.ov='crisis';RE.ovt=6;}else if(c==='peak'){insertLydMoment();}}
+function reLog(msg){const l=$('re-log');if(!l)return;const s=document.createElement('span');s.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;s.style.cssText='color:rgba(255,107,53,.8);display:block';l.insertBefore(s,l.firstChild);while(l.children.length>4)l.removeChild(l.lastChild);}
+function reUI(){$('re-t').style.width=(RE.t*100).toFixed(0)+'%';$('re-b').style.width=(RE.b*100).toFixed(0)+'%';$('re-m').style.width=(RE.m*100).toFixed(0)+'%';$('re-tv').textContent=(RE.t*100).toFixed(0);$('re-bv').textContent=(RE.b*100).toFixed(0);$('re-mv').textContent=(RE.m*100).toFixed(0);$('re-will').textContent=RE.will;$('m-t').style.width=(RE.t*100).toFixed(0)+'%';}
+function reDrawHist(){const cv=$('re-hist');if(!cv)return;const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=42;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,42);const h=RE.th;if(h.length<2)return;ctx.beginPath();h.forEach((v,i)=>{const x=i/h.length*W,y=42-v*38-2;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle='rgba(255,107,53,.75)';ctx.lineWidth=1.5;ctx.stroke();ctx.lineTo(W,42);ctx.lineTo(0,42);ctx.closePath();const g=ctx.createLinearGradient(0,0,0,42);g.addColorStop(0,'rgba(255,107,53,.15)');g.addColorStop(1,'rgba(255,107,53,.01)');ctx.fillStyle=g;ctx.fill();if(RE.freeze){ctx.fillStyle=`rgba(255,107,53,${RE.press*.12})`;ctx.fillRect(0,0,W,42);}}
+
+// ── SHADOW ARC ────────────────────────────────────────────
+const ARCS=[{name:'夜明け前',c:'rgba(48,56,80',dT:.25,ldT:.1,dur:10},{name:'問い',c:'rgba(184,200,232',dT:.43,ldT:.3,dur:12},{name:'旅',c:'rgba(152,136,192',dT:.60,ldT:.55,dur:10},{name:'頂点',c:'rgba(136,120,200',dT:.76,ldT:.9,dur:6},{name:'帰還',c:'rgba(200,184,120',dT:.30,ldT:.18,dur:12}];
+const SA={sec:0,step:0,pull:0,drift:0,dh:[],loops:0};
+function arcTick(){if(!playing)return;const sec=ARCS[SA.sec];const cur=pianoSteps.filter(s=>s.active).length/Math.max(1,pianoLen);SA.drift=Math.abs(cur-sec.dT)+Math.abs(JRN.lyd4Tens-sec.ldT)*.5;SA.pull=SA.pull*.8+Math.min(1,SA.drift*(parseInt($('arcStr').value)/100)*.4)*.2;if(masterStep%8===0){SA.step++;if(SA.step>=sec.dur){SA.sec=(SA.sec+1)%ARCS.length;if(!SA.sec)SA.loops++;SA.step=0;setScene(SA.sec);arcUI();arcLog(`→${ARCS[SA.sec].name}`);}}arcUI();}
+function arcJump(i){SA.sec=i;SA.step=0;setScene(i);arcUI();arcLog(`→${ARCS[i].name}`);}
+function arcCmd(c){if(c==='skip'){arcJump((SA.sec+1)%ARCS.length);}else if(c==='home'){arcJump(4);snapHome();}}
+function arcUI(){ARCS.forEach((_,i)=>{const el=$('sa'+i);if(el)el.style.outline=i===SA.sec?'2px solid rgba(136,120,200,.45)':'';});const nl=$('arc-now');if(nl)nl.textContent=ARCS[SA.sec].name;$('arc-pf').style.width=(SA.pull*100).toFixed(0)+'%';$('arc-df').style.width=(SA.drift*50).toFixed(0)+'%';$('arc-pv').textContent=(SA.pull*100).toFixed(0);$('arc-dv').textContent=(SA.drift*50).toFixed(0);SA.dh.push(SA.drift);if(SA.dh.length>180)SA.dh.shift();drawArcCV();}
+function drawArcCV(){const cv=$('arc-cv');if(!cv)return;const W=cv.parentElement?.offsetWidth||180;cv.width=W;cv.height=36;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,36);const sec=ARCS[SA.sec];SA.dh.forEach((v,i)=>{if(i<1)return;ctx.beginPath();ctx.moveTo((i-1)/SA.dh.length*W,36-SA.dh[i-1]*32-2);ctx.lineTo(i/SA.dh.length*W,36-v*32-2);ctx.strokeStyle=`${sec.c},.5)`;ctx.lineWidth=1.2;ctx.stroke();});const pr=SA.step/ARCS[SA.sec].dur;ctx.fillStyle=`${sec.c},.12)`;ctx.fillRect(0,32,W*pr,4);}
+function arcLog(m){const l=$('arc-log');if(l)l.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+m;}
+
+// ── PLAYBACK ──────────────────────────────────────────────
+let actx=null;
+function getAC(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+let _kn=null;
+function keepAlive(){const c=getAC();if(_kn)return;_kn=c.createOscillator();const g=c.createGain();g.gain.value=0;_kn.connect(g);g.connect(c.destination);_kn.start();}
+const _wCode=`const T={};self.onmessage=e=>{const{type,id,delay}=e.data;if(type==='set')T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay);else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wCode],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){}return _tw;}
+function aTO(fn,ms){const c=getAC();if(c.state==='suspended')c.resume();const w=getTW();if(w){const id=_tn++;const dl=c.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-c.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}const dl=c.currentTime+ms/1000;const o={dead:false,cancel:()=>{o.dead=true;}};function ch(){if(o.dead)return;const rem=(dl-c.currentTime)*1000;if(rem<=1)fn();else setTimeout(ch,rem<25?1:Math.max(1,rem-20));}setTimeout(ch,Math.max(1,ms-20));return o;}
+document.addEventListener('visibilitychange',()=>{const c=getAC();if(c.state==='suspended')c.resume();if(!document.hidden&&mOut)for(let c2=0;c2<16;c2++)mOut.send([0xB0|c2,123,0]);});
+let _timer=null;
+function togglePlay(){ playing?stopAll():startPlay(); }
+function startPlay(){const c=getAC();if(c.state==='suspended')c.resume();keepAlive();playing=true;masterStep=0;pianoIdx=0;strIdx=0;$('btnPlay').textContent='■ stop';tick();}
+function stopAll(){playing=false;if(_timer){_timer.cancel?.();_timer=null;}$('btnPlay').textContent='▶ play';pianoIdx=0;strIdx=0;if(mOut)for(let c=0;c<16;c++)mOut.send([0xB0|c,123,0]);document.querySelectorAll('.step.cur,.step.str-cur').forEach(e=>{e.classList.remove('cur','str-cur');});}
+
+function tick(){
+  if(!playing)return;
+  const bpm=SL.on?SL.bpm:getBpm();
+  const sc=SCENES[curScene];
+  const base=Math.max(18,60000/bpm/4);
+  const stepMs=base/sc.tempoM;
+  const rubato=parseInt($('rubato').value)/100;
+  const jitter=(Math.random()-.5)*rubato*stepMs*.35;
+
+  masterStep++;
+
+  // Piano
+  const p=pianoSteps[pianoIdx%pianoLen];
+  const pChN=(parseInt($('pianoCh').value)||1)-1;
+  if(p?.active&&mOut){
+    const m=Math.max(0,Math.min(127,p.midi));
+    const vel=Math.round(p.vel*(JRN.inMoment?1.18:1)*100+15);
+    mOut.send([0x90|pChN,m,Math.min(127,vel)]);
+    const dur=stepMs*(p.durMult||1.2)*.88;
+    setTimeout(()=>{if(mOut)mOut.send([0x80|pChN,m,0]);},dur);
+  }
+  document.querySelectorAll('#pgrid .step').forEach((el,i)=>el.classList.toggle('cur',i===pianoIdx%pianoLen));
+  pianoIdx++;
+
+  // Strings — advance at strLen rate
+  strIdx++;
+  const sRatio=Math.max(1,Math.round(pianoLen/strLen));
+  if(strIdx%sRatio===0){
+    const si=Math.floor(strIdx/sRatio)%strLen;
+    const s=strSteps[si];
+    const sChN=(parseInt($('strCh').value)||2)-1;
+    if(s?.active&&mOut){
+      const m=Math.max(0,Math.min(127,s.midi));
+      mOut.send([0x90|sChN,m,Math.round(s.vel*85+10)]);
+      const dur=stepMs*(s.durMult||2.5)*1.05;
+      setTimeout(()=>{if(mOut)mOut.send([0x80|sChN,m,0]);},dur);
+    }
+    document.querySelectorAll('#sgrid .step').forEach((el,i)=>el.classList.toggle('str-cur',i===si));
+  }
+
+  journeyTick(); reTick(); arcTick();
+  _timer=aTO(tick,stepMs+jitter);
+}
+
+// MIDI
+function initMIDI(){if(!navigator.requestMIDIAccess){setMS(false,'unsupported');return;}navigator.requestMIDIAccess().then(ma=>{mAccess=ma;ma.onstatechange=()=>{pOut();pIn();};pOut();pIn();}).catch(()=>setMS(false,'denied'));}
+function pOut(){const s=$('midiOut');if(!s||!mAccess)return;const prev=s.value;s.innerHTML='<option value="">—</option>';mAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;s.appendChild(o);});if(prev)s.value=prev;[...s.options].forEach(o=>{if(o.textContent.includes('IAC')&&!s.value){s.value=o.value;selOut(s.value);}});}
+function pIn(){const s=$('clockIn');if(!s||!mAccess)return;s.innerHTML='<option value="">—</option>';mAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;s.appendChild(o);});}
+function selOut(id){if(!id){mOut=null;setMS(false,'—');return;}mOut=mAccess?.outputs.get(id);if(mOut)setMS(true,mOut.name);}
+function setMS(ok,n){$('midiDot')?.classList.toggle('on',ok);const s=$('midiStat');if(s){s.textContent=ok?`✓ ${n}`:n;s.style.color=ok?'var(--dusk)':'var(--dim)';}}
+function selClockIn(id){if(SL.port)SL.port.onmidimessage=null;if(!id||!mAccess)return;SL.port=mAccess.inputs.get(id);if(SL.port)SL.port.onmidimessage=onClock;}
+function toggleSlave(){SL.on=!SL.on;const b=$('slaveBtn');if(b){b.textContent=SL.on?'Slave: ON':'Slave: OFF';b.style.color=SL.on?'var(--dusk)':'';}if(!SL.on&&playing)tick();}
+function onClock(e){const d=e.data[0];if(d===0xFA){SL.running=true;SL.pc=0;if(!playing)startPlay();return;}if(d===0xFB){SL.running=true;return;}if(d===0xFC){SL.running=false;if(playing&&SL.on)stopAll();return;}if(d!==0xF8||!SL.on||!SL.running)return;const now=e.timeStamp||performance.now();if(SL.lp>0){const iv=now-SL.lp;const ib=60000/(iv*24);if(ib>20&&ib<300)SL.bpm=SL.bpm*(1-SL.alpha)+ib*SL.alpha;}SL.lp=now;SL.pc++;if(SL.pc>=6){SL.pc=0;if(playing)tick();}if(SL.pc===0)$('bpmIn').value=Math.round(SL.bpm);}
+
+function exportSCL(){const sc=getScale(),r=getRoot();const d=sc.filter(x=>x>0);const lines=[`! hisaishi_${$('scaleSel').value}.scl`,'!',`Hisaishi — ${$('scaleSel').value} (with Lydian #4 at ${r+6}¢)`,String(d.length+1),'!'];d.forEach(x=>lines.push((x*100).toFixed(3)));lines.push('1200.000');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));a.download=`hisaishi_${$('scaleSel').value}.scl`;a.click();}
+function exportMIDI(){const bpm=getBpm(),tpb=480,stk=tpb/4,µs=Math.round(60000000/bpm);function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}function i16(v){return[(v>>8)&0xFF,v&0xFF];}const ch=(parseInt($('pianoCh')?.value||1)-1);const ev=[];pianoSteps.forEach((s,i)=>{if(!s.active)return;ev.push([i*stk,[0x90|ch,s.midi,Math.round(s.vel*100+15)]]);ev.push([i*stk+Math.round(stk*(s.durMult||1.2)*.88),[0x80|ch,s.midi,0]]);});ev.sort((a,b)=>a[0]-b[0]);let lt=0;const td=[];td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);ev.forEach(([t,msg])=>{td.push(...wv(t-lt),...msg);lt=t;});td.push(0,0xFF,0x2F,0);const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,...i16(tpb)];const bytes=new Uint8Array([...hdr,0x4D,0x54,0x72,0x6B,...i32(td.length),...td]);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'audio/midi'}));a.download='hisaishi.mid';a.click();}
+
+const UM=30;let _us=[],_rs=[];
+function cap(){return{piano:JSON.parse(JSON.stringify(pianoSteps)),str:JSON.parse(JSON.stringify(strSteps)),pianoLen,strLen,root:$('rootSel').value,scale:$('scaleSel').value,scene:curScene};}
+function pushUndo(){_us.push(cap());if(_us.length>UM)_us.shift();_rs=[];upU();}
+function applyS(st){pianoSteps=JSON.parse(JSON.stringify(st.piano));strSteps=JSON.parse(JSON.stringify(st.str));pianoLen=st.pianoLen;strLen=st.strLen;$('rootSel').value=st.root;$('scaleSel').value=st.scale;curScene=st.scene||0;drawPiano();drawStr();updLCM();setScene(curScene);upU();}
+function undo(){if(!_us.length)return;_rs.push(cap());applyS(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(cap());applyS(_rs.pop());}
+function upU(){$('undoBtn').style.opacity=_us.length?'1':'.3';$('redoBtn').style.opacity=_rs.length?'1':'.3';}
+function save(){const st=cap();st._t='Hisaishi';st._at=new Date().toISOString();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(st,null,2)],{type:'application/json'}));a.download=`hisaishi_${new Date().toISOString().slice(0,16).replace('T','_')}.json`;a.click();}
+function load(e){const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const st=JSON.parse(ev.target.result);if(!st.piano)return;pushUndo();applyS(st);}catch(err){}};rd.readAsText(f);e.target.value='';}
+
+let _taps=[];
+function tap(){const n=Date.now();_taps.push(n);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gs=_taps.slice(1).map((t,i)=>t-_taps[i]);const av=gs.reduce((a,b)=>a+b,0)/gs.length;const b=Math.round(60000/av);if(b>30&&b<200)$('bpmIn').value=b;}}
+
+(function(){document.querySelectorAll('.dtab[data-pane]').forEach(t=>{t.addEventListener('click',()=>{const p=t.dataset.pane;if(t.classList.contains('on')){toggleDock();return;}document.querySelectorAll('.dtab').forEach(x=>x.classList.remove('on'));t.classList.add('on');document.querySelectorAll('.dp').forEach(x=>x.classList.remove('on'));$('dp-'+p)?.classList.add('on');const b=$('dockBody');if(b){b.classList.remove('closed');$('dockToggle').textContent='▲';}});});})();
+let _dOpen=true;
+function toggleDock(){_dOpen=!_dOpen;$('dockBody')?.classList.toggle('closed',!_dOpen);$('dockToggle').textContent=_dOpen?'▲':'▼';}
+
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();e.shiftKey?redo():undo();}
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyY'){e.preventDefault();redo();}
+  if(e.code==='Space'&&!['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();gen();}
+  if(e.code==='KeyL'&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();insertLydMoment();}
+  if(e.code==='KeyH'&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();snapHome();}
+  [0,1,2,3,4].forEach(i=>{if(e.code===`Digit${i+1}`&&!['INPUT'].includes(e.target.tagName))setScene(i);});
+});
+
+gen();
+updLCM();
+initMIDI();
+arcUI();
+</script>
+</body>
+</html>

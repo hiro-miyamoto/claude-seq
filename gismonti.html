@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gismonti</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inconsolata:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #0a0602;
+  --bg2:    #110d06;
+  --bg3:    #18120a;
+  --bd:     #2a2010;
+  --bd2:    #3a2e18;
+  --text:   #d4c8a8;
+  --dim:    #5a4e30;
+  --heat:   #d45818;   /* fire — Frevo heat */
+  --heat2:  #f07828;
+  --ember:  #9a3808;
+  --sand:   #c89040;   /* sand, dry earth */
+  --sand2:  #e0b858;
+  --night:  #1a2438;   /* deep blue night */
+  --night2: #2a3858;
+  --v1:     #c89040;   /* Voice I — sand/gold */
+  --v2:     #5a8870;   /* Voice II — forest */
+  --v3:     #c85818;   /* Voice III — fire/bass */
+  --press:  #d45818;   /* pressure engine */
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Heat shimmer — barely visible */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 200% 40% at 50% 100%, rgba(212,88,24,.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at -5% 60%, rgba(10,6,2,.8) 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 1.2rem 1.6rem .8rem;
+  border-bottom: 1px solid var(--bd);
+  display: flex; align-items: flex-end; gap: 2rem;
+  position: relative; z-index: 10;
+}
+.h-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.6rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--sand2);
+  line-height: 1;
+}
+.h-origin {
+  font-size: .38rem;
+  letter-spacing: .4em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-top: .3rem;
+}
+
+/* Pressure display */
+.pressure-block { flex-shrink: 0; }
+.p-label { font-size:.36rem; letter-spacing:.3em; text-transform:uppercase; color:var(--dim); margin-bottom:.22rem; }
+.p-gauge {
+  width: 160px; height: 8px;
+  background: var(--bg3);
+  border-radius: 1px;
+  overflow: visible;
+  border: 1px solid var(--bd);
+  position: relative;
+}
+.p-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--sand), var(--heat), var(--heat2));
+  border-radius: 1px;
+  transition: width .15s;
+  width: 0%;
+  position: relative;
+}
+.p-fill::after {
+  content: '';
+  position: absolute; right: -2px; top: -2px;
+  width: 4px; height: 12px;
+  background: var(--heat2);
+  border-radius: 1px;
+  opacity: .8;
+}
+.p-state {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: .88rem;
+  margin-top: .15rem;
+  color: var(--heat);
+}
+
+/* ── LAYOUT ── */
+.layout { display: grid; grid-template-columns: 195px 1fr; min-height: calc(100vh - 85px); position: relative; z-index: 1; }
+
+/* ── SIDEBAR ── */
+.side {
+  border-right: 1px solid var(--bd);
+  padding: .7rem;
+  display: flex; flex-direction: column; gap: .45rem;
+  overflow-y: auto;
+  background: rgba(10,6,2,.6);
+}
+.panel { background: rgba(17,13,6,.7); border: 1px solid var(--bd); border-radius: 2px; padding: .5rem .6rem; }
+.pt { font-size:.35rem; letter-spacing:.3em; text-transform:uppercase; color:var(--dim); margin-bottom:.38rem; }
+.row { display:flex; align-items:center; gap:.25rem; margin-bottom:.16rem; }
+.lbl { font-size:.38rem; color:var(--dim); width:52px; flex-shrink:0; }
+.val { font-size:.38rem; width:20px; text-align:right; flex-shrink:0; }
+input[type=range] { flex:1; height:2px; accent-color:var(--sand); cursor:pointer; }
+select, input[type=number] {
+  background: var(--bg3); border: 1px solid var(--bd);
+  color: var(--text); font-family: 'Inconsolata', monospace;
+  font-size: .48rem; padding: .1rem .2rem; border-radius: 2px;
+}
+.btn {
+  padding: .16rem .42rem; border: 1px solid var(--bd2);
+  border-radius: 2px; background: transparent; color: var(--text);
+  font-family: 'Inconsolata', monospace; font-size: .46rem;
+  cursor: pointer; transition: all .1s;
+}
+.btn:hover { border-color: var(--sand); color: var(--sand2); }
+.btn.hot { border-color: rgba(212,88,24,.5); color: var(--heat2); background: rgba(212,88,24,.05); }
+.btn.cool { border-color: rgba(90,136,112,.4); color: #7ab890; background: rgba(90,136,112,.05); }
+.mdot { width:6px; height:6px; border-radius:50%; background:var(--dim); flex-shrink:0; transition:all .3s; }
+.mdot.on { background:#7ab890; box-shadow:0 0 5px #7ab890; }
+
+/* ── MAIN ── */
+.main { display: flex; flex-direction: column; overflow: hidden; }
+
+/* Transport */
+.tbar {
+  display: flex; align-items: center; gap:.5rem;
+  padding: .4rem .85rem;
+  border-bottom: 1px solid var(--bd);
+  background: rgba(10,6,2,.9);
+  flex-wrap: wrap;
+}
+
+/* Section selector */
+.sections {
+  display: flex; gap: 1px;
+  padding: .25rem .85rem;
+  border-bottom: 1px solid var(--bd);
+  background: rgba(17,13,6,.6);
+}
+.sec-btn {
+  flex: 1; padding: .2rem .3rem;
+  background: transparent; border: 1px solid transparent;
+  border-radius: 2px; cursor: pointer;
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: .82rem; color: var(--dim);
+  transition: all .18s; text-align: center;
+}
+.sec-btn:hover { color: var(--sand); }
+.sec-btn.on { color: var(--sand2); border-color: rgba(200,144,64,.3); background: rgba(200,144,64,.05); }
+.sec-btn .sdesc { display: block; font-family: 'Inconsolata', monospace; font-size: .3rem; letter-spacing: .08em; opacity: .4; margin-top: .05rem; font-style: normal; }
+
+/* Pressure strip — shows building tension */
+.press-strip {
+  height: 3px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--bd);
+  overflow: hidden;
+}
+.press-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--night2), var(--sand), var(--heat2));
+  transition: width .3s;
+  width: 0%;
+}
+
+/* ── VOICES ── */
+.voices { flex: 1; padding: .6rem .85rem; overflow-y: auto; display: flex; flex-direction: column; gap: .7rem; }
+
+.voice-block {}
+.vh {
+  display: flex; align-items: center; gap: .4rem; margin-bottom: .18rem;
+}
+.vname { font-size: .35rem; letter-spacing: .25em; text-transform: uppercase; }
+.vdesc {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: .56rem; color: var(--dim);
+}
+.vtick { font-size: .36rem; color: var(--dim); }
+.vsteps-info { font-size: .36rem; color: var(--dim); margin-left: auto; }
+
+/* Step grid */
+.grid {
+  display: flex; gap: 2px;
+  overflow-x: auto; padding-bottom: 2px;
+  scrollbar-width: thin; scrollbar-color: var(--bd) transparent;
+}
+.step {
+  flex-shrink: 0; width: 34px; height: 54px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: space-between; padding: .12rem .06rem .1rem;
+  border-radius: 2px; cursor: pointer;
+  border: 1px solid transparent; transition: border-color .08s;
+  position: relative; user-select: none;
+}
+.step:hover { border-color: var(--bd2); }
+.step.cur { border-color: var(--sand) !important; background: rgba(200,144,64,.06); }
+.step.bar { border-left: 1px solid rgba(42,32,16,.9) !important; }
+
+.s-note {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: .72rem; color: var(--dim); line-height: 1;
+}
+.s-note.on { color: #e8dcc0; }
+.s-bar { width: 26px; min-height: 2px; border-radius: 1px; }
+.s-num { font-size: .26rem; color: rgba(90,78,48,.4); }
+
+/* Pressure glow on steps during surge */
+.step.hot { background: rgba(212,88,24,.04); }
+.step.hot .s-note { color: var(--heat2); }
+
+/* ── DOCK ── */
+.dock {
+  border-top: 1px solid var(--bd);
+  background: rgba(10,6,2,.95);
+  position: sticky; bottom: 0; z-index: 20;
+}
+.dtabs {
+  display: flex; border-bottom: 1px solid var(--bd);
+  overflow-x: auto; scrollbar-width: none;
+}
+.dtab {
+  padding: .22rem .5rem; background: transparent; border: none;
+  border-bottom: 2px solid transparent; color: var(--dim);
+  font-family: 'Inconsolata', monospace; font-size: .38rem;
+  letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: all .12s; white-space: nowrap;
+  display: flex; align-items: center; gap: .18rem;
+}
+.dtab:hover { color: var(--text); }
+.dtab.on { color: var(--text); border-bottom-color: var(--tc, var(--sand)); }
+.dtdot { width: 4px; height: 4px; border-radius: 50%; opacity: .4; }
+.dtab.on .dtdot { opacity: 1; }
+.dmini {
+  display: flex; align-items: center; gap: .35rem;
+  padding: 0 .6rem; margin-left: auto; flex-shrink: 0;
+}
+.mb { width: 22px; height: 3px; background: var(--bg3); border-radius: 1px; overflow: hidden; }
+.mf { height: 100%; border-radius: 1px; transition: width .15s; width: 0%; }
+#dock-tag { font-size: .34rem; color: var(--dim); padding-left: .25rem; }
+.dock-body { max-height: 190px; overflow: hidden; transition: max-height .2s ease; }
+.dock-body.closed { max-height: 0 !important; }
+.dp { display: none; padding: .4rem .7rem .5rem; }
+.dp.on { display: block; }
+.dg { display: grid; gap: .35rem; }
+.dg2 { grid-template-columns: 1fr 1fr; }
+.dg3 { grid-template-columns: 1fr 1fr 1fr; }
+.dg4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.db { background: rgba(255,255,255,.012); border: 1px solid var(--bd); border-radius: 2px; padding: .35rem .45rem; }
+.dbt { font-size: .33rem; letter-spacing: .2em; text-transform: uppercase; margin-bottom: .22rem; padding-left: .2rem; border-left: 2px solid currentColor; }
+.dr { display: flex; align-items: center; gap: .22rem; margin-bottom: .14rem; }
+.dl { font-size: .33rem; color: var(--dim); width: 46px; flex-shrink: 0; }
+.dbar { flex: 1; height: 3px; background: var(--bg3); border-radius: 1px; overflow: hidden; }
+.df { height: 100%; border-radius: 1px; transition: width .12s; width: 0%; }
+.dval { font-size: .33rem; width: 18px; text-align: right; flex-shrink: 0; }
+.dlog { font-size: .33rem; color: var(--dim); line-height: 1.85; max-height: 56px; overflow: hidden; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="h-name">Egberto Gismonti</div>
+    <div class="h-origin">Rio de Janeiro · 8-string guitar · piano · Frevo · Bach · Amazônia</div>
+  </div>
+  <div class="pressure-block">
+    <div class="p-label">pressure</div>
+    <div class="p-gauge"><div class="p-fill" id="pFill"></div></div>
+    <div class="p-state" id="pState">breathing</div>
+  </div>
+</header>
+
+<div class="layout">
+
+<div class="side">
+
+  <div class="panel">
+    <div class="pt">Root · Scale</div>
+    <div class="row"><span class="lbl">Root</span>
+      <select id="rootSel" onchange="rebuild()" style="flex:1">
+        <option value="60">C</option><option value="62">D</option><option value="64">E</option>
+        <option value="65">F</option><option value="67">G</option><option value="69" selected>A</option>
+        <option value="71">B</option><option value="61">C#</option><option value="63">Eb</option>
+        <option value="66">F#</option><option value="68">Ab</option><option value="70">Bb</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Scale</span>
+      <select id="scaleSel" onchange="rebuild()" style="flex:1">
+        <option value="dorian" selected>Dorian</option>
+        <option value="minor">Aeolian</option>
+        <option value="major">Major</option>
+        <option value="mixo">Mixolydian</option>
+        <option value="phryg">Phrygian</option>
+        <option value="penta_m">Penta Minor</option>
+        <option value="penta_M">Penta Major</option>
+        <option value="folk_br">Nordestina</option>
+        <option value="whole">Whole Tone</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="panel" style="border-color: rgba(212,88,24,.25)">
+    <div class="pt" style="color:var(--heat)">Pressure Engine</div>
+    <div style="font-size:.37rem;color:var(--dim);line-height:1.75;margin-bottom:.28rem">
+      Frevo explodes when pressure<br>reaches the breaking point.
+    </div>
+    <div class="row"><span class="lbl">Build rate</span>
+      <input type="range" id="buildRate" min="1" max="100" value="22" oninput="$('buildRateV').textContent=this.value">
+      <span class="val" id="buildRateV" style="color:var(--heat)">22</span>
+    </div>
+    <div class="row"><span class="lbl">Threshold</span>
+      <input type="range" id="threshold" min="40" max="99" value="75" oninput="$('thresholdV').textContent=this.value">
+      <span class="val" id="thresholdV" style="color:var(--sand)">75</span>
+    </div>
+    <div class="row"><span class="lbl">Decay</span>
+      <input type="range" id="decayRate" min="1" max="100" value="35" oninput="$('decayRateV').textContent=this.value">
+      <span class="val" id="decayRateV" style="color:var(--dim)">35</span>
+    </div>
+    <div style="display:flex;gap:.25rem;margin-top:.28rem">
+      <button class="btn hot" onclick="ignite()" style="flex:1">⚡ Ignite</button>
+      <button class="btn" onclick="release()" style="flex:1">∿ Release</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">3 Voices · Steps</div>
+    <div class="row">
+      <span class="lbl" style="color:var(--v1)">I upper</span>
+      <select id="v1len" onchange="onVLen(0,this.value)" style="flex:1">
+        <option value="7">7</option><option value="11">11</option><option value="13">13</option>
+        <option value="16" selected>16</option><option value="17">17</option><option value="19">19</option><option value="23">23</option>
+      </select>
+    </div>
+    <div class="row">
+      <span class="lbl" style="color:var(--v2)">II middle</span>
+      <select id="v2len" onchange="onVLen(1,this.value)" style="flex:1">
+        <option value="5">5</option><option value="7">7</option><option value="11">11</option>
+        <option value="13" selected>13</option><option value="16">16</option><option value="17">17</option>
+      </select>
+    </div>
+    <div class="row">
+      <span class="lbl" style="color:var(--v3)">III bass</span>
+      <select id="v3len" onchange="onVLen(2,this.value)" style="flex:1">
+        <option value="5">5</option><option value="7" selected>7</option><option value="8">8</option>
+        <option value="11">11</option><option value="13">13</option>
+      </select>
+    </div>
+    <div style="font-size:.36rem;color:var(--dim);margin-top:.2rem">
+      LCM <span id="lcm" style="color:var(--sand)">—</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Voice Character</div>
+    <div class="row"><span class="lbl">Bach weight</span>
+      <input type="range" id="bachW" min="0" max="100" value="45" oninput="$('bachWV').textContent=this.value">
+      <span class="val" id="bachWV" style="color:var(--v2)">45</span>
+    </div>
+    <div class="row"><span class="lbl">Folk leaps</span>
+      <input type="range" id="leapW" min="0" max="100" value="30" oninput="$('leapWV').textContent=this.value">
+      <span class="val" id="leapWV" style="color:var(--sand)">30</span>
+    </div>
+    <div class="row"><span class="lbl">III speed</span>
+      <input type="range" id="v3speed" min="33" max="200" value="75" oninput="onV3Speed(this.value)">
+      <span class="val" id="v3speedV" style="color:var(--v3)">¾</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Tempo</div>
+    <div class="row"><span class="lbl">BPM</span>
+      <input type="number" id="bpmIn" value="112" min="40" max="320" style="width:46px">
+      <button class="btn" onclick="tap()" style="padding:.09rem .25rem;font-size:.4rem">tap</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">MIDI</div>
+    <div class="row" style="margin-bottom:.2rem">
+      <div class="mdot" id="midiDot"></div>
+      <span id="midiStat" style="font-size:.42rem;color:var(--dim)">—</span>
+    </div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;font-size:.42rem;margin-bottom:.18rem">⟳ refresh</button>
+    <div class="row"><span class="lbl">Out</span>
+      <select id="midiOut" onchange="selOut(this.value)" style="flex:1;font-size:.4rem"></select>
+    </div>
+    <div class="row"><span class="lbl">I ch</span>
+      <select id="ch1" style="flex:1;font-size:.42rem">
+        <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">II ch</span>
+      <select id="ch2" style="flex:1;font-size:.42rem">
+        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">III ch</span>
+      <select id="ch3" style="flex:1;font-size:.42rem">
+        <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      </select>
+    </div>
+    <div class="row"><span class="lbl">Clock in</span>
+      <select id="clockIn" onchange="selClockIn(this.value)" style="flex:1;font-size:.4rem"><option value="">—</option></select>
+    </div>
+    <button id="slaveBtn" class="btn" onclick="toggleSlave()" style="width:100%;margin:.16rem 0;font-size:.42rem">Slave: OFF</button>
+    <button class="btn cool" onclick="exportSCL()" style="width:100%;font-size:.42rem">↓ SCL</button>
+    <button class="btn" onclick="exportMIDI()" style="width:100%;margin-top:.12rem;font-size:.42rem">↓ MIDI</button>
+  </div>
+
+</div><!-- /side -->
+
+<div class="main">
+
+  <div class="tbar">
+    <button id="btnPlay" class="btn" onclick="togglePlay()" style="border-color:rgba(200,144,64,.5);color:var(--sand2)">▶ play</button>
+    <button class="btn" onclick="stopAll()">■ stop</button>
+    <button class="btn" onclick="gen()">⟳ gen</button>
+    <button class="btn hot" onclick="gen('frevo')">frevo</button>
+    <button class="btn" onclick="gen('sparse')" style="color:var(--dim)">sparse</button>
+    <button id="undoBtn" class="btn" onclick="undo()" style="opacity:.3">↩</button>
+    <button id="redoBtn" class="btn" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="save()" style="color:var(--sand)">↓</button>
+    <label class="btn" style="cursor:pointer;color:var(--v2)">↑<input type="file" accept=".json" onchange="load(event)" style="display:none"></label>
+    <div style="margin-left:auto;font-size:.38rem;color:var(--dim)">
+      <span id="secLabel" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--sand)">Silêncio</span>
+      &nbsp;·&nbsp;<span id="stepDisp" style="color:var(--heat)">—</span>
+    </div>
+  </div>
+
+  <!-- 4 sections -->
+  <div class="sections">
+    <button class="sec-btn on" id="sb0" onclick="setSec(0)">
+      Silêncio<span class="sdesc">sparse · before</span>
+    </button>
+    <button class="sec-btn" id="sb1" onclick="setSec(1)">
+      Construção<span class="sdesc">building</span>
+    </button>
+    <button class="sec-btn" id="sb2" onclick="setSec(2)">
+      Frevo<span class="sdesc">explosion</span>
+    </button>
+    <button class="sec-btn" id="sb3" onclick="setSec(3)">
+      Dissolução<span class="sdesc">after · rain</span>
+    </button>
+  </div>
+
+  <!-- Pressure strip -->
+  <div class="press-strip"><div class="press-bar" id="pressBar"></div></div>
+
+  <!-- 3 Voice grids -->
+  <div class="voices">
+
+    <div class="voice-block">
+      <div class="vh">
+        <span class="vname" style="color:var(--v1)">I — Upper</span>
+        <span class="vdesc">melody · 8-string high · syncopated</span>
+        <span class="vtick" id="v1tick">×1.0</span>
+        <canvas id="cv1" width="96" height="16" style="background:rgba(0,0,0,.2);border-radius:1px"></canvas>
+        <span class="vsteps-info" id="v1info">—</span>
+      </div>
+      <div class="grid" id="g1"></div>
+    </div>
+
+    <div class="voice-block">
+      <div class="vh">
+        <span class="vname" style="color:var(--v2)">II — Middle</span>
+        <span class="vdesc">counterpoint · inner voice · Bach</span>
+        <canvas id="cv2" width="96" height="16" style="background:rgba(0,0,0,.2);border-radius:1px"></canvas>
+        <span class="vsteps-info" id="v2info">—</span>
+      </div>
+      <div class="grid" id="g2"></div>
+    </div>
+
+    <div class="voice-block">
+      <div class="vh">
+        <span class="vname" style="color:var(--v3)">III — Bass</span>
+        <span class="vdesc">root · percussive · rhythmic anchor</span>
+        <span class="vtick" id="v3tick">×0.75</span>
+        <span class="vsteps-info" id="v3info">—</span>
+      </div>
+      <div class="grid" id="g3"></div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+
+<!-- Engine Dock -->
+<div class="dock">
+  <div class="dtabs">
+    <button class="dtab on" data-pane="press" style="--tc:var(--heat)">
+      <span class="dtdot" style="background:var(--heat)"></span>pressure
+    </button>
+    <button class="dtab" data-pane="reflect" style="--tc:#ff6b35">
+      <span class="dtdot" style="background:#ff6b35"></span>反射性
+    </button>
+    <button class="dtab" data-pane="arc" style="--tc:var(--sand)">
+      <span class="dtdot" style="background:var(--sand)"></span>arc
+    </button>
+    <button class="dtab" data-pane="tdm" style="--tc:#7ab8b0">
+      <span class="dtdot" style="background:#7ab8b0"></span>tdm
+    </button>
+    <div class="dmini">
+      <span style="font-size:.32rem;color:var(--dim)">P</span>
+      <div class="mb"><div class="mf" id="m-p" style="background:var(--heat)"></div></div>
+      <span style="font-size:.32rem;color:var(--dim)">T</span>
+      <div class="mb"><div class="mf" id="m-t" style="background:#ff6b35"></div></div>
+      <span style="font-size:.32rem;color:var(--dim)">D</span>
+      <div class="mb"><div class="mf" id="m-d" style="background:#7ab8b0"></div></div>
+      <span id="dock-tag">—</span>
+      <button onclick="toggleDock()" id="dockToggle" style="background:none;border:none;color:var(--dim);font-size:.44rem;cursor:pointer;padding:0 .2rem">▲</button>
+    </div>
+  </div>
+  <div class="dock-body" id="dockBody">
+
+    <!-- Pressure -->
+    <div class="dp on" id="dp-press">
+      <div class="dg dg4">
+        <div class="db">
+          <div class="dbt" style="color:var(--heat)">pressure state</div>
+          <div class="dr"><span class="dl">pressure</span><div class="dbar"><div class="df" id="d-pres" style="background:linear-gradient(90deg,var(--sand),var(--heat))"></div></div><span class="dval" id="dv-pres" style="color:var(--heat)">0</span></div>
+          <div class="dr"><span class="dl">threshold</span><div class="dbar"><div class="df" id="d-thresh" style="background:var(--sand)"></div></div><span class="dval" id="dv-thresh" style="color:var(--sand)">75</span></div>
+          <div class="dr"><span class="dl">ignitions</span><div class="dbar"><div class="df" id="d-ign" style="background:var(--heat2)"></div></div><span class="dval" id="dv-ign" style="color:var(--heat2)">0</span></div>
+          <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.82rem;color:var(--heat);margin-top:.15rem" id="d-pstate">breathing</div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--heat)">history</div>
+          <canvas id="d-phist" height="42" style="width:100%;display:block;background:rgba(0,0,0,.25);border-radius:1px"></canvas>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--heat)">voice density</div>
+          <div class="dr"><span class="dl" style="color:var(--v1)">I</span><div class="dbar"><div class="df" id="d-v1dens" style="background:var(--v1)"></div></div><span class="dval" id="dv-v1dens" style="color:var(--v1)">—</span></div>
+          <div class="dr"><span class="dl" style="color:var(--v2)">II</span><div class="dbar"><div class="df" id="d-v2dens" style="background:var(--v2)"></div></div><span class="dval" id="dv-v2dens" style="color:var(--v2)">—</span></div>
+          <div class="dr"><span class="dl" style="color:var(--v3)">III</span><div class="dbar"><div class="df" id="d-v3dens" style="background:var(--v3)"></div></div><span class="dval" id="dv-v3dens" style="color:var(--v3)">—</span></div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--heat)">log</div>
+          <div id="d-plog" class="dlog"><span style="color:rgba(212,88,24,.3)">— waiting —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reflexivity -->
+    <div class="dp" id="dp-reflect">
+      <div class="dg dg4">
+        <div class="db">
+          <div class="dbt" style="color:#ff6b35">observer</div>
+          <div class="dr"><span class="dl">tension</span><div class="dbar"><div class="df" id="re-tbar" style="background:#ff6b35"></div></div><span class="dval" id="re-tv" style="color:#ff6b35">0</span></div>
+          <div class="dr"><span class="dl">boredom</span><div class="dbar"><div class="df" id="re-bbar" style="background:#ff3d7f"></div></div><span class="dval" id="re-bv" style="color:#ff3d7f">0</span></div>
+          <div class="dr"><span class="dl">momentum</span><div class="dbar"><div class="df" id="re-mbar" style="background:#9b59b6"></div></div><span class="dval" id="re-mv" style="color:#9b59b6">0</span></div>
+          <div style="font-size:.34rem;color:var(--dim);margin-top:.16rem">will: <span id="re-will" style="color:#ff6b35">—</span></div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:#ff6b35">sensitivity</div>
+          <div class="dr"><span class="dl">sens</span><input type="range" id="reSens" min="1" max="100" value="55" oninput="$('reSensV').textContent=this.value" style="flex:1"><span class="dval" id="reSensV" style="color:#ff6b35">55</span></div>
+          <div class="dr"><span class="dl">auto</span><input type="range" id="reAuto" min="0" max="100" value="40" oninput="$('reAutoV').textContent=this.value" style="flex:1"><span class="dval" id="reAutoV" style="color:#9b59b6">40</span></div>
+          <canvas id="re-hist" height="42" style="width:100%;display:block;background:rgba(0,0,0,.2);border-radius:1px;margin-top:.2rem"></canvas>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:#ff6b35">override</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem">
+            <button id="re-freeze" onclick="reCmd('freeze')" style="border:1px solid rgba(255,107,53,.35);color:#ff6b35;background:transparent;font-family:'Inconsolata',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">❄ freeze</button>
+            <button onclick="reCmd('crisis')" style="border:1px solid rgba(255,61,127,.35);color:#ff3d7f;background:transparent;font-family:'Inconsolata',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">⚡ crisis</button>
+            <button onclick="reCmd('release')" style="border:1px solid rgba(90,136,112,.35);color:#7ab890;background:transparent;font-family:'Inconsolata',monospace;font-size:.4rem;padding:.16rem;border-radius:2px;cursor:pointer">∿ release</button>
+          </div>
+        </div>
+        <div class="db"><div class="dbt" style="color:#ff6b35">log</div><div id="re-log" class="dlog"><span style="color:rgba(255,107,53,.3)">— waiting —</span></div></div>
+      </div>
+    </div>
+
+    <!-- Arc -->
+    <div class="dp" id="dp-arc">
+      <div class="dg dg3">
+        <div class="db">
+          <div class="dbt" style="color:var(--sand)">shadow arc</div>
+          <div style="display:flex;gap:1px;height:14px;border-radius:2px;overflow:hidden;margin-bottom:.22rem">
+            <div id="sa0" onclick="arcJump(0)" style="flex:2;background:rgba(26,36,56,.2);color:var(--night2);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">Silêncio</div>
+            <div id="sa1" onclick="arcJump(1)" style="flex:2;background:rgba(200,144,64,.08);color:var(--sand);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">Construção</div>
+            <div id="sa2" onclick="arcJump(2)" style="flex:1;background:rgba(212,88,24,.1);color:var(--heat);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">Frevo</div>
+            <div id="sa3" onclick="arcJump(3)" style="flex:2;background:rgba(90,136,112,.06);color:var(--v2);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.44rem;display:flex;align-items:center;justify-content:center;cursor:pointer">Dissolução</div>
+          </div>
+          <div style="font-size:.36rem;color:var(--dim)">now: <span id="arc-now" style="color:var(--sand);font-family:'Cormorant Garamond',serif;font-style:italic">Silêncio</span></div>
+          <canvas id="arc-cv" height="38" style="width:100%;display:block;background:rgba(0,0,0,.2);border-radius:1px;margin-top:.2rem"></canvas>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--sand)">gravity</div>
+          <div class="dr"><span class="dl">pull</span><div class="dbar"><div class="df" id="arc-pf" style="background:var(--sand)"></div></div><span class="dval" id="arc-pv" style="color:var(--sand)">0</span></div>
+          <div class="dr"><span class="dl">drift</span><div class="dbar"><div class="df" id="arc-df" style="background:#b39ddb"></div></div><span class="dval" id="arc-dv" style="color:#b39ddb">0</span></div>
+          <div class="dr" style="margin-top:.2rem"><span class="dl">strength</span><input type="range" id="arcStr" min="0" max="100" value="50" oninput="$('arcStrV').textContent=this.value" style="flex:1"><span class="dval" id="arcStrV" style="color:var(--sand)">50</span></div>
+          <div class="dr"><span class="dl">auto-adv</span><input type="range" id="arcAdv" min="0" max="100" value="55" oninput="$('arcAdvV').textContent=this.value" style="flex:1"><span class="dval" id="arcAdvV" style="color:#b39ddb">55</span></div>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:var(--sand)">control</div>
+          <div style="display:flex;flex-direction:column;gap:.18rem">
+            <button onclick="arcCmd('pull')" style="border:1px solid rgba(200,144,64,.35);color:var(--sand2);background:transparent;font-family:'Inconsolata',monospace;font-size:.38rem;padding:.14rem;border-radius:2px;cursor:pointer">⬤ pull</button>
+            <button onclick="arcCmd('resist')" style="border:1px solid rgba(179,157,219,.3);color:#b39ddb;background:transparent;font-family:'Inconsolata',monospace;font-size:.38rem;padding:.14rem;border-radius:2px;cursor:pointer">↗ resist</button>
+            <button onclick="arcCmd('skip')" style="border:1px solid rgba(200,144,64,.25);color:var(--sand);background:transparent;font-family:'Inconsolata',monospace;font-size:.38rem;padding:.14rem;border-radius:2px;cursor:pointer">⟶ skip</button>
+          </div>
+          <div id="arc-log" style="font-size:.33rem;color:rgba(200,144,64,.6);margin-top:.25rem;line-height:1.8">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TDM -->
+    <div class="dp" id="dp-tdm">
+      <div class="dg" style="grid-template-columns:2fr 1fr">
+        <div class="db">
+          <div class="dbt" style="color:#7ab8b0">Temporal Dissonance Map</div>
+          <canvas id="tdm-cv" height="62" style="width:100%;display:block;background:rgba(0,0,0,.3);border-radius:2px"></canvas>
+        </div>
+        <div class="db">
+          <div class="dbt" style="color:#7ab8b0">values</div>
+          <div style="display:flex;flex-direction:column;gap:.22rem;margin-bottom:.25rem">
+            <div><div style="font-size:.3rem;color:var(--dim)">pitch</div><div style="font-size:.44rem" id="tdm-p">—</div></div>
+            <div><div style="font-size:.3rem;color:var(--dim)">time</div><div style="font-size:.44rem" id="tdm-t">—</div></div>
+            <div><div style="font-size:.3rem;color:var(--dim)">total</div><div style="font-size:.44rem" id="tdm-tot">—</div></div>
+          </div>
+          <div class="dr"><span class="dl">decay</span><input type="range" id="tdmD" min="1" max="100" value="55" oninput="$('tdmDV').textContent=this.value" style="flex:1"><span class="dval" id="tdmDV" style="color:#7ab8b0">55</span></div>
+          <div class="dr"><span class="dl">sens</span><input type="range" id="tdmS" min="1" max="100" value="65" oninput="$('tdmSV').textContent=this.value" style="flex:1"><span class="dval" id="tdmSV" style="color:#ce93d8">65</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ── SCALES ──────────────────────────────────────────────
+const SCALES = {
+  dorian:   [0,2,3,5,7,9,10],
+  minor:    [0,2,3,5,7,8,10],
+  major:    [0,2,4,5,7,9,11],
+  mixo:     [0,2,4,5,7,9,10],
+  phryg:    [0,1,3,5,7,8,10],
+  penta_m:  [0,3,5,7,10],
+  penta_M:  [0,2,4,7,9],
+  folk_br:  [0,2,3,5,7,9,10],  // Dorian variant used in Nordeste
+  whole:    [0,2,4,6,8,10],
+};
+const PC = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const SECS = [
+  { name:'Silêncio',    dens:[.15,.32], pressRate:.003, tempoMult:.75 },
+  { name:'Construção',  dens:[.42,.62], pressRate:.010, tempoMult:.95 },
+  { name:'Frevo',       dens:[.72,.90], pressRate:.025, tempoMult:1.35},
+  { name:'Dissolução',  dens:[.18,.38], pressRate:.004, tempoMult:.70 },
+];
+
+// ── STATE ────────────────────────────────────────────────
+const VS = [
+  { steps:[], len:16, idx:0, acc:0, speedMult:1.0,   col:'var(--v1)', ch:'ch1' },
+  { steps:[], len:13, idx:0, acc:0, speedMult:1.0,   col:'var(--v2)', ch:'ch2' },
+  { steps:[], len:7,  idx:0, acc:0, speedMult:0.75,  col:'var(--v3)', ch:'ch3' },
+];
+let curSec = 0, playing = false, masterStep = 0;
+let mOut = null, mAccess = null;
+const SL = { on:false, port:null, bpm:112, alpha:.15, running:false, lp:0, pc:0 };
+
+// ── PRESSURE ENGINE ──────────────────────────────────────
+const PR = {
+  val: 0,       // 0–1 current pressure
+  phase: 'breathing',  // breathing | building | exploding | fading
+  ignitions: 0,
+  hist: [],
+  autoTimer: 0,
+};
+
+function gcd(a,b){ return b?gcd(b,a%b):a; }
+function lcm(a,b){ return a/gcd(a,b)*b; }
+function getRoot(){ return parseInt($('rootSel').value)||69; }
+function getBpm(){  return parseInt($('bpmIn').value)||112; }
+function getScale(){ return SCALES[$('scaleSel').value]||SCALES.dorian; }
+
+function pool(octLo, octHi) {
+  const r=getRoot(), sc=getScale(), p=[];
+  for(let o=octLo;o<=octHi;o++) sc.forEach(d=>{ const m=r+d+o*12; if(m>=24&&m<=108) p.push(m); });
+  return p.sort((a,b)=>a-b);
+}
+
+// ── GENERATE ─────────────────────────────────────────────
+// The heart of this sequencer:
+// Voice I   = upper melody, syncopated, folk leaps
+// Voice II  = middle counterpoint, stepwise Bach-like
+// Voice III = bass, percussive, slower
+function gen(mode) {
+  pushUndo();
+  const sec = SECS[curSec];
+  const bach = parseInt($('bachW').value)/100;
+  const leaps = parseInt($('leapW').value)/100;
+  const baseD = sec.dens[0] + Math.random()*(sec.dens[1]-sec.dens[0]);
+  const isFrevo = mode==='frevo' || curSec===2;
+  const isSparse = mode==='sparse' || curSec===0;
+
+  VS[0].steps = makeVoice(pool(-1,2), VS[0].len, baseD*(isFrevo?1.15:isSparse?.65:1),   'melody', bach*.6, leaps);
+  VS[1].steps = makeVoice(pool(-1,1), VS[1].len, baseD*(isFrevo?1.0:isSparse?.5:1)*0.8, 'counter',bach, leaps*.4);
+  VS[2].steps = makeVoice(pool(-2,0), VS[2].len, baseD*(isFrevo?1.1:isSparse?.5:1)*0.7, 'bass',   bach*.3, leaps*.2);
+
+  drawAll();
+  updLcm();
+}
+
+function makeVoice(p, len, dens, role, bach, leapChance) {
+  if(!p.length) return [];
+  const steps = [];
+  let pos = role==='bass' ? Math.floor(p.length*.2) : Math.floor(p.length*.5);
+  let lastDir = 1;
+
+  for(let i=0; i<len; i++) {
+    const t = i/len;
+    const active = Math.random() < dens;
+
+    // Movement logic by role
+    let move;
+    if(role==='bass') {
+      // Bass: sparse, root-adjacent, rhythmically placed
+      move = Math.random()<.4 ? 0 : (Math.random()<.5?1:-1);
+    } else if(role==='counter') {
+      // Counterpoint: mostly stepwise, occasional 3rd
+      const isStep = Math.random() < (bach*.7+.25);
+      const dir = (t<.5 ? 1 : -1) * (Math.random()<.15?-1:1);
+      move = isStep ? dir : dir*(Math.floor(Math.random()*2)+2);
+    } else {
+      // Melody: arching phrase with folk leaps
+      const isLeap = Math.random() < leapChance;
+      const arcDir = Math.sin(t*Math.PI) > .5 ? 1 : t<.5 ? 1 : -1;
+      move = isLeap ? arcDir*(Math.floor(Math.random()*4)+3) : arcDir*(Math.random()<.7?1:2);
+    }
+
+    pos = Math.max(0, Math.min(p.length-1, pos+move));
+    const vel = role==='bass' ? .55+Math.random()*.35 : .3+Math.random()*.55;
+    steps.push({ midi:p[pos], active, vel });
+  }
+  return steps;
+}
+
+function rebuild() { gen(); }
+function onVLen(vi, val) { VS[vi].len=parseInt(val); VS[vi].idx=0; VS[vi].steps=[]; gen(); }
+function updLcm() { $('lcm').textContent = [VS[0].len,VS[1].len,VS[2].len].reduce(lcm); }
+function setSec(i) {
+  curSec=i;
+  [0,1,2,3].forEach(j=>$('sb'+j)?.classList.toggle('on',j===i));
+  $('secLabel').textContent=SECS[i].name;
+  gen();
+}
+function onV3Speed(v) {
+  VS[2].speedMult=parseInt(v)/100;
+  const labels={33:'⅓',50:'½',75:'¾',100:'×1',133:'4/3',150:'3/2',200:'×2'};
+  $('v3speedV').textContent=labels[v]||(v/100).toFixed(2);
+  $('v3tick').textContent='×'+(parseInt(v)/100).toFixed(2);
+}
+
+// ── DRAW GRIDS ────────────────────────────────────────────
+function drawAll() { VS.forEach((_,vi)=>drawGrid(vi)); }
+
+function drawGrid(vi) {
+  const v=VS[vi], el=$('g'+(vi+1)); if(!el) return;
+  el.innerHTML='';
+  const isHot = PR.phase==='exploding';
+  v.steps.forEach((s,i) => {
+    const d=document.createElement('div');
+    const barMark = (vi===0&&i%4===0)||(vi===1&&i%3===0)||(vi===2&&i%2===0);
+    d.className='step'+(barMark&&i?'  bar':'')+(isHot&&s.active?' hot':'');
+    d.id=`v${vi+1}s${i}`;
+    const h=s.active?4+Math.round(s.vel*28):2;
+    const c=s.active?v.col:'rgba(255,255,255,.02)';
+    const n=PC[s.midi%12];
+    d.innerHTML=`<span class="s-note${s.active?' on':''}">${n}</span><div class="s-bar" style="height:${h}px;background:${c}"></div><span class="s-num">${i+1}</span>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;drawGrid(vi);});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.vel=Math.max(.1,s.vel-.1);drawGrid(vi);});
+    el.appendChild(d);
+  });
+  const n=v.steps.filter(s=>s.active).length;
+  $('v'+(vi+1)+'info').textContent=`${v.len} · ${n}on`;
+  drawCurve(vi);
+  // Density meters
+  const dens=n/Math.max(1,v.len);
+  $('d-v'+(vi+1)+'dens').style.width=(dens*100).toFixed(0)+'%';
+  $('dv-v'+(vi+1)+'dens').textContent=(dens*100).toFixed(0);
+}
+
+function drawCurve(vi) {
+  const cv=$('cv'+(vi+1)); if(!cv) return;
+  const v=VS[vi]; const W=cv.width,H=cv.height;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const act=v.steps.filter(s=>s.active); if(act.length<2) return;
+  const mids=act.map(s=>s.midi), mn=Math.min(...mids)-1, mx=Math.max(...mids)+1;
+  const cols=['rgba(200,144,64,.7)','rgba(90,136,112,.7)','rgba(200,88,24,.7)'];
+  ctx.beginPath();
+  act.forEach((s,i)=>{const x=(i/(act.length-1))*W,y=H-((s.midi-mn)/(mx-mn))*(H-3)-1.5;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle=cols[vi];ctx.lineWidth=1.5;ctx.stroke();
+}
+
+// ── PRESSURE TICK ────────────────────────────────────────
+let _ptick=0;
+function pressTick() {
+  if(!playing) return;
+  _ptick++;
+  const sec=SECS[curSec];
+  const buildRate=parseInt($('buildRate').value)/1000;
+  const thresh=parseInt($('threshold').value)/100;
+  const decayR=parseInt($('decayRate').value)/1000;
+
+  switch(PR.phase) {
+    case 'breathing':
+      PR.val += sec.pressRate * buildRate * 8;
+      if(PR.val>=thresh) { PR.phase='building'; plog('→ Building'); }
+      PR.val=Math.max(0, Math.min(1,PR.val));
+      break;
+    case 'building':
+      PR.val += buildRate * 1.8;
+      if(PR.val>=1) { PR.phase='exploding'; PR.ignitions++; plog('⚡ FREVO!'); igniteVisual(); }
+      PR.val=Math.min(1,PR.val);
+      break;
+    case 'exploding':
+      PR.val -= decayR * 2.5;
+      if(PR.val<=thresh*.4) { PR.phase='fading'; plog('∿ Fading'); }
+      PR.val=Math.max(0,PR.val);
+      break;
+    case 'fading':
+      PR.val -= decayR;
+      if(PR.val<=0) { PR.phase='breathing'; PR.val=0; plog('— Breathing'); }
+      PR.val=Math.max(0,PR.val);
+      break;
+  }
+
+  PR.hist.push(PR.val);
+  if(PR.hist.length>220) PR.hist.shift();
+
+  if(_ptick%5===0) updatePressUI();
+}
+
+function igniteVisual() {
+  // Briefly highlight hot steps
+  document.querySelectorAll('.step').forEach(el=>{el.classList.add('hot');setTimeout(()=>el.classList.remove('hot'),600);});
+  // Auto-generate a denser pattern if section allows
+  const auto=parseInt($('reAuto').value)/100;
+  if(Math.random()<auto*.6) gen('frevo');
+}
+
+function ignite() { PR.phase='building'; PR.val=parseFloat($('threshold').value)/100*.9; plog('⚡ Manual ignite'); }
+function release(){ PR.phase='fading'; plog('∿ Manual release'); }
+
+function updatePressUI() {
+  $('pFill').style.width=(PR.val*100).toFixed(0)+'%';
+  $('pressBar').style.width=(PR.val*100).toFixed(0)+'%';
+  const stateMap={breathing:'breathing',building:'building…',exploding:'⚡ Frevo!',fading:'dissolving'};
+  $('pState').textContent=stateMap[PR.phase];
+  $('d-pstate').textContent=stateMap[PR.phase];
+  $('d-pres').style.width=(PR.val*100).toFixed(0)+'%';
+  $('dv-pres').textContent=(PR.val*100).toFixed(0);
+  $('d-thresh').style.width=($('threshold').value)+'%';
+  $('dv-thresh').textContent=$('threshold').value;
+  $('d-ign').style.width=Math.min(100,PR.ignitions*10)+'%';
+  $('dv-ign').textContent=PR.ignitions;
+  $('m-p').style.width=(PR.val*100).toFixed(0)+'%';
+  $('dock-tag').textContent=PR.phase==='exploding'?'⚡':PR.phase==='building'?'↑':'○';
+  drawPressHist();
+}
+
+function drawPressHist() {
+  const cv=$('d-phist'); if(!cv) return;
+  const W=cv.parentElement?.offsetWidth||160; cv.width=W; cv.height=42;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,42);
+  const h=PR.hist; if(h.length<2) return;
+  ctx.beginPath(); h.forEach((v,i)=>{const x=i/h.length*W,y=42-v*38-2;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle='rgba(212,88,24,.75)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.lineTo(W,42);ctx.lineTo(0,42);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,42);g.addColorStop(0,'rgba(212,88,24,.18)');g.addColorStop(1,'rgba(212,88,24,.01)');
+  ctx.fillStyle=g; ctx.fill();
+  if(PR.phase==='exploding'){ctx.fillStyle=`rgba(212,88,24,${PR.val*.15})`;ctx.fillRect(0,0,W,42);}
+}
+
+function plog(msg){const l=$('d-plog');if(!l)return;const s=document.createElement('span');s.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;s.style.cssText='color:rgba(212,88,24,.8);display:block';l.insertBefore(s,l.firstChild);while(l.children.length>4)l.removeChild(l.lastChild);}
+
+// ── REFLEXIVITY ENGINE ─────────────────────────────────
+const RE={t:0,b:0,m:0,will:'○',ov:null,ovt:0,freeze:false,fsteps:0,press:0,ash:false,ashn:0,ashi:0,ph:[],th:[],hash:[]};
+let _reTick=0;
+function reflectTick(){
+  if(!playing)return;
+  _reTick++;
+  const cur=VS[0].steps[VS[0].idx%VS[0].len];
+  if(cur?.active){RE.ph.push(cur.midi);if(RE.ph.length>32)RE.ph.shift();}
+  if(RE.ph.length>1)RE.m=RE.m*.8+Math.min(1,Math.abs(RE.ph.at(-1)-RE.ph.at(-2))/24)*.2;
+  RE.t=RE.t*.85+PR.val*.15;
+  if(VS[0].idx===0){const h=VS[0].steps.map(s=>s.active?s.midi:0).join(',');RE.hash.push(h);if(RE.hash.length>5)RE.hash.shift();const r=RE.hash.slice(-4).filter(x=>x===h).length;RE.b=RE.b*.7+Math.min(1,(r-1)/3)*.3;}
+  const sens=parseInt($('reSens').value)/100;
+  if(RE.freeze){RE.fsteps--;RE.press=Math.min(1,RE.press+(RE.t*.6+RE.b*.4)*.04);if(RE.press>=.85||RE.fsteps<=0){reTrigRel();return;}RE.will='frozen';return;}
+  if(RE.ash){RE.ashn--;if(RE.ashn<=0){RE.ash=false;RE.will='○';}else RE.will='aftershock';return;}
+  if(RE.ov){if(RE.ovt-->0)return;RE.ov=null;}
+  if(RE.t>.9*sens)RE.will='escape';
+  else if(RE.b>.7*sens)RE.will='crisis';
+  else if(RE.t>.6*sens)RE.will='ignite';
+  else RE.will='○';
+  const auto=parseInt($('reAuto').value)/100;
+  if(RE.will==='crisis'&&Math.random()<auto){gen();reLog('⚡ crisis→regen');RE.b*=.4;}
+  else if(RE.will==='ignite'&&Math.random()<auto*.6){ignite();reLog('⚡ ignite');}
+  else if(RE.will==='escape'&&Math.random()<auto*.4){VS.forEach(v=>{v.steps.forEach(s=>{if(s.active&&Math.random()<.2)s.active=false;});});drawAll();reLog('↑ escape:reduce');}
+  else if(RE.will==='aftershock'&&Math.random()<auto*RE.ashi*.3){const p=pool(-1,2);if(p.length){const v=VS[0];v.steps[Math.floor(Math.random()*v.steps.length)].midi=p[Math.floor(Math.random()*p.length)];drawGrid(0);}}
+  RE.th.push(RE.t); if(RE.th.length>200)RE.th.shift();
+  if(_reTick%10===0){reUI();reDrawHist();}
+}
+function reTrigRel(){RE.freeze=false;const p=RE.press;RE.press=0;gen();reLog(`💥 release(${(p*100).toFixed(0)}%)`);RE.ash=true;RE.ashn=Math.round(2+p*5);RE.ashi=p;RE.will='aftershock';const b=$('re-freeze');if(b){b.style.borderColor='rgba(255,107,53,.35)';b.textContent='❄ freeze';}}
+function reCmd(c){if(c==='freeze'){if(RE.freeze){reTrigRel();return;}RE.freeze=true;RE.fsteps=24;RE.press=0;RE.will='frozen';const b=$('re-freeze');if(b){b.style.borderColor='rgba(255,107,53,.7)';b.textContent='❄';}reLog('❄ freeze');}else if(c==='crisis'){RE.ov='crisis';RE.ovt=6;}else{release();}}
+function reLog(msg){const l=$('re-log');if(!l)return;const s=document.createElement('span');s.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg;s.style.cssText='color:rgba(255,107,53,.8);display:block';l.insertBefore(s,l.firstChild);while(l.children.length>4)l.removeChild(l.lastChild);}
+function reUI(){$('re-tbar').style.width=(RE.t*100).toFixed(0)+'%';$('re-bbar').style.width=(RE.b*100).toFixed(0)+'%';$('re-mbar').style.width=(RE.m*100).toFixed(0)+'%';$('re-tv').textContent=(RE.t*100).toFixed(0);$('re-bv').textContent=(RE.b*100).toFixed(0);$('re-mv').textContent=(RE.m*100).toFixed(0);$('re-will').textContent=RE.will;$('m-t').style.width=(RE.t*100).toFixed(0)+'%';}
+function reDrawHist(){const cv=$('re-hist');if(!cv)return;const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=42;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,42);const h=RE.th;if(h.length<2)return;ctx.beginPath();h.forEach((v,i)=>{const x=i/h.length*W,y=42-v*38-2;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle='rgba(255,107,53,.75)';ctx.lineWidth=1.5;ctx.stroke();ctx.lineTo(W,42);ctx.lineTo(0,42);ctx.closePath();const g=ctx.createLinearGradient(0,0,0,42);g.addColorStop(0,'rgba(255,107,53,.15)');g.addColorStop(1,'rgba(255,107,53,.01)');ctx.fillStyle=g;ctx.fill();if(RE.freeze){ctx.fillStyle=`rgba(255,107,53,${RE.press*.12})`;ctx.fillRect(0,0,W,42);}}
+
+// ── SHADOW ARC ────────────────────────────────────────────
+const ARC=[{name:'Silêncio',c:'rgba(26,36,56',dT:.25,dur:10},{name:'Construção',c:'rgba(200,144,64',dT:.55,dur:12},{name:'Frevo',c:'rgba(212,88,24',dT:.82,dur:8},{name:'Dissolução',c:'rgba(90,136,112',dT:.28,dur:12}];
+const SA={sec:0,step:0,pull:0,drift:0,ov:null,ovt:0,dh:[],loops:0};
+function arcTick(){if(!playing)return;const sec=ARC[SA.sec];const cur=VS[0].steps.filter(s=>s.active).length/Math.max(1,VS[0].len);SA.drift=Math.abs(cur-sec.dT);SA.pull=SA.pull*.8+Math.min(1,SA.drift*(parseInt($('arcStr').value)/100))*.2;if(masterStep%8===0){SA.step++;if(SA.step>=sec.dur){SA.sec=(SA.sec+1)%ARC.length;if(!SA.sec)SA.loops++;SA.step=0;setSec(SA.sec);arcUI();arcLog(`→${ARC[SA.sec].name}`);}}arcUI();}
+function arcJump(i){SA.sec=i;SA.step=0;setSec(i);arcUI();arcLog(`→${ARC[i].name}`);}
+function arcCmd(c){if(c==='skip'){arcJump((SA.sec+1)%ARC.length);}else{SA.ov=c;SA.ovt=10;}}
+function arcUI(){ARC.forEach((_,i)=>{const el=$('sa'+i);if(el)el.style.outline=i===SA.sec?'2px solid rgba(200,144,64,.5)':'';});const nl=$('arc-now');if(nl)nl.textContent=ARC[SA.sec].name;$('arc-pf').style.width=(SA.pull*100).toFixed(0)+'%';$('arc-df').style.width=(SA.drift*100).toFixed(0)+'%';$('arc-pv').textContent=(SA.pull*100).toFixed(0);$('arc-dv').textContent=(SA.drift*100).toFixed(0);SA.dh.push(SA.drift);if(SA.dh.length>200)SA.dh.shift();drawArcCV();}
+function drawArcCV(){const cv=$('arc-cv');if(!cv)return;const W=cv.parentElement?.offsetWidth||180;cv.width=W;cv.height=38;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,38);const sec=ARC[SA.sec];const g=ctx.createLinearGradient(0,0,W,0);g.addColorStop(0,`${sec.c},.07)`);g.addColorStop(1,`${sec.c},.02)`);ctx.fillStyle=g;ctx.fillRect(0,0,W,38);SA.dh.forEach((v,i)=>{if(i<1)return;ctx.beginPath();ctx.moveTo((i-1)/SA.dh.length*W,38-SA.dh[i-1]*34-2);ctx.lineTo(i/SA.dh.length*W,38-v*34-2);ctx.strokeStyle=`${sec.c},.55)`;ctx.lineWidth=1.2;ctx.stroke();});const pr=SA.step/ARC[SA.sec].dur;ctx.fillStyle=`${sec.c},.15)`;ctx.fillRect(0,34,W*pr,4);}
+function arcLog(m){const l=$('arc-log');if(l)l.textContent=new Date().toLocaleTimeString('ja',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+m;}
+
+// ── TDM ──────────────────────────────────────────────────
+const TD={nm:[],mm:Array(12).fill(null).map(()=>new Float32Array(16).fill(0)),pd:0,td:0,tot:0};
+const DIS=[0,.9,.7,.2,.1,.15,.85,.05,.1,.2,.5,.8];
+function tcFn(s){if(s<=0)return 1;if(s<=3)return.85-s*.05;if(s<=8)return.6-(s-4)*.07;return Math.max(.05,.32-(s-9)*.03);}
+function tdmAdd(m,t){TD.nm.push({m,t});if(TD.nm.length>24)TD.nm.shift();}
+function tdmTick(){if(!playing)return;const d=parseInt($('tdmD').value)/100;const se=parseInt($('tdmS').value)/100;for(let iv=0;iv<12;iv++)for(let td=0;td<16;td++)TD.mm[iv][td]*=(1-d*.05);const r=TD.nm.slice(-10);let pS=0,tS=0,pairs=0;for(let i=0;i<r.length;i++)for(let j=i+1;j<r.length;j++){const iv=Math.abs(r[i].m-r[j].m)%12,td=Math.min(15,Math.abs(r[i].t-r[j].t));const ps=DIS[iv]||0,ts=tcFn(td),c=ps*ts*se;TD.mm[iv][td]=Math.min(1,TD.mm[iv][td]+c*.3);pS+=ps;tS+=ts;pairs++;}if(pairs>0){TD.pd=TD.pd*.8+(pS/pairs)*.2;TD.td=TD.td*.8+(tS/pairs)*.2;TD.tot=Math.sqrt(TD.pd*TD.td)*se;}if(TD.nm.length%8===0){drawTDM();tdmUI();}};
+function drawTDM(){const cv=$('tdm-cv');if(!cv)return;const W=cv.parentElement?.offsetWidth||220;cv.width=W;cv.height=62;const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,62);const cW=W/12,cH=62/16;for(let iv=0;iv<12;iv++)for(let td=0;td<16;td++){const v=TD.mm[iv][td];if(v<.02)continue;ctx.fillStyle=`rgba(${Math.round(v*240)},${Math.round(128*(1-v))},${Math.round(180*(1-v*.5))},${.3+v*.6})`;ctx.fillRect(iv*cW,td*cH,cW-1,cH-1);}ctx.strokeStyle='rgba(122,184,176,.06)';ctx.lineWidth=.5;for(let iv=0;iv<=12;iv++){ctx.beginPath();ctx.moveTo(iv*cW,0);ctx.lineTo(iv*cW,62);ctx.stroke();}ctx.fillStyle='rgba(200,144,64,.4)';ctx.font='6px Inconsolata';PC.forEach((n,i)=>ctx.fillText(n,i*cW+1,61));}
+function tdmUI(){const tp=$('tdm-p'),tt=$('tdm-t'),tot=$('tdm-tot');if(tp){tp.textContent=(TD.pd*100).toFixed(0)+'%';tp.style.color=TD.pd>.6?'#ce93d8':'#7ab8b0';}if(tt){tt.textContent=(TD.td*100).toFixed(0)+'%';tt.style.color=TD.td>.6?'#ff3d7f':'#7ab8b0';}if(tot){tot.textContent=(TD.tot*100).toFixed(0)+'%';tot.style.color=TD.tot>.7?'#ff3d7f':TD.tot>.4?'#ce93d8':'#7ab8b0';}$('m-d').style.width=(TD.tot*100).toFixed(0)+'%';}
+
+// ── PLAYBACK ──────────────────────────────────────────────
+let actx=null;
+function getAC(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+let _kn=null;
+function keepAlive(){const c=getAC();if(_kn)return;_kn=c.createOscillator();const g=c.createGain();g.gain.value=0;_kn.connect(g);g.connect(c.destination);_kn.start();}
+
+// Web Worker timer
+const _wCode=`const T={};self.onmessage=e=>{const{type,id,delay}=e.data;if(type==='set')T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay);else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wCode],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){}return _tw;}
+function aTO(fn,ms){const c=getAC();if(c.state==='suspended')c.resume();const w=getTW();if(w){const id=_tn++;const dl=c.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-c.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}const dl=c.currentTime+ms/1000;let tid=null;const o={cancel:()=>{if(tid)clearTimeout(tid);o.dead=true;}};function ch(){if(o.dead)return;const rem=(dl-c.currentTime)*1000;if(rem<=1)fn();else tid=setTimeout(ch,rem<25?1:Math.max(1,rem-20));}tid=setTimeout(ch,Math.max(1,ms-20));return o;}
+
+document.addEventListener('visibilitychange',()=>{const c=getAC();if(c.state==='suspended')c.resume();if(!document.hidden&&mOut)for(let ch=0;ch<16;ch++)mOut.send([0xB0|ch,123,0]);});
+
+let _timer=null;
+function togglePlay(){ playing?stopAll():startPlay(); }
+function startPlay(){
+  const c=getAC();if(c.state==='suspended')c.resume();keepAlive();
+  playing=true;masterStep=0;VS.forEach(v=>{v.idx=0;v.acc=0;});
+  $('btnPlay').textContent='■ stop';
+  tick();
+}
+function stopAll(){
+  playing=false;if(_timer){_timer.cancel?.();_timer=null;}
+  $('btnPlay').textContent='▶ play';$('stepDisp').textContent='—';
+  VS.forEach(v=>v.idx=0);
+  if(mOut)for(let c=0;c<16;c++)mOut.send([0xB0|c,123,0]);
+  document.querySelectorAll('.step.cur').forEach(e=>e.classList.remove('cur'));
+}
+
+function tick(){
+  if(!playing)return;
+  const bpm=SL.on?SL.bpm:getBpm();
+  const sec=SECS[curSec];
+  const base=Math.max(18,60000/bpm/4);
+  const stepMs=base/sec.tempoMult/(PR.phase==='exploding'?1+PR.val*.5:1);
+
+  masterStep++;
+  $('stepDisp').textContent=masterStep;
+
+  VS.forEach((v,vi)=>{
+    v.acc+=v.speedMult;
+    while(v.acc>=1){
+      v.acc-=1;
+      const s=v.steps[v.idx%v.len];
+      const chN=(parseInt($(v.ch)?.value||vi+1)-1);
+      if(s?.active&&mOut){
+        const m=Math.max(0,Math.min(127,s.midi));
+        const vel=Math.round(s.vel*(PR.phase==='exploding'?1.15:1)*100+20);
+        mOut.send([0x90|chN,m,Math.min(127,vel)]);
+        const dur=stepMs*(vi===2?.65:.82);
+        setTimeout(()=>{if(mOut)mOut.send([0x80|chN,m,0]);},dur);
+        tdmAdd(m,masterStep);
+      }
+      document.querySelectorAll(`#g${vi+1} .step`).forEach((el,i)=>el.classList.toggle('cur',i===v.idx%v.len));
+      v.idx++;
+    }
+  });
+
+  pressTick(); reflectTick(); arcTick(); tdmTick();
+  _timer=aTO(tick,stepMs);
+}
+
+// ── MIDI ─────────────────────────────────────────────────
+function initMIDI(){if(!navigator.requestMIDIAccess){setMS(false,'unsupported');return;}navigator.requestMIDIAccess().then(ma=>{mAccess=ma;ma.onstatechange=()=>{popOut();popIn();};popOut();popIn();}).catch(()=>setMS(false,'denied'));}
+function popOut(){const s=$('midiOut');if(!s||!mAccess)return;const prev=s.value;s.innerHTML='<option value="">—</option>';mAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;s.appendChild(o);});if(prev)s.value=prev;[...s.options].forEach(o=>{if(o.textContent.includes('IAC')&&!s.value){s.value=o.value;selOut(s.value);}});}
+function popIn(){const s=$('clockIn');if(!s||!mAccess)return;s.innerHTML='<option value="">—</option>';mAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;s.appendChild(o);});}
+function selOut(id){if(!id){mOut=null;setMS(false,'—');return;}mOut=mAccess?.outputs.get(id);if(mOut)setMS(true,mOut.name);}
+function setMS(ok,n){$('midiDot')?.classList.toggle('on',ok);const s=$('midiStat');if(s){s.textContent=ok?`✓ ${n}`:n;s.style.color=ok?'#7ab890':'var(--dim)';}}
+function selClockIn(id){if(SL.port)SL.port.onmidimessage=null;if(!id||!mAccess)return;SL.port=mAccess.inputs.get(id);if(SL.port)SL.port.onmidimessage=onClock;}
+function toggleSlave(){SL.on=!SL.on;const b=$('slaveBtn');if(b){b.textContent=SL.on?'Slave: ON':'Slave: OFF';b.style.color=SL.on?'#7ab890':'';}if(!SL.on&&playing)tick();}
+function onClock(e){const d=e.data[0];if(d===0xFA){SL.running=true;SL.pc=0;if(!playing)startPlay();return;}if(d===0xFB){SL.running=true;return;}if(d===0xFC){SL.running=false;if(playing&&SL.on)stopAll();return;}if(d!==0xF8||!SL.on||!SL.running)return;const now=e.timeStamp||performance.now();if(SL.lp>0){const iv=now-SL.lp;const ib=60000/(iv*24);if(ib>20&&ib<320)SL.bpm=SL.bpm*(1-SL.alpha)+ib*SL.alpha;}SL.lp=now;SL.pc++;if(SL.pc>=6){SL.pc=0;if(playing)tick();}if(SL.pc===0)$('bpmIn').value=Math.round(SL.bpm);}
+
+// ── EXPORT ───────────────────────────────────────────────
+function exportSCL(){const sc=getScale(),r=getRoot();const degs=sc.filter(d=>d>0);const lines=[`! gismonti_${$('scaleSel').value}.scl`,'!',`Gismonti — ${$('scaleSel').value}`,String(degs.length+1),'!'];degs.forEach(d=>lines.push((d*100).toFixed(3)));lines.push('1200.000');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));a.download=`gismonti_${$('scaleSel').value}.scl`;a.click();}
+function exportMIDI(){const bpm=getBpm(),tpb=480,stk=tpb/4,µs=Math.round(60000000/bpm);function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}function i16(v){return[(v>>8)&0xFF,v&0xFF];}const ch=(parseInt($('ch1')?.value||1)-1);const ev=[];VS[0].steps.forEach((s,i)=>{if(!s.active)return;ev.push([i*stk,[0x90|ch,s.midi,Math.round(s.vel*100+20)]]);ev.push([i*stk+Math.round(stk*.8),[0x80|ch,s.midi,0]]);});ev.sort((a,b)=>a[0]-b[0]);let lt=0;const td=[];td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);ev.forEach(([t,msg])=>{td.push(...wv(t-lt),...msg);lt=t;});td.push(0,0xFF,0x2F,0);const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,...i16(tpb)];const bytes=new Uint8Array([...hdr,0x4D,0x54,0x72,0x6B,...i32(td.length),...td]);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'audio/midi'}));a.download='gismonti.mid';a.click();}
+
+// ── UNDO/REDO/SAVE/LOAD ───────────────────────────────────
+const UM=30;let _us=[],_rs=[];
+function cap(){return{vs:VS.map(v=>({steps:JSON.parse(JSON.stringify(v.steps)),len:v.len})),sec:curSec,root:$('rootSel').value,scale:$('scaleSel').value};}
+function pushUndo(){_us.push(cap());if(_us.length>UM)_us.shift();_rs=[];upU();}
+function applyS(st){st.vs.forEach((d,vi)=>{VS[vi].steps=JSON.parse(JSON.stringify(d.steps));VS[vi].len=d.len;});curSec=st.sec||0;$('rootSel').value=st.root;$('scaleSel').value=st.scale;drawAll();updLcm();setSec(curSec);upU();}
+function undo(){if(!_us.length)return;_rs.push(cap());applyS(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(cap());applyS(_rs.pop());}
+function upU(){$('undoBtn').style.opacity=_us.length?'1':'.3';$('redoBtn').style.opacity=_rs.length?'1':'.3';}
+function save(){const st=cap();st._t='Gismonti';st._at=new Date().toISOString();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(st,null,2)],{type:'application/json'}));a.download=`gismonti_${new Date().toISOString().slice(0,16).replace('T','_')}.json`;a.click();}
+function load(e){const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const st=JSON.parse(ev.target.result);if(!st.vs)return;pushUndo();applyS(st);}catch(err){}};rd.readAsText(f);e.target.value='';}
+
+// ── TAP TEMPO ─────────────────────────────────────────────
+let _taps=[];
+function tap(){const n=Date.now();_taps.push(n);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gs=_taps.slice(1).map((t,i)=>t-_taps[i]);const av=gs.reduce((a,b)=>a+b,0)/gs.length;const b=Math.round(60000/av);if(b>40&&b<320)$('bpmIn').value=b;}}
+
+// ── DOCK ──────────────────────────────────────────────────
+(function(){document.querySelectorAll('.dtab[data-pane]').forEach(t=>{t.addEventListener('click',()=>{const p=t.dataset.pane;if(t.classList.contains('on')){toggleDock();return;}document.querySelectorAll('.dtab').forEach(x=>x.classList.remove('on'));t.classList.add('on');document.querySelectorAll('.dp').forEach(x=>x.classList.remove('on'));$('dp-'+p)?.classList.add('on');const b=$('dockBody');if(b){b.classList.remove('closed');$('dockToggle').textContent='▲';}});});})();
+let _dOpen=true;
+function toggleDock(){_dOpen=!_dOpen;$('dockBody')?.classList.toggle('closed',!_dOpen);$('dockToggle').textContent=_dOpen?'▲':'▼';}
+
+// ── KEYBOARD ─────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();e.shiftKey?redo():undo();}
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyY'){e.preventDefault();redo();}
+  if(e.code==='Space'&&!['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();gen();}
+  if(e.code==='KeyF'&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();ignite();}
+  if(e.code==='Digit1'&&!['INPUT'].includes(e.target.tagName))setSec(0);
+  if(e.code==='Digit2'&&!['INPUT'].includes(e.target.tagName))setSec(1);
+  if(e.code==='Digit3'&&!['INPUT'].includes(e.target.tagName))setSec(2);
+  if(e.code==='Digit4'&&!['INPUT'].includes(e.target.tagName))setSec(3);
+});
+
+// ── INIT ─────────────────────────────────────────────────
+gen();
+updLcm();
+initMIDI();
+arcUI();
+</script>
+</body>
+</html>

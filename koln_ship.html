@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Köln 対位法の船</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@300;400;600&display=swap');
+:root{
+  --bg:#0e0d0c; --panel:#17150f; --ink:#e8e2d4; --dim:#8a8170;
+  --drone:#c77b4a; --upper:#d4b46a; --mid:#7a9a9a; --line:#2a2620;
+  --accent:#c77b4a; --hot:#e0a050;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;padding:0}
+.wrap{display:grid;grid-template-columns:340px 1fr;height:100vh}
+.controls{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:16px}
+.stage{position:relative;overflow:hidden;display:flex;flex-direction:column}
+h1{font-family:'IM Fell English',serif;font-size:1.5rem;font-weight:400;font-style:italic;color:var(--upper);margin-bottom:2px}
+.sub{font-size:.62rem;color:var(--dim);margin-bottom:16px;letter-spacing:.05em}
+.group{border:1px solid var(--line);border-radius:3px;padding:10px;margin-bottom:10px}
+.group-title{font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:var(--accent);margin-bottom:8px;letter-spacing:.03em}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.row label{font-size:.7rem;color:var(--dim);flex:0 0 auto}
+select,input[type=number]{background:#0e0d0c;color:var(--ink);border:1px solid var(--line);border-radius:2px;padding:3px 6px;font-family:inherit;font-size:.7rem;flex:1;min-width:0}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.val{font-size:.65rem;color:var(--upper);flex:0 0 32px;text-align:right}
+button{background:#211d16;color:var(--ink);border:1px solid var(--line);border-radius:2px;padding:4px 8px;font-family:inherit;font-size:.68rem;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--hot)}
+button.play{background:var(--accent);color:#0e0d0c;font-weight:600;border:none;padding:8px;width:100%;font-size:.85rem;margin-bottom:8px}
+button.play:hover{background:var(--hot);color:#0e0d0c}
+.voicegrid{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 6px;align-items:center}
+.voicegrid .vname{font-size:.66rem;color:var(--dim)}
+.octbtn{padding:2px 6px;font-size:.7rem;min-width:28px}
+.chk{display:flex;align-items:center;gap:5px}
+.chk input{accent-color:var(--accent)}
+.statebar{display:flex;gap:14px;padding:8px 14px;background:#17150f;border-bottom:1px solid var(--line);font-size:.66rem;color:var(--dim)}
+.statebar b{color:var(--upper);font-weight:400}
+canvas{flex:1;width:100%;display:block}
+.hint{font-size:.6rem;color:#6a6354;line-height:1.5;margin-top:6px;font-style:italic;font-family:'IM Fell English',serif}
+.mono{font-family:'JetBrains Mono',monospace}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="controls">
+    <h1>Köln 対位法の船</h1>
+    <div class="sub">3パターンの逆行が主役 / 半音は転換と同時のみ / データの土台に手で組む</div>
+    <button class="play" id="play">▶ 出航</button>
+
+    <div class="group">
+      <div class="group-title">MIDI / 拍</div>
+      <div class="row"><label>出力</label><select id="port"></select></div>
+      <div class="row"><label>BPM</label><input type="number" id="bpm" value="60" min="30" max="180"></div>
+      <div class="row"><label>旋律ch</label><input type="number" id="melCh" value="1" min="1" max="16" style="flex:0 0 48px"></div>
+      <div class="row"><label>声部ch</label><input type="number" id="voiceCh" value="2" min="1" max="16" style="flex:0 0 48px"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">① 対位法(主役)</div>
+      <div class="row"><label>パターン</label><select id="cpPattern">
+        <option value="auto">自動(物語に従う)</option>
+        <option value="hold_sink">①上保続・下沈む</option>
+        <option value="contrary">②逆行(上昇×下降)</option>
+        <option value="rise_then_sink">③全体上げ→戻り下主導</option>
+        <option value="parallel">並行(同方向)</option>
+        <option value="rest">弛緩</option>
+      </select></div>
+      <div class="row"><label>速さ(拍/手)</label><input type="range" id="cpRate" min="1" max="8" value="3"><span class="val" id="cpRateV">3</span></div>
+      <div class="hint">上声部と下(drone)を逆に動かし、開きを広げる=脳が上昇と感じる</div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">② ルート / 磁場</div>
+      <div class="row"><label>ルート</label><select id="root"></select></div>
+      <div class="row"><label>磁場転換先</label><select id="fieldTarget"></select></div>
+      <button id="doField" style="width:100%;margin-top:4px">磁場を転換（半音許可）</button>
+    </div>
+
+    <div class="group">
+      <div class="group-title">③ スケール枠 / 次元(小磁場)</div>
+      <div class="row"><label>枠</label><select id="frame"></select></div>
+      <div class="row"><label>次元転換先</label><select id="dimTarget"></select></div>
+      <button id="doDim" style="width:100%;margin-top:4px">次元を転換（半音許可）</button>
+    </div>
+
+    <div class="group">
+      <div class="group-title">④ チョイス(次元の積み)</div>
+      <div class="row chk"><label><input type="checkbox" id="noRoot"> ルート抜き(半音許可)</label></div>
+      <div class="row"><label>積む次元</label><select id="dims" multiple size="5" style="height:auto">
+        <option value="3" selected>3度(色)</option>
+        <option value="5" selected>5度(支柱)</option>
+        <option value="7">7度(浮遊)</option>
+        <option value="11">11度(浮揚)</option>
+        <option value="13">13度(広がり)</option>
+      </select></div>
+      <div class="hint">複数選択可。ルート抜きにすると半音が斜めに効く</div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">⑤ drone STパターン</div>
+      <div class="row"><label>型</label><select id="dronePat">
+        <option value="hold">持続(ST0保続)</option>
+        <option value="fifth">5度往復(0⇄7)</option>
+        <option value="sink" selected>沈下(逆シェパード)</option>
+        <option value="ostinato">オスティナート(0-7-0-5)</option>
+        <option value="pedal">ペダル(固定)</option>
+      </select></div>
+      <div class="row"><label>沈下量</label><input type="range" id="sink" min="0" max="100" value="50"><span class="val" id="sinkV">50</span></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">⑥ Jamalカラーリング</div>
+      <div class="row"><label>配置</label><select id="coloring">
+        <option value="sparse" selected>疎(単音+間)</option>
+        <option value="block">ブロック和音</option>
+        <option value="left_emb">左手刺繍</option>
+        <option value="right_solo">右手単旋律</option>
+      </select></div>
+      <div class="row"><label>間(ま)</label><input type="range" id="ma" min="0" max="100" value="30"><span class="val" id="maV">30</span></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">⑦ 奏法 / 物語</div>
+      <div class="row"><label>物語の弧</label><select id="story"></select></div>
+      <div class="row"><label>奏法</label><select id="artic">
+        <option value="legato">レガート</option>
+        <option value="rubato" selected>ルバート</option>
+        <option value="staccato">スタッカート</option>
+        <option value="swing">スウィング</option>
+      </select></div>
+      <div class="row"><label>ルバート量</label><input type="range" id="rubato" min="0" max="100" value="35"><span class="val" id="rubatoV">35</span></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">⑧ ボイス別 オクターブ(±12)</div>
+      <div class="voicegrid">
+        <span class="vname">上声部</span><span></span>
+        <button class="octbtn" data-v="upper" data-d="-12">−12</button>
+        <button class="octbtn" data-v="upper" data-d="12">+12</button>
+        <span class="vname">中声部</span><span></span>
+        <button class="octbtn" data-v="mid" data-d="-12">−12</button>
+        <button class="octbtn" data-v="mid" data-d="12">+12</button>
+        <span class="vname">下(drone)</span><span></span>
+        <button class="octbtn" data-v="lower" data-d="-12">−12</button>
+        <button class="octbtn" data-v="lower" data-d="12">+12</button>
+      </div>
+      <div class="hint">各声部を即座に1オクターブ上下=ジスモンチ的な手探り</div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="statebar">
+      <span>章 <b id="sLabel">—</b></span>
+      <span>対位 <b id="cpLabel">—</b></span>
+      <span>枠 <b id="frLabel">—</b></span>
+      <span>磁場 <b id="fdLabel">—</b></span>
+      <span>開き <b id="spanLabel">—</b></span>
+    </div>
+    <canvas id="terrain"></canvas>
+  </div>
+</div>
+<script>
+const NN=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const nm=m=>NN[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const g=id=>document.getElementById(id);
+
+// ═══ スケール辞書 ═══
+const SCALES={
+'Köln(Dドリアン)':[0,2,3,5,7,9,10],'イオニアン':[0,2,4,5,7,9,11],'ドリアン':[0,2,3,5,7,9,10],
+'フリジアン':[0,1,3,5,7,8,10],'リディアン':[0,2,4,6,7,9,11],'ミクソリディアン':[0,2,4,5,7,9,10],
+'エオリアン':[0,2,3,5,7,8,10],'ロクリアン':[0,1,3,5,6,8,10],'リディアン♭7':[0,2,4,6,7,9,10],
+'リディアン#5':[0,2,4,6,8,9,11],'ハーモニックマイナー':[0,2,3,5,7,8,11],'メロディックマイナー':[0,2,3,5,7,9,11],
+'ハーモニックメジャー':[0,2,4,5,7,8,11],'フリジアンドミナント':[0,1,4,5,7,8,10],'オルタード':[0,1,3,4,6,8,10],
+'メジャーペンタ':[0,2,4,7,9],'マイナーペンタ':[0,3,5,7,10],'ブルース':[0,3,5,6,7,10],
+'都節':[0,1,5,7,8],'陰旋':[0,2,3,7,8],'ホールトーン':[0,2,4,6,8,10]
+};
+// ① 磁場転換先(データ実測:滑らかな順)
+const FIELD_MOVES=[[1,'+半音上(28%)'],[-1,'-半音下(20%)'],[-2,'-全音下(12%)'],[5,'+4度上(12%)'],[2,'+全音上(8%)'],[-3,'-短3度下(8%)'],[-5,'-4度下(4%)'],[4,'+長3度上(4%)'],[7,'+5度上'],[3,'+短3度上']];
+// 次元転換先=親和モード
+const DIM_TARGETS=Object.keys(SCALES);
+
+// ═══ 状態 ═══
+const ST={
+  playing:false, root:2, frame:'Köln(Dドリアン)', field:2,
+  upper:74, mid:62, lower:50, span:0,
+  octShift:{upper:0,mid:0,lower:0},
+  story:'jarrett', beat:0, lastSec:null,
+  cpPhase:0, sinkAccum:0,
+  midiOut:null, timer:null,
+};
+// 物語
+const STORIES={
+  jarrett:{name:'ジャレットの旅',secs:[
+    {n:'序',beats:32,cp:'hold_sink',sink:0.2,frame:'Köln(Dドリアン)'},
+    {n:'承',beats:40,cp:'rise_then_sink',sink:0.4,frame:'エオリアン'},
+    {n:'転',beats:36,cp:'contrary',sink:0.7,frame:'リディアン',field:2},
+    {n:'破',beats:24,cp:'contrary',sink:1.0,frame:'フリジアン',field:-1},
+    {n:'結',beats:36,cp:'hold_sink',sink:0.4,frame:'メジャーペンタ'},
+  ]},
+  serene:{name:'静謐',secs:[
+    {n:'入',beats:40,cp:'hold_sink',sink:0.3,frame:'メジャーペンタ'},
+    {n:'歩',beats:48,cp:'rise_then_sink',sink:0.5,frame:'ドリアン',field:2},
+    {n:'戻',beats:40,cp:'hold_sink',sink:0.3,frame:'Köln(Dドリアン)'},
+  ]},
+  rising:{name:'上昇一途',secs:[
+    {n:'地',beats:40,cp:'contrary',sink:0.3,frame:'ドリアン'},
+    {n:'登',beats:48,cp:'contrary',sink:0.6,frame:'リディアン',field:2},
+    {n:'天',beats:48,cp:'contrary',sink:0.95,frame:'リディアン#5',field:2},
+  ]},
+};
+
+// ═══ 対位法(主役) ═══
+function stepInFrame(midi,dir){
+  if(dir===0) return midi;
+  const fr=SCALES[ST.frame]||SCALES['ドリアン'];
+  for(let k=1;k<=4;k++){ const m=midi+dir*k; const pc=((m-ST.field)%12+12)%12; if(fr.includes(pc)) return m; }
+  return midi+dir*2;
+}
+function counterpoint(pat,prog){
+  let uD=0,lD=0;
+  if(pat==='hold_sink'){uD=0;lD=-1;}
+  else if(pat==='contrary'){uD=1;lD=-1;}
+  else if(pat==='rise_then_sink'){ if(prog<0.5){uD=1;lD=1;}else{uD=0;lD=-1;} }
+  else if(pat==='parallel'){uD=1;lD=1;}
+  else if(pat==='rest'){uD=Math.random()<0.5?1:-1;lD=0;}
+  ST.upper=stepInFrame(ST.upper,uD);
+  ST.lower=stepInFrame(ST.lower,lD);
+  if(ST.upper>86)ST.upper-=12; if(ST.upper<64)ST.upper+=12;
+  if(ST.lower<33)ST.lower+=12; if(ST.lower>59)ST.lower-=12;
+  ST.span=ST.upper-ST.lower;
+  return {uD,lD};
+}
+
+// drone型
+function droneNote(){
+  const pat=g('dronePat').value; const base=ST.field+36;
+  const sink=Math.floor(ST.sinkAccum*12*(+g('sink').value/100));
+  if(pat==='hold') return base;
+  if(pat==='fifth') return base+(ST.beat%2?7:0);
+  if(pat==='sink') return base-sink;
+  if(pat==='ostinato'){ const seq=[0,7,0,5]; return base+seq[ST.beat%4]; }
+  if(pat==='pedal') return base;
+  return base;
+}
+
+// 転換(半音はここでのみ許可)
+function doFieldShift(){
+  const d=+g('fieldTarget').value;
+  ST.field=ST.root+(((ST.field-ST.root+d)%12)+12)%12;
+  // 転換時、上声部に経由半音を一瞬だけ許す(変化と同時)
+  flashTransition('磁場→'+NN[ST.field%12]);
+}
+function doDimShift(){
+  ST.frame=g('dimTarget').value;
+  g('frame').value=ST.frame;
+  flashTransition('次元→'+ST.frame);
+}
+
+// ボイス別オクターブ
+document.querySelectorAll('.octbtn').forEach(b=>b.addEventListener('click',()=>{
+  const v=b.dataset.v, d=+b.dataset.d;
+  ST.octShift[v]+=d;
+  if(v==='upper')ST.upper+=d; if(v==='mid')ST.mid+=d; if(v==='lower')ST.lower+=d;
+}));
+
+// MIDI送出
+function sendNote(midi,vel,ch,durMs){
+  if(ST.midiOut){ const v=Math.max(1,Math.min(127,Math.round(vel*127)));
+    ST.midiOut.send([0x90|(ch-1),midi,v]);
+    setTimeout(()=>{if(ST.midiOut)ST.midiOut.send([0x80|(ch-1),midi,0]);},Math.max(50,durMs*0.8)); }
+  terrainPush(midi,ch,vel);
+}
+
+// ═══ 地形 ═══
+const TER={notes:[],ctx:null,W:0,H:0,t0:0};
+function initTerrain(){const c=g('terrain');if(!c)return;c.width=c.clientWidth;c.height=c.clientHeight;TER.ctx=c.getContext('2d');TER.W=c.width;TER.H=c.height;TER.t0=performance.now();}
+function terrainPush(midi,ch,vel){if(!TER.ctx)initTerrain();TER.notes.push({t:(performance.now()-TER.t0)/1000,midi,ch,vel});if(TER.notes.length>700)TER.notes.shift();drawTerrain();}
+function drawTerrain(){
+  const x=TER.ctx;if(!x||!TER.notes.length)return;const W=TER.W,H=TER.H,p=10;x.clearRect(0,0,W,H);
+  const ns=TER.notes,tMin=ns[0].t,tMax=Math.max(ns.at(-1).t,tMin+1);
+  let lo=Math.min(...ns.map(n=>n.midi),40),hi=Math.max(...ns.map(n=>n.midi),84);
+  const X=t=>p+(t-tMin)/(tMax-tMin)*(W-p*2),Y=m=>H-p-(m-lo)/(hi-lo||1)*(H-p*2);
+  x.strokeStyle='rgba(255,255,255,0.04)';for(let m=Math.ceil(lo/12)*12;m<=hi;m+=12){x.beginPath();x.moveTo(p,Y(m));x.lineTo(W-p,Y(m));x.stroke();}
+  // drone帯
+  const dr=ns.filter(n=>n.midi<58);
+  if(dr.length>1){x.beginPath();x.moveTo(X(dr[0].t),H-p);dr.forEach(n=>x.lineTo(X(n.t),Y(n.midi)));x.lineTo(X(dr.at(-1).t),H-p);x.closePath();x.fillStyle='rgba(199,123,74,0.10)';x.fill();}
+  ns.forEach(n=>{const col=n.midi<58?'#c77b4a':(n.midi>68?'#d4b46a':'#7a9a9a');x.fillStyle=col;x.beginPath();x.arc(X(n.t),Y(n.midi),2+n.vel*2.5,0,7);x.fill();});
+  // 上声部・下声部の包絡線
+  [['#d4b46a',n=>n.midi>68],['#c77b4a',n=>n.midi<58]].forEach(([col,f])=>{
+    const pts=ns.filter(f);if(pts.length<2)return;x.strokeStyle=col;x.lineWidth=1.2;x.beginPath();
+    pts.forEach((n,i)=>{const px=X(n.t),py=Y(n.midi);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();
+  });
+}
+let flashMsg='',flashUntil=0;
+function flashTransition(msg){flashMsg=msg;flashUntil=performance.now()+1200;}
+
+// ═══ メインループ ═══
+function tick(){
+  if(!ST.playing)return;
+  const story=STORIES[g('story').value]||STORIES.jarrett;
+  const total=story.secs.reduce((a,s)=>a+s.beats,0);
+  let b=ST.beat%total, acc=0, sec=story.secs[0];
+  for(const s of story.secs){if(b<acc+s.beats){sec=s;break;}acc+=s.beats;}
+  // 章替わり=転換
+  if(ST.lastSec!==sec.n){
+    if(sec.frame){ST.frame=sec.frame;g('frame').value=sec.frame;}
+    if(sec.field){ST.field=ST.root+(((ST.field-ST.root+sec.field)%12)+12)%12;}
+    ST.lastSec=sec.n;
+  }
+  ST.sinkAccum=b/total;
+
+  // 対位法パターン(手動優先、autoなら章)
+  let pat=g('cpPattern').value; if(pat==='auto')pat=sec.cp;
+  const cpRate=+g('cpRate').value;
+  const move=counterpoint(pat, (b-acc)/sec.beats);
+
+  const beatMs=60000/(+g('bpm').value||60);
+  const rub=1+(Math.random()*2-1)*(+g('rubato').value/100)*0.4;
+  let durMs=beatMs*rub*(cpRate/3);
+
+  const maGap=Math.random()<(+g('ma').value/100);
+  const coloring=g('coloring').value;
+
+  // 発音(Jamalカラーリングで配置)
+  if(!maGap){
+    // 上声部
+    sendNote(ST.upper,0.6,+g('melCh').value,durMs);
+    // 中声部(チョイスの次元を積む、ブロック時)
+    if(coloring==='block'||coloring==='left_emb'){
+      const dims=[...g('dims').selectedOptions].map(o=>+o.value);
+      const fr=SCALES[ST.frame];
+      const noRoot=g('noRoot').checked;
+      dims.forEach(d=>{
+        if(noRoot&&d===1)return;
+        const iv=({3:3,5:7,7:10,11:17,13:21})[d]||7;
+        const m=ST.upper-iv;
+        // 縦の半音衝突を禁止
+        if(Math.abs(m-ST.upper)===1||Math.abs(m-ST.lower)===1)return;
+        if(m>ST.lower&&m<ST.upper) sendNote(m,0.45,+g('voiceCh').value,durMs);
+      });
+    }
+    // drone
+    sendNote(droneNote(),0.55,+g('voiceCh').value,durMs);
+  }
+
+  // ラベル
+  g('sLabel').textContent=sec.n;
+  g('cpLabel').textContent=pat;
+  g('frLabel').textContent=ST.frame;
+  g('fdLabel').textContent=NN[ST.field%12];
+  g('spanLabel').textContent=ST.span+'半音';
+
+  ST.beat++;
+  ST.timer=setTimeout(tick,Math.max(80,durMs));
+}
+
+// ═══ 初期化 ═══
+function fillSelect(id,items,valFn,txtFn,sel){const e=g(id);if(!e)return;items.forEach(it=>{const o=document.createElement('option');o.value=valFn(it);o.textContent=txtFn(it);e.appendChild(o);});if(sel!==undefined)e.value=sel;}
+fillSelect('root',NN.map((n,i)=>[n,i]),x=>x[1],x=>x[0],2);
+fillSelect('frame',Object.keys(SCALES),x=>x,x=>x,'Köln(Dドリアン)');
+fillSelect('fieldTarget',FIELD_MOVES,x=>x[0],x=>x[1]);
+fillSelect('dimTarget',DIM_TARGETS,x=>x,x=>x,'エオリアン');
+fillSelect('story',Object.keys(STORIES),x=>x,x=>STORIES[x].name);
+
+// スライダー値表示
+['cpRate','sink','ma','rubato'].forEach(id=>{const e=g(id);if(e)e.addEventListener('input',()=>{const v=g(id+'V');if(v)v.textContent=e.value;});});
+g('root').addEventListener('change',()=>{ST.root=+g('root').value;ST.field=ST.root;});
+g('frame').addEventListener('change',()=>{ST.frame=g('frame').value;});
+g('doField').addEventListener('click',doFieldShift);
+g('doDim').addEventListener('click',doDimShift);
+
+g('play').addEventListener('click',()=>{
+  if(ST.playing){ST.playing=false;clearTimeout(ST.timer);g('play').textContent='▶ 出航';return;}
+  ST.playing=true;ST.beat=0;ST.lastSec=null;ST.sinkAccum=0;
+  ST.root=+g('root').value;ST.field=ST.root;ST.frame=g('frame').value;
+  ST.upper=74;ST.mid=62;ST.lower=50;
+  TER.notes=[];initTerrain();
+  g('play').textContent='■ 停泊';
+  tick();
+});
+
+// MIDI
+if(navigator.requestMIDIAccess){navigator.requestMIDIAccess().then(a=>{
+  const sel=g('port');[...a.outputs.values()].forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.name;sel.appendChild(op);});
+  sel.addEventListener('change',()=>{ST.midiOut=a.outputs.get(sel.value);});
+  if(sel.options.length){ST.midiOut=a.outputs.get(sel.options[0].value);}
+}).catch(()=>{});}
+window.addEventListener('resize',initTerrain);
+setTimeout(initTerrain,100);
+</script>
+</body></html>

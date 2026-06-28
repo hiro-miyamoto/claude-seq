@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vernel Fournier — Dolphin Dance · 隙間のアート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #080608;
+  --s0:    #0d0b0e;
+  --s1:    #131016;
+  --bd:    #1e1820;
+  --bd2:   #2a2230;
+  --text:  #cac4d0;
+  --dim:   #585068;
+  --fog:   #28202e;
+
+  /* Brush HH: almost nothing, air */
+  --brush: #506868;
+  --brush2:'#304848';
+
+  /* Open HH: presence */
+  --open:  '#a0b8c8';
+  --openh: #a0b8c8;
+
+  /* Snare: behind the beat */
+  --snare: #c8a878;
+
+  /* Kick: the one that counts */
+  --kick:  '#c85038';
+  --kickh: #c85038;
+
+  /* Ride: placed not struck */
+  --ride:  '#9888b8';
+  --rideh: #9888b8;
+
+  /* Silence: the art */
+  --sil:   #181420;
+
+  --bone:  #d4ccd8;
+  --paper: #060408;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;min-height:100vh;}
+
+header{
+  padding:.9rem 1.5rem .65rem;border-bottom:1px solid var(--bd);
+  display:flex;align-items:flex-end;gap:1.4rem;
+  background:var(--paper);position:relative;z-index:10;
+}
+.hdr-name{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:300;font-style:italic;color:var(--bone);line-height:1;}
+.hdr-sub{font-size:.38rem;color:var(--dim);letter-spacing:.3em;text-transform:uppercase;margin-top:.22rem;}
+.hdr-title{flex:1;}
+
+/* Gap meter — 隙間の量 */
+.gap-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.22rem;}
+.gap-label{font-size:.36rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;}
+.gap-val{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:var(--brush);}
+.gap-bar{width:90px;height:3px;background:var(--s1);border-radius:2px;overflow:hidden;}
+.gap-fill{height:100%;border-radius:2px;background:var(--brush);transition:width .4s;}
+
+/* Massage indicator */
+.massage-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:.22rem;}
+.massage-label{font-size:.36rem;color:var(--dim);letter-spacing:.15em;text-transform:uppercase;}
+.massage-orb{width:10px;height:10px;border-radius:50%;background:var(--fog);transition:all .1s;}
+.massage-orb.pulse{background:var(--brush);box-shadow:0 0 8px var(--brush);}
+
+.layout{display:grid;grid-template-columns:205px 1fr;min-height:calc(100vh - 136px);position:relative;z-index:1;}
+.left-panel{border-right:1px solid var(--bd);padding:.6rem;display:flex;flex-direction:column;gap:.42rem;overflow-y:auto;background:var(--paper);}
+.panel{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.48rem .56rem;}
+.panel-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:var(--dim);margin-bottom:.36rem;display:flex;align-items:center;gap:.28rem;}
+.panel-title::before{content:'';width:8px;height:1px;background:currentColor;opacity:.4;flex-shrink:0;}
+.pr{display:flex;align-items:center;gap:.28rem;margin-bottom:.16rem;}
+.pr label{font-size:.37rem;color:var(--dim);width:60px;flex-shrink:0;}
+.pr-val{font-size:.37rem;width:22px;text-align:right;flex-shrink:0;}
+input[type=range]{height:2px;cursor:pointer;flex:1;}
+select{background:var(--s1);border:1px solid var(--bd);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.44rem;padding:.08rem .15rem;border-radius:1px;}
+.btn{padding:.14rem .44rem;border:1px solid var(--bd);border-radius:1px;background:transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.44rem;cursor:pointer;transition:all .1s;}
+.btn:hover{border-color:var(--brush);color:var(--brush);}
+.btn.act{border-color:rgba(80,104,104,.5);color:var(--brush);background:rgba(80,104,104,.07);}
+.midi-dot{width:6px;height:6px;border-radius:50%;background:var(--fog);flex-shrink:0;}
+.midi-dot.on{background:var(--brush);box-shadow:0 0 4px var(--brush);}
+
+.main-area{display:flex;flex-direction:column;}
+.transport{padding:.4rem .85rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.48rem;background:var(--paper);flex-wrap:wrap;}
+
+/* ── DRUM TRACKS ── */
+.tracks-area{flex:1;padding:.65rem .85rem;overflow-y:auto;}
+
+.track{margin-bottom:.75rem;}
+.track-header{display:flex;align-items:center;gap:.45rem;margin-bottom:.22rem;}
+.track-name{font-family:'Cormorant Garamond',serif;font-size:.88rem;font-style:italic;}
+.track-ch{font-size:.35rem;color:var(--dim);padding:.05rem .18rem;border:1px solid var(--bd);border-radius:1px;}
+.track-info{font-size:.34rem;color:var(--fog);margin-left:auto;}
+.track-desc{font-size:.35rem;color:var(--dim);margin-left:.3rem;}
+
+/* Step grid */
+.step-row{display:flex;gap:2px;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+
+/* ── BRUSH HH: inverted — filled = playing, empty = gap ── */
+.step-brush{
+  flex-shrink:0;width:28px;height:28px;
+  border:1px solid var(--bd);border-radius:1px;
+  cursor:pointer;position:relative;
+  transition:all .08s;
+  display:flex;align-items:center;justify-content:center;
+}
+/* Default state: brush is flowing (playing) */
+.step-brush.flowing{
+  background:rgba(80,104,104,.18);
+  border-color:rgba(80,104,104,.35);
+}
+/* Gap state: silence (user marked this as gap) */
+.step-brush.gap{
+  background:var(--sil);
+  border-color:rgba(24,20,32,.8);
+}
+.step-brush.playing{
+  border-color:var(--brush)!important;
+  box-shadow:0 0 4px rgba(80,104,104,.4);
+}
+.step-brush.gap.playing{
+  border-color:rgba(80,104,104,.2)!important;
+  box-shadow:none;
+}
+.step-brush-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--brush);opacity:.7;
+  transition:all .08s;
+}
+.step-brush.gap .step-brush-dot{
+  opacity:.12;
+  background:var(--fog);
+}
+/* Beat markers */
+.step-brush.beat1{border-top:2px solid rgba(80,104,104,.5)!important;}
+.step-brush.beat{border-top:1px solid rgba(80,104,104,.2)!important;}
+
+/* ── OPEN HH: normal step input ── */
+.step-open{
+  flex-shrink:0;width:28px;height:28px;
+  border:1px solid var(--bd);border-radius:1px;
+  cursor:pointer;position:relative;
+  background:transparent;
+  transition:all .08s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+}
+.step-open.active{background:rgba(160,184,200,.08);border-color:rgba(160,184,200,.3);}
+.step-open.playing{border-color:var(--openh)!important;}
+.step-open-bar{width:18px;border-radius:0;transition:height .08s;}
+.step-open-num{font-size:.22rem;color:var(--fog);}
+
+/* ── SNARE ── */
+.step-snare{
+  flex-shrink:0;width:28px;height:28px;
+  border:1px solid var(--bd);border-radius:1px;
+  cursor:pointer;background:transparent;
+  transition:all .08s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+}
+.step-snare.active{background:rgba(200,168,120,.06);border-color:rgba(200,168,120,.25);}
+.step-snare.accent{background:rgba(200,168,120,.12);border-color:rgba(200,168,120,.45);}
+.step-snare.playing{border-color:var(--snare)!important;}
+/* Snare: behind the beat indicator */
+.step-snare.behind{border-left:2px solid rgba(200,168,120,.3);}
+
+/* ── KICK ── */
+.step-kick{
+  flex-shrink:0;width:28px;height:28px;
+  border:1px solid var(--bd);border-radius:1px;
+  cursor:pointer;background:transparent;
+  transition:all .08s;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-kick.active{background:rgba(200,80,56,.08);border-color:rgba(200,80,56,.3);}
+.step-kick.playing{border-color:var(--kickh)!important;background:rgba(200,80,56,.14);}
+/* Kick: the one circle */
+.step-kick-orb{width:12px;height:12px;border-radius:50%;background:transparent;border:1px solid var(--fog);transition:all .08s;}
+.step-kick.active .step-kick-orb{background:var(--kickh);border-color:var(--kickh);opacity:.8;}
+
+/* ── RIDE ── */
+.step-ride{
+  flex-shrink:0;width:28px;height:28px;
+  border:1px solid var(--bd);border-radius:1px;
+  cursor:pointer;background:transparent;
+  transition:all .08s;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-ride.placed{background:rgba(152,136,184,.06);border-color:rgba(152,136,184,.2);}
+.step-ride.playing{border-color:var(--rideh)!important;}
+.step-ride-mark{font-family:'Cormorant Garamond',serif;font-size:.6rem;font-style:italic;color:var(--rideh);opacity:.0;transition:opacity .08s;}
+.step-ride.placed .step-ride-mark{opacity:.6;}
+
+/* Dock */
+.engine-dock{border-top:1px solid var(--bd);background:var(--paper);position:sticky;bottom:0;z-index:20;}
+.dock-tabbar{display:flex;border-bottom:1px solid var(--bd);overflow-x:auto;scrollbar-width:none;}
+.dock-tab{padding:.22rem .46rem;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:.38rem;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:.18rem;transition:all .1s;white-space:nowrap;}
+.dock-tab:hover{color:var(--text);}
+.dock-tab.active{color:var(--text);border-bottom-color:var(--brush);}
+.dock-tdot{width:4px;height:4px;border-radius:50%;opacity:.4;}
+.dock-tab.active .dock-tdot{opacity:1;}
+.dock-minibar{display:flex;align-items:center;gap:.35rem;padding:0 .55rem;margin-left:auto;flex-shrink:0;}
+.mini-lbl{font-size:.32rem;color:var(--dim);}
+.mini-bar{width:24px;height:2px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:1px;transition:width .3s;}
+.dock-panels{max-height:190px;overflow:hidden;transition:max-height .22s;}
+.dock-panels.collapsed{max-height:0!important;}
+.dock-panel{display:none;padding:.4rem .75rem .52rem;}
+.dock-panel.active{display:block;}
+.dpg{display:grid;gap:.4rem;}
+.dpg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.dpg-3{grid-template-columns:1fr 1fr 1fr;}
+.dsub{background:var(--s0);border:1px solid var(--bd);border-radius:1px;padding:.35rem .42rem;}
+.dsub-t{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.78rem;color:var(--dim);margin-bottom:.2rem;padding-left:.2rem;border-left:1px solid var(--brush);opacity:.65;}
+.dg-row{display:flex;align-items:center;gap:.22rem;margin-bottom:.12rem;}
+.dg-lbl{font-size:.34rem;color:var(--dim);width:54px;flex-shrink:0;}
+.dg-track{flex:1;height:3px;background:var(--s1);border-radius:1px;overflow:hidden;}
+.dg-fill{height:100%;border-radius:1px;transition:width .25s;}
+.dg-val{font-size:.34rem;width:20px;text-align:right;flex-shrink:0;}
+.dg-log{font-size:.35rem;color:var(--dim);line-height:1.85;max-height:58px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-title">
+    <div class="hdr-name">Vernel Fournier</div>
+    <div class="hdr-sub">Dolphin Dance · Ahmad Jamal · 隙間のアート · CR-78 · KR-55C</div>
+  </div>
+  <div class="massage-wrap">
+    <span class="massage-label">Massage</span>
+    <div class="massage-orb" id="massageOrb"></div>
+  </div>
+  <div class="gap-wrap">
+    <span class="gap-label">Gap Ratio</span>
+    <div class="gap-bar"><div class="gap-fill" id="gapFill" style="width:60%"></div></div>
+    <span class="gap-val" id="gapVal">60%</span>
+  </div>
+</header>
+
+<div class="layout">
+<div class="left-panel">
+
+  <div class="panel">
+    <div class="panel-title">Tempo</div>
+    <div class="pr"><label>BPM</label>
+      <input type="number" id="bpmIn" value="138" min="60" max="220"
+        style="width:44px;font-size:.5rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.07rem .14rem;border-radius:1px">
+      <button class="btn" onclick="tapTempo()" style="font-size:.36rem;padding:.06rem .22rem">TAP</button></div>
+    <div class="pr"><label>Steps</label>
+      <select id="stepCount" onchange="generateAll()" style="flex:1">
+        <option value="8">8</option>
+        <option value="16" selected>16</option>
+        <option value="32">32</option>
+      </select></div>
+    <div class="pr"><label>Swing</label>
+      <input type="range" id="swingAmt" min="0" max="100" value="22"
+        style="accent-color:var(--snare)">
+      <span class="pr-val" id="swingAmtV" style="color:var(--snare)">22</span></div>
+    <div class="pr"><label>Ableton</label>
+      <select id="clockInSel" onchange="selectClockIn(this.value)" style="flex:1;font-size:.42rem">
+        <option value="">— (internal)</option></select></div>
+    <button id="btnSlave" class="btn" onclick="toggleSlave()" style="width:100%;margin-top:.15rem;font-size:.4rem">Slave: OFF</button>
+  </div>
+
+  <!-- Brush HH -->
+  <div class="panel" style="border-color:rgba(80,104,104,.3)">
+    <div class="panel-title" style="color:var(--brush)">HH ブラシ — Gap Design</div>
+    <div style="font-size:.36rem;color:var(--dim);line-height:1.8;margin-bottom:.22rem">
+      流れがデフォルト。<br>クリックで「抜く」場所を選ぶ。<br>抜いた場所が音楽になる。
+    </div>
+    <div class="pr"><label>Vel.</label>
+      <input type="range" id="brushVel" min="1" max="40" value="18"
+        style="accent-color:var(--brush)">
+      <span class="pr-val" id="brushVelV" style="color:var(--brush)">18</span></div>
+    <div class="pr"><label>Auto-gap</label>
+      <input type="range" id="autoGap" min="0" max="100" value="30">
+      <span class="pr-val" id="autoGapV">30</span></div>
+    <div class="pr"><label>Ch</label>
+      <select id="brushCh" style="flex:1;font-size:.42rem">
+        <option value="4" selected>Ch 4</option><option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option></select></div>
+    <div class="pr"><label>MIDI note</label>
+      <input type="number" id="brushNote" value="42" min="0" max="127"
+        style="width:38px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.06rem .12rem;border-radius:1px">
+      <span style="font-size:.34rem;color:var(--dim)">HH closed</span></div>
+    <button onclick="generateBrush()" class="btn" style="width:100%;margin-top:.2rem;font-size:.4rem">↻ New Pattern</button>
+    <button onclick="clearGaps()" class="btn" style="width:100%;margin-top:.15rem;font-size:.4rem;color:var(--dim)">Clear Gaps</button>
+  </div>
+
+  <!-- Open HH -->
+  <div class="panel" style="border-color:rgba(160,184,200,.2)">
+    <div class="panel-title" style="color:var(--openh)">HH やや鳴る — Open</div>
+    <div style="font-size:.36rem;color:var(--dim);line-height:1.8;margin-bottom:.22rem">
+      選ばれた場所に存在する。<br>少ない。主張しない。
+    </div>
+    <div class="pr"><label>Vel.</label>
+      <input type="range" id="openVel" min="20" max="80" value="48"
+        style="accent-color:var(--openh)">
+      <span class="pr-val" id="openVelV" style="color:var(--openh)">48</span></div>
+    <div class="pr"><label>Density</label>
+      <input type="range" id="openDens" min="0" max="60" value="18">
+      <span class="pr-val" id="openDensV">18</span></div>
+    <div class="pr"><label>Ch</label>
+      <select id="openCh" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5" selected>Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option></select></div>
+    <div class="pr"><label>MIDI note</label>
+      <input type="number" id="openNote" value="46" min="0" max="127"
+        style="width:38px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.06rem .12rem;border-radius:1px">
+      <span style="font-size:.34rem;color:var(--dim)">HH open</span></div>
+  </div>
+
+  <!-- Snare -->
+  <div class="panel" style="border-color:rgba(200,168,120,.2)">
+    <div class="panel-title" style="color:var(--snare)">Snare — Behind the Beat</div>
+    <div style="font-size:.36rem;color:var(--dim);line-height:1.8;margin-bottom:.22rem">
+      2拍4拍の「後ろ」から来る。<br>待っていると来ない。
+    </div>
+    <div class="pr"><label>Vel.</label>
+      <input type="range" id="snareVel" min="20" max="90" value="55"
+        style="accent-color:var(--snare)">
+      <span class="pr-val" id="snareVelV" style="color:var(--snare)">55</span></div>
+    <div class="pr"><label>Behind</label>
+      <input type="range" id="behindAmt" min="0" max="100" value="55">
+      <span class="pr-val" id="behindAmtV">55</span></div>
+    <div class="pr"><label>Ghost</label>
+      <input type="range" id="ghostProb" min="0" max="100" value="30">
+      <span class="pr-val" id="ghostProbV">30</span></div>
+    <div class="pr"><label>Ch</label>
+      <select id="snareCh" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5">Ch 5</option><option value="6" selected>Ch 6</option><option value="7">Ch 7</option><option value="8">Ch 8</option></select></div>
+    <div class="pr"><label>MIDI note</label>
+      <input type="number" id="snareNote" value="38" min="0" max="127"
+        style="width:38px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.06rem .12rem;border-radius:1px">
+      <span style="font-size:.34rem;color:var(--dim)">Snare</span></div>
+  </div>
+
+  <!-- Kick -->
+  <div class="panel" style="border-color:rgba(200,80,56,.18)">
+    <div class="panel-title" style="color:var(--kickh)">Kick — 確信の一発</div>
+    <div style="font-size:.36rem;color:var(--dim);line-height:1.8;margin-bottom:.22rem">
+      存在を忘れた頃に来る。<br>その一発で全部が繋がる。
+    </div>
+    <div class="pr"><label>Vel.</label>
+      <input type="range" id="kickVel" min="30" max="100" value="65"
+        style="accent-color:var(--kickh)">
+      <span class="pr-val" id="kickVelV" style="color:var(--kickh)">65</span></div>
+    <div class="pr"><label>Density</label>
+      <input type="range" id="kickDens" min="0" max="50" value="12">
+      <span class="pr-val" id="kickDensV">12</span></div>
+    <div class="pr"><label>Ch</label>
+      <select id="kickCh" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7" selected>Ch 7</option><option value="8">Ch 8</option></select></div>
+    <div class="pr"><label>MIDI note</label>
+      <input type="number" id="kickNote" value="36" min="0" max="127"
+        style="width:38px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.06rem .12rem;border-radius:1px">
+      <span style="font-size:.34rem;color:var(--dim)">Bass drum</span></div>
+  </div>
+
+  <!-- Ride -->
+  <div class="panel" style="border-color:rgba(152,136,184,.18)">
+    <div class="panel-title" style="color:var(--rideh)">Ride — 置く</div>
+    <div style="font-size:.36rem;color:var(--dim);line-height:1.8;margin-bottom:.22rem">
+      叩くのではなく置いてくる。
+    </div>
+    <div class="pr"><label>Vel.</label>
+      <input type="range" id="rideVel" min="10" max="70" value="38"
+        style="accent-color:var(--rideh)">
+      <span class="pr-val" id="rideVelV" style="color:var(--rideh)">38</span></div>
+    <div class="pr"><label>Density</label>
+      <input type="range" id="rideDens" min="0" max="60" value="25">
+      <span class="pr-val" id="rideDensV">25</span></div>
+    <div class="pr"><label>Ch</label>
+      <select id="rideCh" style="flex:1;font-size:.42rem">
+        <option value="4">Ch 4</option><option value="5">Ch 5</option><option value="6">Ch 6</option><option value="7">Ch 7</option><option value="8" selected>Ch 8</option></select></div>
+    <div class="pr"><label>MIDI note</label>
+      <input type="number" id="rideNote" value="51" min="0" max="127"
+        style="width:38px;font-size:.46rem;background:var(--s1);border:1px solid var(--bd);color:var(--text);padding:.06rem .12rem;border-radius:1px">
+      <span style="font-size:.34rem;color:var(--dim)">Ride cymbal</span></div>
+  </div>
+
+  <!-- MIDI -->
+  <div class="panel">
+    <div class="panel-title">MIDI</div>
+    <div class="pr"><div class="midi-dot" id="midiDot"></div>
+      <span id="midiStatus" style="font-size:.4rem;color:var(--dim)">—</span></div>
+    <button class="btn" onclick="initMIDI()" style="width:100%;margin-bottom:.18rem;font-size:.4rem">↻ Refresh</button>
+    <div class="pr"><label>Out</label>
+      <select id="midiDevSel" onchange="selectMidiOut(this.value)" style="flex:1;font-size:.38rem"></select></div>
+    <button class="btn act" onclick="exportMIDI()" style="width:100%;margin-top:.15rem;font-size:.4rem">↓ Export MIDI</button>
+  </div>
+
+</div>
+
+<div class="main-area">
+  <div class="transport">
+    <button class="btn act" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+    <button class="btn" onclick="stopAll()">■ Stop</button>
+    <button class="btn" onclick="generateAll()">↻ All</button>
+    <button class="btn" onclick="generateBrush()" style="color:var(--brush)">↻ Brush</button>
+    <button class="btn" onclick="generateOpens()" style="color:var(--openh)">↻ Open</button>
+    <button class="btn" onclick="generateSnare()" style="color:var(--snare)">↻ Snare</button>
+    <button class="btn" onclick="generateKick()" style="color:var(--kickh)">↻ Kick</button>
+    <button class="btn" onclick="generateRide()" style="color:var(--rideh)">↻ Ride</button>
+    <button class="btn" id="btnUndo" onclick="undo()" style="opacity:.3">↩</button>
+    <button class="btn" id="btnRedo" onclick="redo()" style="opacity:.3">↪</button>
+    <button class="btn" onclick="saveState()" style="color:var(--brush)">↓ Save</button>
+    <label class="btn" style="cursor:pointer;color:var(--dim)">↑ Load
+      <input type="file" accept=".json" onchange="loadState(event)" style="display:none"></label>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:.45rem">
+      <span style="font-size:.38rem;color:var(--dim)" id="stepDisplay">—</span>
+      <span style="font-size:.38rem;color:var(--brush)" id="gapDisplay">gaps: —</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:.5rem;font-style:italic;color:var(--snare)" id="bpmDisplay">138</span>
+    </div>
+  </div>
+
+  <div class="tracks-area">
+
+    <!-- Brush HH — inverted logic -->
+    <div class="track">
+      <div class="track-header">
+        <span class="track-name" style="color:var(--brush)">HH ブラシ</span>
+        <span class="track-ch">Ch <span id="brushChDisp">4</span></span>
+        <span class="track-desc">流れる — クリックで抜く</span>
+        <span class="track-info" id="brushInfo">—</span>
+      </div>
+      <div class="step-row" id="brushGrid"></div>
+    </div>
+
+    <!-- Open HH -->
+    <div class="track">
+      <div class="track-header">
+        <span class="track-name" style="color:var(--openh)">HH やや鳴る</span>
+        <span class="track-ch">Ch <span id="openChDisp">5</span></span>
+        <span class="track-desc">選ばれた場所に</span>
+        <span class="track-info" id="openInfo">—</span>
+      </div>
+      <div class="step-row" id="openGrid"></div>
+    </div>
+
+    <!-- Snare -->
+    <div class="track">
+      <div class="track-header">
+        <span class="track-name" style="color:var(--snare)">Snare</span>
+        <span class="track-ch">Ch <span id="snareChDisp">6</span></span>
+        <span class="track-desc">後ろから来る</span>
+        <span class="track-info" id="snareInfo">—</span>
+      </div>
+      <div class="step-row" id="snareGrid"></div>
+    </div>
+
+    <!-- Kick -->
+    <div class="track">
+      <div class="track-header">
+        <span class="track-name" style="color:var(--kickh)">Kick</span>
+        <span class="track-ch">Ch <span id="kickChDisp">7</span></span>
+        <span class="track-desc">確信の一発</span>
+        <span class="track-info" id="kickInfo">—</span>
+      </div>
+      <div class="step-row" id="kickGrid"></div>
+    </div>
+
+    <!-- Ride -->
+    <div class="track">
+      <div class="track-header">
+        <span class="track-name" style="color:var(--rideh)">Ride</span>
+        <span class="track-ch">Ch <span id="rideChDisp">8</span></span>
+        <span class="track-desc">置く — 叩かない</span>
+        <span class="track-info" id="rideInfo">—</span>
+      </div>
+      <div class="step-row" id="rideGrid"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Dock -->
+<div class="engine-dock">
+  <div class="dock-tabbar">
+    <button class="dock-tab active" data-panel="gaps"><span class="dock-tdot" style="background:var(--brush)"></span>Gaps</button>
+    <button class="dock-tab" data-panel="swing"><span class="dock-tdot" style="background:var(--snare)"></span>Swing</button>
+    <button class="dock-tab" data-panel="log"><span class="dock-tdot" style="background:var(--fog)"></span>Log</button>
+    <div class="dock-minibar">
+      <span class="mini-lbl">Gap</span><div class="mini-bar"><div class="mini-fill" id="miniGap" style="background:var(--brush)"></div></div>
+      <span class="mini-lbl">Snare</span><div class="mini-bar"><div class="mini-fill" id="miniSnare" style="background:var(--snare)"></div></div>
+      <span class="mini-lbl">Kick</span><div class="mini-bar"><div class="mini-fill" id="miniKick" style="background:var(--kickh)"></div></div>
+      <button onclick="toggleDock()" id="dockColBtn" style="background:transparent;border:none;color:var(--dim);font-size:.42rem;cursor:pointer;margin-left:.28rem">▲</button>
+    </div>
+  </div>
+  <div class="dock-panels" id="dockPanels">
+
+    <div class="dock-panel active" id="dp-gaps">
+      <div class="dpg dpg-4">
+        <div class="dsub">
+          <div class="dsub-t">Gap Analysis</div>
+          <div class="dg-row"><span class="dg-lbl">Total gaps</span><span id="totalGaps" style="font-size:.4rem;color:var(--brush)">—</span></div>
+          <div class="dg-row"><span class="dg-lbl">Gap ratio</span><div class="dg-track"><div class="dg-fill" id="gapRatioF" style="background:var(--brush)"></div></div><span class="dg-val" id="gapRatioV" style="color:var(--brush)">0</span></div>
+          <div class="dg-row"><span class="dg-lbl">Consecutive</span><span id="consGaps" style="font-size:.38rem;color:var(--dim)">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Gap Pattern</div>
+          <canvas id="gapCanvas" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">隙間の哲学</div>
+          <div style="font-size:.36rem;color:var(--dim);line-height:1.85">
+            脳のマッサージのような<br>
+            隙間のアート<br>
+            <span style="color:var(--brush)">鳴らさない場所が音楽</span>
+          </div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">ログ</div>
+          <div id="gapLog" class="dg-log"><span style="color:rgba(80,104,104,.35)">— waiting —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-panel" id="dp-swing">
+      <div class="dpg dpg-3">
+        <div class="dsub">
+          <div class="dsub-t">Swing State</div>
+          <div class="dg-row"><span class="dg-lbl">Amount</span><div class="dg-track"><div class="dg-fill" id="swingF" style="background:var(--snare)"></div></div><span class="dg-val" id="swingV" style="color:var(--snare)">22</span></div>
+          <div class="dg-row"><span class="dg-lbl">Behind</span><div class="dg-track"><div class="dg-fill" id="behindF" style="background:var(--snare)"></div></div><span class="dg-val" id="behindV">55</span></div>
+          <div class="dg-row"><span class="dg-lbl">Ghost cnt</span><span id="ghostCnt" style="font-size:.38rem;color:var(--dim)">—</span></div>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Groove Curve</div>
+          <canvas id="grooveCanvas" height="50" style="width:100%;display:block;background:var(--bg);border-radius:1px"></canvas>
+        </div>
+        <div class="dsub">
+          <div class="dsub-t">Vernel Notes</div>
+          <div style="font-size:.36rem;color:var(--dim);line-height:1.85">
+            スネアは「後ろ」に座る<br>
+            バスドラは疎ら＆確信<br>
+            <span style="color:var(--snare)">縦に乗れる重力</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-panel" id="dp-log">
+      <div class="dsub">
+        <div class="dsub-t">Event Log</div>
+        <div id="mainLog" class="dg-log" style="max-height:130px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let playing = false;
+let midiOut = null, midiAccess = null;
+let stepIdx = 0;
+let playTimer = null;
+let audioCtx = null, _keepNode = null;
+
+// Track data — Vernel's five voices
+// Brush HH: isGap=true means SILENCE (inverted logic)
+let brushSteps = [];  // {isGap, vel}
+let openSteps  = [];  // {active, vel}
+let snareSteps = [];  // {active, vel, isBehind, isGhost}
+let kickSteps  = [];  // {active, vel}
+let rideSteps  = [];  // {active, vel}  (placed)
+
+let loopCount = 0;
+
+// Groove timing state
+const GROOVE = {
+  swingPhase: 0,
+  history:    [],
+};
+
+// Slave
+const SLAVE={active:false,running:false,clockInPort:null,ppqn:24,pulsesPerStep:6,pulseCount:0,bpmSmoothed:138,bpmAlpha:0.15,lastPulseTime:0};
+
+// ══════════════════════════════════════════════════════
+//  GENERATION
+// ══════════════════════════════════════════════════════
+function getSteps(){ return parseInt(document.getElementById('stepCount').value)||16; }
+function getBpm(){   return parseInt(document.getElementById('bpmIn').value)||138; }
+
+// ── BRUSH HH: flowing stream, gaps are punched in ──
+function generateBrush(){
+  const steps   = getSteps();
+  const autoGap = parseInt(document.getElementById('autoGap').value)/100;
+  const vel     = parseInt(document.getElementById('brushVel').value)/127;
+
+  brushSteps = [];
+  // Vernel's brush: 8th note flow
+  // Auto-gap: algorithmically place gaps in Vernel-like patterns
+  // Key: gaps tend to come in groups of 1-2, not isolated
+  let gapMode = false;
+  let gapLen  = 0;
+
+  for(let i=0; i<steps; i++){
+    if(gapMode){
+      brushSteps.push({isGap:true, vel:0});
+      gapLen--;
+      if(gapLen<=0) gapMode=false;
+    } else {
+      // Chance of starting a gap
+      // Gaps more likely after beat 2 and 4 (off-beats)
+      const beatPos = i % 4;
+      const gapChance = autoGap * (beatPos===1||beatPos===3 ? 0.6 : 0.3);
+      if(Math.random()<gapChance){
+        gapMode = true;
+        gapLen  = Math.random()<0.6 ? 1 : 2; // mostly single, sometimes double gap
+        brushSteps.push({isGap:true, vel:0});
+        gapLen--;
+        if(gapLen<=0) gapMode=false;
+      } else {
+        // Velocity variation: brushes vary slightly
+        const v = vel * (0.7+Math.random()*0.45);
+        brushSteps.push({isGap:false, vel:Math.max(0.05,Math.min(0.32,v))});
+      }
+    }
+  }
+
+  buildBrushGrid();
+  updateGapUI();
+  gLog('↻ Brush: '+brushSteps.filter(s=>s.isGap).length+' gaps / '+steps);
+}
+
+// ── OPEN HH: sparse, chosen moments ──
+function generateOpens(){
+  const steps = getSteps();
+  const dens  = parseInt(document.getElementById('openDens').value)/100;
+  const vel   = parseInt(document.getElementById('openVel').value)/127;
+
+  openSteps = [];
+  // Open HH placement: often on the upbeat, never on kick
+  // Vernel places them sparingly — feels like a choice each time
+  for(let i=0; i<steps; i++){
+    const isUpbeat = i%2===1; // upbeat positions
+    const prob = dens * (isUpbeat?1.5:0.3);
+    const active = Math.random()<prob;
+    const v = vel*(0.8+Math.random()*0.35);
+    openSteps.push({active, vel:Math.max(0.15,Math.min(0.65,v))});
+  }
+
+  buildOpenGrid();
+  gLog('↻ Open HH: '+openSteps.filter(s=>s.active).length+'/'+steps);
+}
+
+// ── SNARE: behind the beat ──
+function generateSnare(){
+  const steps   = getSteps();
+  const vel     = parseInt(document.getElementById('snareVel').value)/127;
+  const behind  = parseInt(document.getElementById('behindAmt').value)/100;
+  const ghost   = parseInt(document.getElementById('ghostProb').value)/100;
+
+  snareSteps = [];
+  // Vernel snare: 2 and 4, but not always exactly
+  // "Behind": snare comes late (micro-timing handled in playback)
+  // Ghost notes: very soft, between main snare hits
+  let ghosts = 0;
+  for(let i=0; i<steps; i++){
+    // Main snare on 2 and 4 (steps 4,8,12 in 16-step / 2,6 in 8-step)
+    const step16 = Math.round(i * 16/steps);
+    const isMain2 = (step16===4||step16===5);  // beat 2 area
+    const isMain4 = (step16===12||step16===13); // beat 4 area
+    const isMain  = isMain2||isMain4;
+
+    if(isMain&&Math.random()<0.88){
+      const isBehind = Math.random()<behind;
+      const v = vel*(0.75+Math.random()*0.3);
+      snareSteps.push({active:true,vel:Math.min(0.85,v),isBehind,isGhost:false,isAccent:!isBehind&&Math.random()<0.3});
+    } else if(Math.random()<ghost*0.25){
+      // Ghost note: very soft
+      const v = vel*0.18*(0.5+Math.random()*0.5);
+      snareSteps.push({active:true,vel:Math.max(0.06,v),isBehind:false,isGhost:true,isAccent:false});
+      ghosts++;
+    } else {
+      snareSteps.push({active:false,vel:0,isBehind:false,isGhost:false,isAccent:false});
+    }
+  }
+
+  buildSnareGrid();
+  document.getElementById('ghostCnt').textContent=ghosts+' ghosts';
+  gLog('↻ Snare: behind='+Math.round(behind*100)+'% ghosts='+ghosts);
+}
+
+// ── KICK: the one that counts ──
+function generateKick(){
+  const steps = getSteps();
+  const vel   = parseInt(document.getElementById('kickVel').value)/127;
+  const dens  = parseInt(document.getElementById('kickDens').value)/100;
+
+  kickSteps = [];
+  // Vernel kick: beat 1, sometimes beat 3, rarely elsewhere
+  // The sparseness is what makes each hit COUNT
+  for(let i=0; i<steps; i++){
+    const step16 = Math.round(i*16/steps);
+    const isBeat1 = step16===0;
+    const isBeat3 = step16===8;
+    const isEarly = step16===2||step16===10; // anticipation
+
+    let prob = 0;
+    if(isBeat1)  prob = 0.85;
+    else if(isBeat3) prob = dens*1.2;
+    else if(isEarly) prob = dens*0.4;
+    else             prob = dens*0.1;
+
+    const active = Math.random()<prob;
+    const v = vel*(0.8+Math.random()*0.3);
+    kickSteps.push({active, vel:Math.max(0.3,Math.min(0.9,v))});
+  }
+
+  buildKickGrid();
+  gLog('↻ Kick: '+kickSteps.filter(s=>s.active).length+'/'+steps+' hits');
+}
+
+// ── RIDE: placed not struck ──
+function generateRide(){
+  const steps = getSteps();
+  const vel   = parseInt(document.getElementById('rideVel').value)/127;
+  const dens  = parseInt(document.getElementById('rideDens').value)/100;
+
+  rideSteps = [];
+  // Ride: Vernel uses it sparsely, almost as punctuation
+  // "Placed" = softer velocity, placed on specific beats
+  for(let i=0; i<steps; i++){
+    const step16 = Math.round(i*16/steps);
+    // Ride favors beat 1 and beat 3 area
+    const isFav = step16%4===0;
+    const prob = dens*(isFav?1.4:0.4);
+    const active = Math.random()<prob;
+    const v = vel*(0.65+Math.random()*0.4); // placed = softer
+    rideSteps.push({active, vel:Math.max(0.1,Math.min(0.6,v))});
+  }
+
+  buildRideGrid();
+  gLog('↻ Ride: '+rideSteps.filter(s=>s.active).length+' placed');
+}
+
+function generateAll(){
+  generateBrush();
+  generateOpens();
+  generateSnare();
+  generateKick();
+  generateRide();
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD GRIDS
+// ══════════════════════════════════════════════════════
+function buildBrushGrid(){
+  const el=document.getElementById('brushGrid'); if(!el)return;
+  el.innerHTML='';
+  brushSteps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    const isBeat1=(i%4===0);
+    d.className='step-brush'+(s.isGap?' gap':' flowing')+(isBeat1?' beat1':i%2===0?' beat':'');
+    d.id='brushStep'+i;
+    d.innerHTML=`<div class="step-brush-dot"></div>`;
+    // Click = toggle gap (invert: click makes silence)
+    d.addEventListener('click',()=>{
+      pushUndo();
+      s.isGap=!s.isGap;
+      buildBrushGrid();
+      updateGapUI();
+    });
+    el.appendChild(d);
+  });
+  const info=document.getElementById('brushInfo');
+  if(info){
+    const gaps=brushSteps.filter(s=>s.isGap).length;
+    info.textContent=gaps+' gaps / '+brushSteps.length;
+  }
+  const cd=document.getElementById('brushChDisp');
+  if(cd){const ce=document.getElementById('brushCh');if(ce)cd.textContent=ce.value;}
+}
+
+function buildOpenGrid(){
+  const el=document.getElementById('openGrid'); if(!el)return;
+  el.innerHTML='';
+  openSteps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='step-open'+(s.active?' active':'');
+    d.id='openStep'+i;
+    const h=s.active?Math.round(s.vel*24)+2:2;
+    d.innerHTML=`<div class="step-open-bar" style="height:${h}px;background:${s.active?'var(--openh)':'rgba(255,255,255,.03)'};width:18px"></div>
+      <span class="step-open-num">${i+1}</span>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;buildOpenGrid();});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.vel=s.vel>0.4?0.25:0.55;buildOpenGrid();});
+    el.appendChild(d);
+  });
+  const info=document.getElementById('openInfo');
+  if(info)info.textContent=openSteps.filter(s=>s.active).length+'/'+openSteps.length;
+  const cd=document.getElementById('openChDisp');
+  if(cd){const ce=document.getElementById('openCh');if(ce)cd.textContent=ce.value;}
+}
+
+function buildSnareGrid(){
+  const el=document.getElementById('snareGrid'); if(!el)return;
+  el.innerHTML='';
+  snareSteps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='step-snare'+(s.active?(s.isGhost?' ghost':s.isAccent?' accent':' active'):'')+(s.isBehind?' behind':'');
+    d.id='snareStep'+i;
+    const h=s.active?Math.round(s.vel*30)+2:1;
+    const col=s.isGhost?'rgba(200,168,120,.25)':s.isAccent?'var(--snare)':'rgba(200,168,120,.6)';
+    d.innerHTML=`<div class="step-open-bar" style="height:${h}px;background:${s.active?col:'rgba(255,255,255,.03)'};width:18px"></div>
+      <span class="step-open-num">${i+1}</span>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;buildSnareGrid();});
+    d.addEventListener('contextmenu',e=>{e.preventDefault();s.isBehind=!s.isBehind;buildSnareGrid();});
+    el.appendChild(d);
+  });
+  const info=document.getElementById('snareInfo');
+  if(info){
+    const main=snareSteps.filter(s=>s.active&&!s.isGhost).length;
+    const ghosts=snareSteps.filter(s=>s.active&&s.isGhost).length;
+    info.textContent=main+' main · '+ghosts+' ghost';
+  }
+  const cd=document.getElementById('snareChDisp');
+  if(cd){const ce=document.getElementById('snareCh');if(ce)cd.textContent=ce.value;}
+}
+
+function buildKickGrid(){
+  const el=document.getElementById('kickGrid'); if(!el)return;
+  el.innerHTML='';
+  kickSteps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='step-kick'+(s.active?' active':'');
+    d.id='kickStep'+i;
+    d.innerHTML=`<div class="step-kick-orb"></div>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;buildKickGrid();updateGapUI();});
+    el.appendChild(d);
+  });
+  const info=document.getElementById('kickInfo');
+  if(info)info.textContent=kickSteps.filter(s=>s.active).length+' hits';
+  const cd=document.getElementById('kickChDisp');
+  if(cd){const ce=document.getElementById('kickCh');if(ce)cd.textContent=ce.value;}
+}
+
+function buildRideGrid(){
+  const el=document.getElementById('rideGrid'); if(!el)return;
+  el.innerHTML='';
+  rideSteps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='step-ride'+(s.active?' placed':'');
+    d.id='rideStep'+i;
+    d.innerHTML=`<div class="step-ride-mark">·</div>`;
+    d.addEventListener('click',()=>{pushUndo();s.active=!s.active;buildRideGrid();});
+    el.appendChild(d);
+  });
+  const info=document.getElementById('rideInfo');
+  if(info)info.textContent=rideSteps.filter(s=>s.active).length+' placed';
+  const cd=document.getElementById('rideChDisp');
+  if(cd){const ce=document.getElementById('rideCh');if(ce)cd.textContent=ce.value;}
+}
+
+function clearGaps(){
+  pushUndo();
+  brushSteps.forEach(s=>s.isGap=false);
+  buildBrushGrid();
+  updateGapUI();
+  gLog('Clear: all gaps removed');
+}
+
+// ══════════════════════════════════════════════════════
+//  UI UPDATES
+// ══════════════════════════════════════════════════════
+function updateGapUI(){
+  const total=brushSteps.length;
+  const gaps=brushSteps.filter(s=>s.isGap).length;
+  const pct=total?Math.round(gaps/total*100):0;
+  const gf=document.getElementById('gapFill');if(gf)gf.style.width=pct+'%';
+  const gv=document.getElementById('gapVal');if(gv)gv.textContent=pct+'%';
+  const gd=document.getElementById('gapDisplay');if(gd)gd.textContent='gaps: '+pct+'%';
+  const tg=document.getElementById('totalGaps');if(tg)tg.textContent=gaps+' / '+total;
+  const grf=document.getElementById('gapRatioF');if(grf)grf.style.width=pct+'%';
+  const grv=document.getElementById('gapRatioV');if(grv)grv.textContent=pct;
+  const mg=document.getElementById('miniGap');if(mg)mg.style.width=pct+'%';
+  // Consecutive gaps
+  let maxCons=0,cur=0;
+  brushSteps.forEach(s=>{if(s.isGap){cur++;maxCons=Math.max(maxCons,cur);}else cur=0;});
+  const cg=document.getElementById('consGaps');if(cg)cg.textContent='max '+maxCons+' consecutive';
+  drawGapCanvas();
+}
+
+function drawGapCanvas(){
+  const cv=document.getElementById('gapCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=50;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,50);
+  const bw=W/Math.max(1,brushSteps.length);
+  brushSteps.forEach((s,i)=>{
+    const x=i*bw;
+    if(s.isGap){
+      ctx.fillStyle='rgba(80,104,104,.12)';
+      ctx.fillRect(x,0,bw-1,50);
+    } else {
+      ctx.fillStyle='rgba(80,104,104,.45)';
+      ctx.fillRect(x,50-s.vel*120-2,bw-1,s.vel*120+2);
+    }
+  });
+}
+
+function drawGrooveCanvas(){
+  const cv=document.getElementById('grooveCanvas');if(!cv||!cv.getContext)return;
+  const W=cv.parentElement?.offsetWidth||160;cv.width=W;cv.height=50;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,50);
+  const all=[...brushSteps.map(s=>({v:s.isGap?0:s.vel,col:'rgba(80,104,104,.5)'})),
+             ...snareSteps.map(s=>({v:s.active?s.vel:0,col:'rgba(200,168,120,.6)'}))];
+  if(all.length<2)return;
+  const bw=W/all.length;
+  all.forEach((s,i)=>{
+    if(s.v>0){
+      const h=s.v*42;
+      ctx.fillStyle=s.col;
+      ctx.fillRect(i*bw,50-h,bw-1,h);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  PLAYBACK
+// ══════════════════════════════════════════════════════
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function startKeepAlive(){const ctx=getAudioCtx();if(_keepNode)return;_keepNode=ctx.createOscillator();const g=ctx.createGain();g.gain.value=0;_keepNode.connect(g);g.connect(ctx.destination);_keepNode.start();}
+
+const _wC=`const T={};self.onmessage=function(e){const{type,id,delay}=e.data;if(type==='set'){T[id]=setTimeout(()=>{delete T[id];self.postMessage({id})},delay)}else if(type==='clear'){clearTimeout(T[id]);delete T[id]}};`;
+let _tw=null;const _tc={};let _tn=1;
+function getTW(){if(_tw)return _tw;try{const b=new Blob([_wC],{type:'application/javascript'});_tw=new Worker(URL.createObjectURL(b));_tw.onmessage=e=>{const cb=_tc[e.data.id];if(cb){delete _tc[e.data.id];cb();}};}catch(e){_tw=null;}return _tw;}
+function bgTimeout(fn,ms){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  const w=getTW();
+  if(w){const id=_tn++;const dl=ctx.currentTime+ms/1000;_tc[id]=()=>{const rem=(dl-ctx.currentTime)*1000;if(rem>2){const id2=_tn++;_tc[id2]=fn;w.postMessage({type:'set',id:id2,delay:Math.max(0,rem-1)});}else fn();};w.postMessage({type:'set',id,delay:Math.max(0,ms-5)});return{cancelled:false,cancel:()=>{w.postMessage({type:'clear',id});delete _tc[id];}};}
+  const dl=ctx.currentTime+ms/1000;const tid={cancelled:false};let t=null;
+  function check(){if(tid.cancelled)return;const rem=(dl-ctx.currentTime)*1000;if(rem<=1)fn();else{t=setTimeout(check,rem<25?1:Math.max(1,rem-20));}}
+  t=setTimeout(check,Math.max(1,ms-20));
+  tid.cancel=()=>{tid.cancelled=true;if(t)clearTimeout(t);};
+  return tid;
+}
+
+document.addEventListener('visibilitychange',()=>{const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();if(!document.hidden&&midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);});
+
+function togglePlay(){playing?stopAll():startPlay();}
+function startPlay(){
+  const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();
+  startKeepAlive();
+  playing=true;stepIdx=0;
+  document.getElementById('btnPlay').textContent='■ Stop';
+  if(SLAVE.active&&SLAVE.running)return;
+  tick();
+}
+function stopAll(){
+  playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}
+  document.getElementById('btnPlay').textContent='▶ Play';
+  document.getElementById('stepDisplay').textContent='—';
+  stepIdx=0;
+  if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);
+  document.querySelectorAll('.step-brush.playing,.step-open.playing,.step-snare.playing,.step-kick.playing,.step-ride.playing').forEach(e=>e.classList.remove('playing'));
+}
+
+let _tc4=0;
+function tick(){
+  if(!playing)return;
+  if(SLAVE.active&&SLAVE.running){playing=true;return;}
+
+  const bpm  = getBpm();
+  const steps= getSteps();
+  // 8th note steps: each step = half a quarter note
+  const stepMs = 60000/bpm/2;
+
+  // Swing: odd steps are pushed forward slightly
+  const swingAmt = parseInt(document.getElementById('swingAmt').value)/100;
+  const isOdd = stepIdx%2===1;
+  const swingOffset = isOdd ? stepMs*swingAmt*0.25 : -stepMs*swingAmt*0.08;
+  const actualMs = Math.max(20, stepMs+swingOffset);
+
+  // Behind-the-beat: snare micro-timing
+  const behindAmt = parseInt(document.getElementById('behindAmt').value)/100;
+  const snare = snareSteps[stepIdx%Math.max(1,snareSteps.length)];
+  const snareBehind = snare&&snare.isBehind ? stepMs*behindAmt*0.12 : 0;
+
+  // Highlight
+  const si=stepIdx%Math.max(1,brushSteps.length);
+  ['brush','open','snare','kick','ride'].forEach(t=>{
+    document.querySelectorAll('#'+t+'Grid .step-'+t).forEach((e,i)=>{
+      e.classList.toggle('playing',i===si);
+    });
+  });
+
+  // Massage orb: pulses on non-gap steps
+  const brush=brushSteps[si];
+  const orb=document.getElementById('massageOrb');
+  if(orb)orb.classList.toggle('pulse',brush&&!brush.isGap);
+
+  // Send MIDI
+  sendDrum(brushSteps,si,'brushCh','brushNote',0);
+  sendDrum(openSteps, si,'openCh', 'openNote', 0);
+  // Snare with behind-the-beat delay
+  if(snareBehind>5){
+    setTimeout(()=>sendDrum(snareSteps,si,'snareCh','snareNote',0), snareBehind);
+  } else {
+    sendDrum(snareSteps,si,'snareCh','snareNote',0);
+  }
+  sendDrum(kickSteps, si,'kickCh', 'kickNote', 0);
+  sendDrum(rideSteps, si,'rideCh', 'rideNote', 0);
+
+  document.getElementById('stepDisplay').textContent=(Math.floor(stepIdx/2)+1)+':'+(stepIdx%2===0?1:'+');
+  document.getElementById('bpmDisplay').textContent=Math.round(bpm);
+
+  stepIdx++;
+  if(stepIdx>=steps){stepIdx=0;loopCount++;onLoopEnd();}
+
+  _tc4++;
+  if(_tc4%8===0){updateGapUI();drawGrooveCanvas();}
+
+  playTimer=bgTimeout(tick,actualMs);
+}
+
+function onLoopEnd(){
+  // Vernel: subtle variation per loop
+  // Occasionally shift a gap or add/remove a ghost
+  if(Math.random()<0.25){
+    // Shift one gap
+    const nonGap=brushSteps.map((s,i)=>(!s.isGap?i:-1)).filter(i=>i>=0);
+    const isGap=brushSteps.map((s,i)=>(s.isGap?i:-1)).filter(i=>i>=0);
+    if(nonGap.length>0&&isGap.length>0&&Math.random()<0.4){
+      // Move a gap slightly
+      const from=isGap[Math.floor(Math.random()*isGap.length)];
+      const to=nonGap[Math.floor(Math.random()*nonGap.length)];
+      if(Math.abs(from-to)<=2){
+        brushSteps[from].isGap=false;
+        brushSteps[to].isGap=true;
+        buildBrushGrid();
+        updateGapUI();
+      }
+    }
+  }
+}
+
+function sendDrum(steps,idx,chId,noteId,octOff){
+  if(!steps.length||!midiOut)return;
+  const s=steps[idx%steps.length];
+  if(!s)return;
+  // Brush HH: isGap=true means DON'T play (inverted)
+  if(s.isGap!==undefined && s.isGap) return;
+  if(s.active===false) return;
+  const chEl=document.getElementById(chId);
+  const noteEl=document.getElementById(noteId);
+  const ch=(parseInt(chEl?chEl.value:1)||1)-1;
+  const note=Math.max(0,Math.min(127,(parseInt(noteEl?noteEl.value:36)||36)+(octOff||0)));
+  const v=Math.max(1,Math.min(120,Math.round(s.vel*110+5)));
+  // Drum: very short note off (percussive)
+  try{
+    midiOut.send([0x90|ch,note,v]);
+    setTimeout(()=>{try{if(midiOut)midiOut.send([0x80|ch,note,0]);}catch(e){}},40);
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════════════════
+//  MIDI
+// ══════════════════════════════════════════════════════
+function initMIDI(){if(!navigator.requestMIDIAccess){setMS(false,'N/A');return;}navigator.requestMIDIAccess().then(ma=>{midiAccess=ma;ma.onstatechange=()=>{populatePorts();populateIn();};populatePorts();populateIn();}).catch(()=>setMS(false,'denied'));}
+function populatePorts(){const sel=document.getElementById('midiDevSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.outputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;[...sel.options].forEach(o=>{if(o.textContent.includes('IAC')&&!sel.value){sel.value=o.value;selectMidiOut(sel.value);}});}
+function populateIn(){const sel=document.getElementById('clockInSel');if(!sel||!midiAccess)return;const prev=sel.value;sel.innerHTML='<option value="">—</option>';midiAccess.inputs.forEach((p,id)=>{const o=document.createElement('option');o.value=id;o.textContent=p.name;sel.appendChild(o);});if(prev)sel.value=prev;}
+function selectMidiOut(id){if(!id){midiOut=null;setMS(false,'—');return;}midiOut=midiAccess?.outputs.get(id);if(midiOut)setMS(true,midiOut.name);}
+function setMS(ok,name){const dot=document.getElementById('midiDot'),stat=document.getElementById('midiStatus');if(dot)dot.classList.toggle('on',ok);if(stat){stat.textContent=ok?'✓ '+name:name;stat.style.color=ok?'var(--brush)':'var(--dim)';}}
+function selectClockIn(id){if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=null;if(!id||!midiAccess)return;SLAVE.clockInPort=midiAccess.inputs.get(id);if(SLAVE.clockInPort)SLAVE.clockInPort.onmidimessage=onClockMsg;}
+function toggleSlave(){SLAVE.active=!SLAVE.active;const btn=document.getElementById('btnSlave');if(btn){btn.textContent=SLAVE.active?'Slave: ON':'Slave: OFF';btn.style.color=SLAVE.active?'var(--brush)':'';}if(SLAVE.active){if(playTimer){playTimer.cancelled=true;playTimer=null;}}else if(playing)tick();}
+function onClockMsg(e){const d=e.data[0];if(d===0xFA){SLAVE.running=true;SLAVE.pulseCount=0;if(playTimer){playTimer.cancelled=true;playTimer=null;}playing=true;stepIdx=0;startKeepAlive();const ctx=getAudioCtx();if(ctx.state==='suspended')ctx.resume();document.getElementById('btnPlay').textContent='■ Stop';return;}if(d===0xFB){SLAVE.running=true;if(!playing){playing=true;startKeepAlive();document.getElementById('btnPlay').textContent='■ Stop';}return;}if(d===0xFC){SLAVE.running=false;playing=false;if(playTimer){playTimer.cancelled=true;playTimer=null;}document.getElementById('btnPlay').textContent='▶ Play';if(midiOut)for(let c=0;c<16;c++)midiOut.send([0xB0|c,123,0]);return;}if(d!==0xF8||!SLAVE.active||!SLAVE.running)return;const now=e.timeStamp||performance.now();if(SLAVE.lastPulseTime>0){const iv=now-SLAVE.lastPulseTime;const ibpm=60000/(iv*SLAVE.ppqn);if(ibpm>50&&ibpm<220)SLAVE.bpmSmoothed=SLAVE.bpmSmoothed*(1-SLAVE.bpmAlpha)+ibpm*SLAVE.bpmAlpha;}SLAVE.lastPulseTime=now;SLAVE.pulseCount++;if(SLAVE.pulseCount>=SLAVE.pulsesPerStep){SLAVE.pulseCount=0;if(playing)slaveStep();}if(SLAVE.pulseCount===0)document.getElementById('bpmIn').value=Math.round(SLAVE.bpmSmoothed);}
+function slaveStep(){if(!playing)return;const si=stepIdx%Math.max(1,brushSteps.length);sendDrum(brushSteps,si,'brushCh','brushNote',0);sendDrum(openSteps,si,'openCh','openNote',0);sendDrum(snareSteps,si,'snareCh','snareNote',0);sendDrum(kickSteps,si,'kickCh','kickNote',0);sendDrum(rideSteps,si,'rideCh','rideNote',0);stepIdx++;if(stepIdx>=getSteps()){stepIdx=0;loopCount++;onLoopEnd();}}
+
+function exportMIDI(){
+  const bpm=getBpm();const tpb=480;const µs=Math.round(60000000/bpm);
+  function wv(v){const b=[];b.push(v&0x7F);v>>=7;while(v>0){b.unshift((v&0x7F)|0x80);v>>=7;}return b;}
+  function i32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF];}
+  function i16(v){return[(v>>8)&0xFF,v&0xFF];}
+  const tracks=[
+    [brushSteps,'brushCh','brushNote',s=>!s.isGap,s=>s.vel],
+    [openSteps, 'openCh', 'openNote', s=>s.active,  s=>s.vel],
+    [snareSteps,'snareCh','snareNote',s=>s.active,  s=>s.vel],
+    [kickSteps, 'kickCh', 'kickNote', s=>s.active,  s=>s.vel],
+    [rideSteps, 'rideCh', 'rideNote', s=>s.active,  s=>s.vel],
+  ];
+  const trackData=tracks.map(([steps,chId,noteId,isActive,getVel])=>{
+    const ch=(parseInt(document.getElementById(chId)?.value||1)-1);
+    const note=parseInt(document.getElementById(noteId)?.value||36)||36;
+    const ev=[];let t=0;
+    const stk=Math.round(tpb*0.5); // 8th note
+    steps.forEach(s=>{if(isActive(s)){const v=Math.round(getVel(s)*110+5);ev.push([t,[0x90|ch,note,Math.min(120,v)]]);ev.push([t+20,[0x80|ch,note,0]]);}t+=stk;});
+    let lt=0;const td=[];
+    td.push(...[0,0xFF,0x51,0x03,...i32(µs).slice(1)]);
+    ev.forEach(([t2,msg])=>{td.push(...wv(t2-lt),...msg);lt=t2;});
+    td.push(0,0xFF,0x2F,0);return td;
+  });
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1,...i16(trackData.length),...i16(tpb)];
+  const all=[...hdr];trackData.forEach(td=>{all.push(...[0x4D,0x54,0x72,0x6B,...i32(td.length)],...td);});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([new Uint8Array(all)],{type:'audio/midi'}));
+  a.download=`fournier_dolphin_${bpm}bpm.mid`;a.click();
+}
+
+// ══════════════════════════════════════════════════════
+//  UNDO / REDO / SAVE / LOAD
+// ══════════════════════════════════════════════════════
+const UMAX=30;let _us=[],_rs=[];
+function captureState(){return{brush:JSON.parse(JSON.stringify(brushSteps)),open:JSON.parse(JSON.stringify(openSteps)),snare:JSON.parse(JSON.stringify(snareSteps)),kick:JSON.parse(JSON.stringify(kickSteps)),ride:JSON.parse(JSON.stringify(rideSteps)),bpm:getBpm()};}
+function pushUndo(){_us.push(captureState());if(_us.length>UMAX)_us.shift();_rs=[];updateUndoBtns();}
+function applyState(s){brushSteps=JSON.parse(JSON.stringify(s.brush));openSteps=JSON.parse(JSON.stringify(s.open));snareSteps=JSON.parse(JSON.stringify(s.snare));kickSteps=JSON.parse(JSON.stringify(s.kick));rideSteps=JSON.parse(JSON.stringify(s.ride));const bi=document.getElementById('bpmIn');if(bi)bi.value=s.bpm||138;buildBrushGrid();buildOpenGrid();buildSnareGrid();buildKickGrid();buildRideGrid();updateGapUI();updateUndoBtns();}
+function undo(){if(!_us.length)return;_rs.push(captureState());applyState(_us.pop());}
+function redo(){if(!_rs.length)return;_us.push(captureState());applyState(_rs.pop());}
+function updateUndoBtns(){const u=document.getElementById('btnUndo'),r=document.getElementById('btnRedo');if(u)u.style.opacity=_us.length?'1':'.3';if(r)r.style.opacity=_rs.length?'1':'.3';}
+function saveState(){const s=captureState();s._tool='FournierDrums';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));a.download=`fournier_dolphin_${getBpm()}bpm.json`;a.click();}
+function loadState(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const s=JSON.parse(ev.target.result);pushUndo();applyState(s);}catch(err){alert('Load error: '+err.message);}};r.readAsText(f);e.target.value='';}
+
+let _taps=[];
+function tapTempo(){const now=Date.now();_taps.push(now);if(_taps.length>4)_taps.shift();if(_taps.length>=2){const gaps=_taps.slice(1).map((t,i)=>t-_taps[i]);const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length;const bpm=Math.round(60000/avg);if(bpm>60&&bpm<220)document.getElementById('bpmIn').value=bpm;}}
+
+function gLog(msg){const log=document.getElementById('gapLog');if(!log)return;const s=document.createElement('span');s.textContent=msg;s.style.cssText='color:rgba(80,104,104,.75);display:block';log.insertBefore(s,log.firstChild);while(log.children.length>4)log.removeChild(log.lastChild);}
+
+document.querySelectorAll('input[type=range]').forEach(el=>{
+  const vid=el.id+'V';
+  el.addEventListener('input',()=>{const v=document.getElementById(vid);if(v)v.textContent=el.value;});
+});
+
+(function(){document.querySelectorAll('.dock-tab[data-panel]').forEach(tab=>{tab.addEventListener('click',()=>{const p=tab.dataset.panel;if(tab.classList.contains('active')){toggleDock();return;}document.querySelectorAll('.dock-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.querySelectorAll('.dock-panel').forEach(p2=>p2.classList.remove('active'));const dp=document.getElementById('dp-'+p);if(dp)dp.classList.add('active');const panels=document.getElementById('dockPanels');if(panels){panels.classList.remove('collapsed');document.getElementById('dockColBtn').textContent='▲';}});});})();
+let _dockOpen=true;
+function toggleDock(){_dockOpen=!_dockOpen;const p=document.getElementById('dockPanels'),b=document.getElementById('dockColBtn');if(p)p.classList.toggle('collapsed',!_dockOpen);if(b)b.textContent=_dockOpen?'▲':'▼';}
+
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='KeyZ'){e.preventDefault();if(e.shiftKey)redo();else undo();}
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'){e.preventDefault();togglePlay();}
+  if(e.code==='KeyG'&&e.target.tagName!=='INPUT'){e.preventDefault();generateAll();}
+});
+
+function init(){
+  generateAll();
+  initMIDI();
+}
+init();
+</script>
+</body>
+</html>
