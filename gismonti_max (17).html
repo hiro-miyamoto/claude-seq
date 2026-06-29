@@ -1,0 +1,3939 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gismonti Sequencer</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #080a06;
+  --s0:    #0d100a;
+  --s1:    #121508;
+  --bd:    rgba(180,210,100,.1);
+  --text:  #d8e8b0;
+  --dim:   rgba(180,210,120,.35);
+  --acc:   #9ec840;   /* Frevo green */
+  --acc2:  #e8a030;   /* Salvador orange */
+  --acc3:  #60c8b0;   /* Bach teal */
+  --danger:#e85050;
+  --upper: #9ec840;   /* 上声部 */
+  --middle: #60c8d0;  /* 中声部 */
+  --lower: #e8a030;   /* 下声部 */
+  --folk:  #c860c8;   /* 民謡断片 */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 40% at 20% 80%, rgba(158,200,64,.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 80% 20%, rgba(232,160,48,.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Header ── */
+header {
+  padding: 1.2rem 2rem .8rem;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: flex-end;
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.title-block h1 {
+  font-family: 'IM Fell English', serif;
+  font-size: 2.2rem;
+  font-weight: 400;
+  letter-spacing: .02em;
+  color: var(--acc);
+  line-height: 1;
+}
+
+.title-block .sub {
+  font-size: .55rem;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-top: .3rem;
+}
+
+.header-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-left: auto;
+  align-items: center;
+}
+
+.stat { text-align: center; }
+.stat-val { font-size: 1.1rem; color: var(--acc); font-weight: 600; }
+.stat-lbl { font-size: .45rem; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; }
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem 2rem;
+  border-bottom: 1px solid var(--bd);
+  background: var(--s0);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+label { font-size: .58rem; color: var(--dim); letter-spacing: .12em; text-transform: uppercase; }
+
+select, input[type=number], input[type=range] {
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .65rem;
+  padding: .2rem .4rem;
+  border-radius: 2px;
+  outline: none;
+}
+select:focus, input:focus { border-color: var(--acc); }
+input[type=range] { accent-color: var(--acc); cursor: pointer; }
+
+.btn {
+  background: transparent;
+  border: 1px solid var(--bd);
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .65rem;
+  padding: .28rem .7rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--acc); color: var(--acc); }
+.btn.green  { border-color: rgba(158,200,64,.5); color: var(--acc); background: rgba(158,200,64,.07); }
+.btn.orange { border-color: rgba(232,160,48,.5); color: var(--acc2); background: rgba(232,160,48,.07); }
+.btn.teal   { border-color: rgba(96,200,176,.5); color: var(--acc3); background: rgba(96,200,176,.07); }
+.btn.red    { border-color: rgba(232,80,80,.4);  color: var(--danger); }
+.btn.active { filter: brightness(1.4); }
+
+.sep { width: 1px; height: 20px; background: var(--bd); }
+
+/* ── Main layout ── */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+  min-height: calc(100vh - 120px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Sequencer area ── */
+.seq-area {
+  padding: 1rem 1.5rem;
+  border-right: 1px solid var(--bd);
+}
+
+.voice-block {
+  margin-bottom: 1.2rem;
+}
+
+.voice-header {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin-bottom: .5rem;
+}
+
+.voice-label {
+  font-size: .58rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.voice-controls {
+  display: flex;
+  gap: .4rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* ── Step grid ── */
+.grid-wrap {
+  overflow-x: auto;
+  padding-bottom: .3rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bd) transparent;
+}
+.grid-wrap::-webkit-scrollbar { height: 3px; }
+.grid-wrap::-webkit-scrollbar-thumb { background: var(--bd); }
+
+.step-grid {
+  display: flex;
+  gap: 2px;
+  min-width: max-content;
+}
+
+.step {
+  width: 32px;
+  height: 44px;
+  background: var(--s1);
+  border: 1px solid var(--bd);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 2px;
+  transition: background .08s;
+  user-select: none;
+}
+.step:hover { background: rgba(158,200,64,.08); border-color: rgba(158,200,64,.3); }
+.step.active { border-color: var(--acc); }
+.step.bar4 { border-left: 2px solid rgba(158,200,64,.4) !important; }
+.step.bar4.lower-step { border-left-color: rgba(232,160,48,.4) !important; }
+.step.playing { background: rgba(158,200,64,.15) !important; box-shadow: 0 0 8px rgba(158,200,64,.3); }
+.step.playing.lower-step { background: rgba(232,160,48,.15) !important; box-shadow: 0 0 8px rgba(232,160,48,.3); }
+.step.folk-step { border-top: 2px solid var(--folk); }
+
+.step-bar {
+  width: 26px;
+  border-radius: 2px 2px 0 0;
+  transition: height .06s;
+}
+
+.step-note {
+  position: absolute;
+  top: 2px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: .52rem;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  color: rgba(255,255,255,.75);
+  pointer-events: none;
+  line-height: 1.2;
+}
+.step-note .note-name {
+  display: block;
+  font-size: .54rem;
+}
+.step-note .note-oct {
+  display: block;
+  font-size: .38rem;
+  color: rgba(255,255,255,.35);
+  margin-top: -1px;
+}
+
+.step-num {
+  position: absolute;
+  bottom: 2px;
+  font-size: .36rem;
+  color: rgba(255,255,255,.2);
+}
+
+/* ── Contrapuntal display ── */
+.counterpoint-display {
+  margin: .8rem 0;
+  background: var(--s0);
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  padding: .6rem .8rem;
+}
+
+.cp-title {
+  font-size: .5rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: .4rem;
+}
+
+.cp-canvas-wrap {
+  position: relative;
+  height: 60px;
+}
+
+canvas.cp-canvas {
+  width: 100%;
+  height: 60px;
+  display: block;
+}
+
+/* ── Polyrhythm timeline ── */
+.timeline {
+  margin: .6rem 0;
+  background: var(--s0);
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  padding: .5rem .8rem;
+}
+
+.tl-title {
+  font-size: .5rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: .35rem;
+}
+
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .2rem;
+}
+
+.tl-label {
+  font-size: .5rem;
+  color: var(--dim);
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.tl-beats {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.tl-beat {
+  height: 8px;
+  border-radius: 1px;
+  flex: 1;
+  background: var(--s1);
+  border: 1px solid var(--bd);
+  transition: background .08s;
+}
+.tl-beat.on { background: var(--acc); }
+.tl-beat.on.middle { background: var(--middle); }
+.tl-beat.on.lower { background: var(--acc2); }
+.tl-beat.now { box-shadow: 0 0 6px var(--acc); }
+.tl-beat.now.lower { box-shadow: 0 0 6px var(--acc2); }
+
+/* ── Sidebar ── */
+.sidebar {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+}
+
+.panel {
+  background: var(--s0);
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  padding: .65rem .8rem;
+}
+
+.panel-title {
+  font-size: .5rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.panel-title::before {
+  content: '';
+  width: 3px;
+  height: 10px;
+  background: var(--acc);
+  border-radius: 1px;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .3rem;
+}
+
+.panel-row label { width: 70px; flex-shrink: 0; font-size: .54rem; }
+
+.param-val {
+  font-size: .58rem;
+  color: var(--acc);
+  width: 28px;
+  text-align: right;
+}
+
+/* Folk mode indicator */
+.folk-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .52rem;
+  color: var(--folk);
+  padding: .15rem .4rem;
+  border: 1px solid rgba(200,96,200,.3);
+  border-radius: 2px;
+  background: rgba(200,96,200,.06);
+}
+
+/* Frevo meter */
+.frevo-meter {
+  height: 4px;
+  background: var(--s1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: .3rem;
+}
+
+.frevo-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--acc) 0%, var(--acc2) 60%, var(--danger) 100%);
+  border-radius: 2px;
+  transition: width .2s;
+}
+
+/* MIDI out */
+.midi-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .25rem;
+}
+
+.midi-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+}
+.midi-dot.connected { background: var(--acc); box-shadow: 0 0 6px var(--acc); }
+
+/* ── Transport ── */
+.transport {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: .5rem 2rem;
+  background: var(--s0);
+  border-top: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  z-index: 100;
+}
+
+.progress-wrap {
+  flex: 1;
+  height: 4px;
+  background: var(--s1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--acc), var(--acc2));
+  border-radius: 2px;
+  transition: width .1s linear;
+}
+
+.phase-label {
+  font-size: .55rem;
+  color: var(--acc2);
+  min-width: 80px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>Gismonti</h1>
+    <div class="sub">Egberto Gismonti Sequencer · 対位法 · Frevo · Polyrhythm</div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><div class="stat-val" id="statUpper">—</div><div class="stat-lbl">Upper Steps</div></div>
+    <div class="stat"><div class="stat-val" id="statLower">—</div><div class="stat-lbl">Lower Steps</div></div>
+    <div class="stat"><div class="stat-val" id="statCycle">—</div><div class="stat-lbl">Cycle</div></div>
+    <div class="stat"><div class="stat-val" id="statBpm">—</div><div class="stat-lbl">BPM</div></div>
+
+  </div>
+</header>
+
+
+
+<div class="controls">
+  <label>Root</label>
+  <select id="rootSel">
+    <option value="60">C4</option><option value="62">D4</option><option value="64">E4</option>
+    <option value="65">F4</option><option value="67">G4</option><option value="69">A4</option>
+    <option value="71">B4</option><option value="61">C#4</option><option value="63">D#4</option>
+    <option value="66">F#4</option><option value="68">G#4</option><option value="70">A#4</option>
+  </select>
+
+  <label>Scale</label>
+    <select id="scaleSel">
+  </select>
+
+  <label>BPM</label>
+  <input type="number" id="bpmIn" value="138" min="60" max="240" style="width:52px">
+
+  <div class="sep"></div>
+
+
+  <label>Harmony</label>
+  <select id="harmonyOn" style="width:60px"><option value="on">ON</option><option value="off">OFF</option></select>
+  <select id="progSel" style="max-width:150px"></select>
+  <label style="font-size:.7em">寄せ</label>
+  <input type="range" id="harmonyBias" min="0" max="100" value="70" style="width:70px" oninput="HARMONY.bias=this.value/100;document.getElementById('harmonyBiasV').textContent=this.value+'%'">
+  <span id="harmonyBiasV" style="font-size:.7em">70%</span>
+  <span id="chordNow" style="font-size:.7em;color:var(--acc3);min-width:54px"></span>
+  <label style="font-size:.7em">終止</label>
+  <select id="cadenceSel" style="font-size:.7em;max-width:110px"></select>
+  <label style="font-size:.7em">動機</label>
+  <select id="motifOp" style="font-size:.7em"><option value="off">OFF</option></select>
+  <label style="font-size:.7em">長</label>
+  <input type="number" id="motifLen" value="4" min="1" max="8" style="width:36px">
+
+
+  <button class="btn green" onclick="generateAll()">⟳ Generate All</button>
+  <button class="btn orange" onclick="generateAll('frevo')">⚡ Frevo</button>
+  <button class="btn teal" onclick="generateAll('bach')">𝄢 Bach</button>
+  <button class="btn" onclick="generateAll('folk')">⊕ Folk</button>
+  <button class="btn" onclick="randomize()">⚄ Random</button>
+
+  <div class="sep"></div>
+
+  <button class="btn green" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+  <button class="btn red" onclick="stopAll()">■ Stop</button>
+
+  <div class="sep"></div>
+  <button class="btn" onclick="exportMIDI()">↓ MIDI</button>
+  <div class="sep"></div>
+  <label>Chromatic</label>
+  <select id="chromaticMode" style="font-size:.58rem">
+    <option value="none">None</option>
+    <option value="semitone">±1 semitone</option>
+    <option value="quarter">±0.5 quarter</option>
+  </select>
+  <div class="sep"></div>
+  <button class="btn teal" onclick="openStepEditor('upper')" title="上声部を別窓で編集">✎ Upper</button>
+  <button class="btn" onclick="openStepEditor('middle')" title="中声部を別窓で編集" style="border-color:rgba(96,200,208,.5);color:var(--middle)">✎ Middle</button>
+  <button class="btn orange" onclick="openStepEditor('lower')" title="下声部を別窓で編集">✎ Lower</button>
+  <div class="sep"></div>
+  <button class="btn" onclick="undo()" title="前の状態に戻る (Ctrl+Z)">↩ Undo</button>
+  <button class="btn" onclick="redo()" title="やり直す (Ctrl+Shift+Z)">↪ Redo</button>
+  <button class="btn" onclick="savePreset()" title="現在の状態を保存">↑ Save</button>
+  <input id="presetName" type="text" placeholder="preset name..." style="width:100px;font-size:.58rem">
+  <label style="padding:.22rem .6rem;border:1px solid rgba(96,200,176,.3);color:var(--acc3);font-family:inherit;font-size:.6rem;border-radius:2px;cursor:pointer">
+    ↓ Load JSON<input type="file" accept=".json" onchange="loadPresetFile(event)" style="display:none">
+  </label>
+</div>
+
+<div class="main">
+  <div class="seq-area">
+
+    <!-- Counterpoint display -->
+    <div class="counterpoint-display">
+      <div class="cp-title">対位法 — Contrapuntal Motion</div>
+      <div class="cp-canvas-wrap">
+        <canvas class="cp-canvas" id="cpCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Upper voice -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label" style="color:var(--upper)">上声部 — Upper</span>
+        <span style="font-size:.5rem;color:var(--dim)" id="upperInfo">16 steps · ch2</span>
+        <div class="voice-controls">
+          <label style="font-size:.5rem" title="格子=Frevo(躍動) / 連続=Ciranda(拍を超えて泳ぐ)">Eng</label>
+          <select id="upperEngine" onchange="onUpperEngineChange()" style="font-size:.5rem;color:var(--upper);background:transparent;border:1px solid var(--upper)">
+            <option value="grid">格子 Frevo</option>
+            <option value="cont">連続 Ciranda</option>
+          </select>
+          <button id="muteUpper" onclick="toggleMute('upper')"
+            style="padding:.15rem .5rem;border:1px solid var(--upper);background:transparent;
+            color:var(--upper);font-family:inherit;font-size:.52rem;border-radius:2px;cursor:pointer">
+            M</button>
+          <span style="font-size:.48rem;color:var(--dim)">sw</span>
+          <button ondblclick="setSwingVoice('upper',0)" style="background:none;border:1px solid rgba(158,200,64,.3);color:var(--upper);font-size:.48rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer" onclick="adjustSwingVoice('upper',-1)">−</button>
+          <span id="upperSwingVal" style="font-size:.48rem;color:var(--upper);width:20px;text-align:center">0</span>
+          <button style="background:none;border:1px solid rgba(158,200,64,.3);color:var(--upper);font-size:.48rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer" onclick="adjustSwingVoice('upper',1)">+</button>
+          <label style="font-size:.5rem">Rate</label>
+          <select id="upperRate" onchange="voiceRate.upper=parseFloat(this.value)" style="font-size:.52rem">
+            ${RATE_OPTIONS ? '' : ''}
+          </select>
+          <label style="font-size:.5rem">Steps</label>
+          <select id="upperSteps" onchange="resizeGrid('upper',this.value)" style="font-size:.55rem">
+            <option value="5">5</option><option value="7">7</option>
+            <option value="8">8</option><option value="11">11</option>
+            <option value="12">12</option><option value="13">13</option>
+            <option value="16" selected>16</option><option value="17">17</option>
+            <option value="19">19</option><option value="23">23</option>
+            <option value="24">24</option><option value="32">32</option>
+            <option value="48">48</option>
+          </select>
+          <label style="font-size:.5rem">CH</label>
+          <input type="number" id="upperCh" value="2" min="1" max="16" style="width:36px;font-size:.55rem">
+          <label style="font-size:.5rem">Oct</label>
+          <input type="number" id="upperOct" value="0" min="-2" max="2" style="width:36px;font-size:.55rem">
+        </div>
+      </div>
+      <div class="grid-wrap"><div class="step-grid" id="upperGrid"></div></div>
+    </div>
+
+    <!-- Polyrhythm timeline -->
+    <div class="timeline">
+      <div class="tl-title">Polyrhythm Timeline</div>
+      <div class="tl-row">
+        <span class="tl-label" style="color:var(--upper)">上声部</span>
+        <div class="tl-beats" id="tlUpper"></div>
+      </div>
+      <div class="tl-row">
+        <span class="tl-label" style="color:var(--middle)">中声部</span>
+        <div class="tl-beats" id="tlMiddle"></div>
+      </div>
+      <div class="tl-row">
+        <span class="tl-label" style="color:var(--lower)">下声部</span>
+        <div class="tl-beats" id="tlLower"></div>
+      </div>
+      <div class="tl-row">
+        <span class="tl-label" style="color:var(--folk)">民謡</span>
+        <div class="tl-beats" id="tlFolk"></div>
+      </div>
+      <div class="tl-row">
+        <span class="tl-label" style="color:var(--acc3)">和音</span>
+        <div class="tl-beats" id="tlChord"></div>
+      </div>
+    </div>
+
+    <!-- Middle voice -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label" style="color:var(--middle)">中声部 — Middle</span>
+        <span style="font-size:.5rem;color:var(--dim)" id="middleInfo">11 steps · ch3</span>
+        <div class="voice-controls">
+          <label style="font-size:.5rem" title="格子=Frevo(躍動) / 連続=Ciranda(拍を超えて泳ぐ)">Eng</label>
+          <select id="middleEngine" onchange="onMiddleEngineChange()" style="font-size:.5rem;color:var(--middle);background:transparent;border:1px solid var(--middle)">
+            <option value="grid">格子 Frevo</option>
+            <option value="cont">連続 Ciranda</option>
+          </select>
+          <button id="muteMiddle" onclick="toggleMute('middle')"
+            style="padding:.15rem .5rem;border:1px solid var(--middle);background:transparent;
+            color:var(--middle);font-family:inherit;font-size:.52rem;border-radius:2px;cursor:pointer">M</button>
+          <span style="font-size:.48rem;color:var(--dim)">sw</span>
+          <button ondblclick="setSwingVoice('middle',0)" style="background:none;border:1px solid rgba(96,200,208,.3);color:var(--middle);font-size:.48rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer" onclick="adjustSwingVoice('middle',-1)">−</button>
+          <span id="middleSwingVal" style="font-size:.48rem;color:var(--middle);width:20px;text-align:center">0</span>
+          <button style="background:none;border:1px solid rgba(96,200,208,.3);color:var(--middle);font-size:.48rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer" onclick="adjustSwingVoice('middle',1)">+</button>
+          <label style="font-size:.5rem">Rate</label>
+          <select id="middleRate" onchange="voiceRate.middle=parseFloat(this.value)" style="font-size:.52rem"></select>
+          <label style="font-size:.5rem">Steps</label>
+          <select id="middleSteps" onchange="resizeGrid('middle',this.value)" style="font-size:.55rem">
+            <option value="5">5</option><option value="7">7</option>
+            <option value="8">8</option><option value="11" selected>11</option>
+            <option value="12">12</option><option value="13">13</option>
+            <option value="16">16</option><option value="17">17</option>
+            <option value="19">19</option><option value="23">23</option>
+            <option value="24">24</option><option value="32">32</option>
+          </select>
+          <label style="font-size:.5rem">CH</label>
+          <input type="number" id="middleCh" value="3" min="1" max="16" style="width:36px;font-size:.55rem">
+          <label style="font-size:.5rem">Oct</label>
+          <input type="number" id="middleOct" value="0" min="-2" max="2" style="width:36px;font-size:.55rem">
+        </div>
+      </div>
+      <div class="grid-wrap"><div class="step-grid" id="middleGrid"></div></div>
+    </div>
+
+    <!-- Lower voice -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label" style="color:var(--lower)">下声部 — Lower</span>
+        <span style="font-size:.5rem;color:var(--dim)" id="lowerInfo">13 steps · ch3</span>
+        <div class="voice-controls">
+          <button id="muteLower" onclick="toggleMute('lower')"
+            style="padding:.15rem .5rem;border:1px solid var(--lower);background:transparent;
+            color:var(--lower);font-family:inherit;font-size:.52rem;border-radius:2px;cursor:pointer">
+            M</button>
+          <span style="font-size:.48rem;color:var(--dim)">sw</span>
+          <button ondblclick="setSwingVoice('lower',0)" style="background:none;border:1px solid rgba(232,160,48,.3);color:var(--lower);font-size:.48rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer" onclick="adjustSwingVoice('lower',-1)">−</button>
+          <span id="lowerSwingVal" style="font-size:.48rem;color:var(--lower);width:20px;text-align:center">0</span>
+          <button style="background:none;border:1px solid rgba(232,160,48,.3);color:var(--lower);font-size:.48rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer" onclick="adjustSwingVoice('lower',1)">+</button>
+          <label style="font-size:.5rem">Rate</label>
+          <select id="lowerRate" onchange="voiceRate.lower=parseFloat(this.value)" style="font-size:.52rem">
+          </select>
+          <label style="font-size:.5rem">Steps</label>
+          <select id="lowerSteps" onchange="resizeGrid('lower',this.value)" style="font-size:.55rem">
+            <option value="5">5</option><option value="7">7</option>
+            <option value="8">8</option><option value="11">11</option>
+            <option value="12">12</option><option value="13" selected>13</option>
+            <option value="16">16</option><option value="17">17</option>
+            <option value="19">19</option><option value="23">23</option>
+            <option value="24">24</option><option value="32">32</option>
+            <option value="48">48</option>
+          </select>
+          <label style="font-size:.5rem">CH</label>
+          <input type="number" id="lowerCh" value="3" min="1" max="16" style="width:36px;font-size:.55rem">
+          <label style="font-size:.5rem">Oct</label>
+          <input type="number" id="lowerOct" value="-1" min="-2" max="2" style="width:36px;font-size:.55rem">
+        </div>
+      </div>
+      <div class="grid-wrap"><div class="step-grid" id="lowerGrid"></div></div>
+    </div>
+
+    <!-- Chord voice (4th) -->
+    <div class="voice-block">
+      <div class="voice-header">
+        <span class="voice-label" style="color:var(--acc3)">和音 — Chord Sequencer</span>
+        <span style="font-size:.5rem;color:var(--dim)" id="chordInfo">16 steps · ch4</span>
+        <div class="voice-controls" style="flex-wrap:wrap;gap:.25rem">
+          <button id="muteChord" onclick="toggleMute('chord')" style="padding:.15rem .5rem;border:1px solid var(--acc3);background:transparent;color:var(--acc3);font-family:inherit;font-size:.52rem;border-radius:2px;cursor:pointer">M</button>
+          <label style="font-size:.5rem">駆動</label>
+          <select id="chordDrive" style="font-size:.5rem"><option value="follow">追従(3声部)</option><option value="pattern">型駆動</option><option value="grid">グリッド</option></select>
+          <label style="font-size:.5rem">型</label>
+          <select id="chordPattern" style="font-size:.5rem;max-width:90px"></select>
+          <span id="ecmControls" style="display:none;align-items:center;gap:.25rem;margin-left:.3rem;padding:.1rem .3rem;background:rgba(96,200,176,.06);border-radius:3px">
+            <label style="font-size:.46rem;color:var(--acc3)">懐の速さ</label>
+            <input type="range" id="ecmRate" min="0.05" max="0.8" step="0.01" value="0.22" style="width:46px" oninput="ECM.breathRate=parseFloat(this.value)">
+            <label style="font-size:.46rem;color:var(--acc3)">開き</label>
+            <input type="range" id="ecmSpread" min="0" max="2" step="0.1" value="1" style="width:46px" oninput="ECM.spread=parseFloat(this.value)">
+            <label style="font-size:.46rem;color:var(--acc3)"><input type="checkbox" id="ecmLongLow" checked onchange="ECM.longLow=this.checked">深い懐</label>
+          </span>
+          <label style="font-size:.5rem">Steps</label>
+          <input type="number" id="chordStepsN" value="16" min="2" max="64" style="width:40px;font-size:.55rem">
+          <label style="font-size:.5rem">Rate</label>
+          <select id="chordRate" style="font-size:.5rem"><option value="0.5">½</option><option value="1" selected>1</option><option value="2">2</option><option value="4">4</option></select>
+          <label style="font-size:.5rem">CH</label>
+          <input type="number" id="chordChN" value="4" min="1" max="16" style="width:36px;font-size:.55rem">
+          <label style="font-size:.5rem">Oct</label>
+          <input type="number" id="chordOctN" value="-1" min="-3" max="2" style="width:36px;font-size:.55rem">
+          <label style="font-size:.5rem">転回</label>
+          <select id="chordInv" style="font-size:.5rem"><option value="0">基本</option><option value="1">第1</option><option value="2">第2</option></select>
+          <label style="font-size:.5rem" title="前の和音から各声部最小移動で繋ぐ(ブーランジェ)"><input type="checkbox" id="chordVL"> VL</label>
+          <label style="font-size:.5rem">テンション</label>
+          <label style="font-size:.5rem"><input type="checkbox" id="chord7"> 7</label>
+          <label style="font-size:.5rem"><input type="checkbox" id="chord9"> 9</label>
+          <label style="font-size:.5rem"><input type="checkbox" id="chord11"> 11</label>
+          <label style="font-size:.5rem"><input type="checkbox" id="chord13"> 13</label>
+          <label style="font-size:.5rem"><input type="checkbox" id="chordOpen"> open</label>
+          <label style="font-size:.5rem">声部</label>
+          <select id="chordVoices" style="font-size:.5rem"><option value="0">自動</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option></select>
+          <span style="font-size:.48rem;color:var(--dim)">sw</span>
+          <button onclick="adjustSwingVoice('chord',-5);buildChordGrid&&buildChordGrid()" style="background:none;border:1px solid rgba(232,168,124,.3);color:var(--acc3);font-size:.48rem;padding:.1rem .25rem;border-radius:2px;cursor:pointer">−</button>
+          <span id="chordSwingVal" style="font-size:.48rem;color:var(--acc3);width:20px;text-align:center;display:inline-block">0</span>
+          <button onclick="adjustSwingVoice('chord',5);buildChordGrid&&buildChordGrid()" style="background:none;border:1px solid rgba(232,168,124,.3);color:var(--acc3);font-size:.48rem;padding:.1rem .25rem;border-radius:2px;cursor:pointer">+</button>
+          <label style="font-size:.5rem" title="ランダムな揺らぎ(久石の1%)。Swingとは別物">1%揺</label>
+          <input type="range" id="chordHumanize" min="0" max="100" value="12" style="width:40px">
+        </div>
+      </div>
+      <div class="grid-wrap"><div class="step-grid" id="chordGrid"></div></div>
+    </div>
+
+  </div><!-- /seq-area -->
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Density -->
+    <div class="panel">
+      <div class="panel-title">密度</div>
+      <div class="panel-row">
+        <label>Density</label>
+        <input type="range" id="freqDens" min="0" max="100" value="60" style="flex:1"
+          oninput="document.getElementById('freqDensV').textContent=this.value; liveRegen();">
+        <span class="param-val" id="freqDensV">60</span>
+      </div>
+      <div style="font-size:.5rem;color:var(--dim)">音符と休符の比率(基本の賑やかさ)</div>
+    </div>
+
+    <!-- Contrapuntal Engine -->
+    <div class="panel">
+      <div class="panel-title" style="--acc:var(--acc3)">対位法エンジン</div>
+      <!-- 音程関係の説明 -->
+      <div style="font-size:.46rem;color:var(--dim);line-height:1.6;margin-bottom:.4rem;padding:.3rem .4rem;background:rgba(96,200,176,.05);border-radius:2px;border-left:2px solid var(--acc3)">
+        <strong style="color:var(--acc3)">反行</strong>=逆方向 · <strong style="color:var(--acc3)">並行</strong>=同方向 · <strong style="color:var(--acc3)">斜行</strong>=片方固定<br>
+        協和:3度・5度・6度 → 不協和:2度・7度 → 解決
+      </div>
+      <div class="panel-row">
+        <label>Tension</label>
+        <input type="range" id="cpTension" min="0" max="100" value="50" style="flex:1"
+          oninput="document.getElementById('cpTensionV').textContent=this.value; liveRegen();">
+        <span class="param-val" id="cpTensionV" style="color:var(--acc3)">50</span>
+      </div>
+      <div class="panel-row">
+        <label>Interplay</label>
+        <input type="range" id="cpInterplay" min="0" max="100" value="65" style="flex:1"
+          oninput="document.getElementById('cpInterplayV').textContent=this.value; liveRegen();">
+        <span class="param-val" id="cpInterplayV" style="color:var(--acc3)">65</span>
+      </div>
+      <div class="panel-row">
+        <label>Resolution</label>
+        <input type="range" id="cpResolve" min="0" max="100" value="60" style="flex:1"
+          oninput="document.getElementById('cpResolveV').textContent=this.value+'%'; liveRegen();">
+        <span class="param-val" id="cpResolveV" style="color:var(--acc3)">60%</span>
+      </div>
+      <div class="panel-row">
+        <label>Mode</label>
+        <select id="cpMode" style="flex:1;font-size:.54rem" onchange="liveRegen()">
+          <option value="contrary">反行 Contrary</option>
+          <option value="parallel">並行 Parallel</option>
+          <option value="oblique">斜行 Oblique</option>
+          <option value="similar">同行 Similar</option>
+          <option value="free">自由 Free</option>
+          <option value="gismonti">Gismonti式</option>
+        </select>
+      </div>
+      <div style="margin-top:.35rem;padding:.3rem .4rem;background:rgba(96,200,176,.06);border-radius:3px">
+        <div style="font-size:.5rem;color:var(--acc3);margin-bottom:.2rem">ブーランジェ相補 — 第3の線(1+1=3)</div>
+        <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:.5rem;color:var(--dim)">
+          <select id="complementMode" style="font-size:.5rem" onchange="COMPLEMENT.mode=this.value; liveRegen()">
+            <option value="off">第3の線: off</option>
+            <option value="envelope">上輪郭(頂点交互)</option>
+            <option value="gap">間の動き(距離が拍動)</option>
+            <option value="chopin">ショパン平行六度・五度</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:.2rem"><input type="checkbox" id="complementRhythm" onchange="COMPLEMENT.rhythmFill=this.checked; liveRegen()">リズム相補(奔流)</label>
+          <label style="display:flex;align-items:center;gap:.2rem"><input type="checkbox" id="complementArc" onchange="COMPLEMENT.arc=this.checked; liveRegen()">大きな線(弧)</label>
+        </div>
+        <div style="font-size:.44rem;color:var(--dim);margin-top:.2rem;line-height:1.4">2声から«書かれてない第3の旋律»を立ち上げる。リズム相補=上が休む時に埋め、流れを途切れさせない(frevo)。大きな線=形式の弧で相補が変わる(序盤=相補→中盤=平行六度のクライマックス→終盤=蒸発)。</div>
+      </div>
+      <div class="panel-row">
+        <label>U-M間隔</label>
+        <select id="cpIntervalUM" style="flex:1;font-size:.54rem" onchange="liveRegen()">
+          <option value="3rd">3度（柔らか）</option>
+          <option value="6th" selected>6度（開放的）</option>
+          <option value="10th">10度（広い）</option>
+          <option value="free">自由</option>
+        </select>
+      </div>
+      <div class="panel-row">
+        <label>M-L間隔</label>
+        <select id="cpIntervalML" style="flex:1;font-size:.54rem" onchange="liveRegen()">
+          <option value="5th">5度（空洞的）</option>
+          <option value="8ve" selected>8度（オクターブ）</option>
+          <option value="free">自由</option>
+        </select>
+      </div>
+      <!-- 協和度リアルタイム表示 -->
+      <div style="margin-top:.4rem">
+        <div style="font-size:.46rem;color:var(--dim);margin-bottom:.2rem">現在の協和度</div>
+        <div id="consonanceBar" style="height:6px;background:var(--s1);border-radius:3px;overflow:hidden">
+          <div id="consonanceFill" style="height:100%;width:50%;background:var(--acc3);border-radius:3px;transition:width .3s,background .3s"></div>
+        </div>
+        <div id="consonanceLabel" style="font-size:.44rem;color:var(--acc3);margin-top:.15rem;text-align:right">—</div>
+      </div>
+    </div>
+
+    <!-- Folk Injection -->
+          <div class="panel-title" style="--acc:var(--upper)">呼吸の波 — Breath (連続モード)</div>
+      <div style="font-size:.46rem;color:var(--dim);line-height:1.6;margin-bottom:.4rem;padding:.3rem .4rem;background:rgba(158,200,64,.05);border-radius:2px;border-left:2px solid var(--upper)">
+        上声部/中部を<strong style="color:var(--upper)">連続 Ciranda</strong>にした時の呼吸を彫る。<br>
+        登り(詰めて昇る)→ <strong style="color:var(--upper)">引力の懐</strong>(頂点後の空間)→ 下り → 息継ぎ。<br>
+        ★懐は音の長さでなく「音の後のSPACE」。Abletonのリバーブが満たす。
+      </div>
+      <div id="breathPanelBody"></div>
+      <div class="panel-title" style="--acc:var(--upper);margin-top:.5rem;font-size:.6rem">音の個性 — 指紋 (Note Personality)</div>
+      <div style="font-size:.44rem;color:var(--dim);line-height:1.5;margin-bottom:.3rem">
+        各スケール音の<strong style="color:var(--upper)">重</strong>(選ばれやすさ/0で消える)・<strong style="color:var(--upper)">心</strong>(中心音=帰る場所)・<strong style="color:var(--upper)">↑避↓避</strong>(上行/下行で避ける=jati)・<strong style="color:var(--upper)">8va</strong>(高低レジスタ)を彫る。同じスケールが別の旋律性格になる。
+      </div>
+      <label style="font-size:.5rem;color:var(--dim);display:flex;align-items:center;gap:.3rem;margin-bottom:.3rem">
+        <input type="checkbox" id="npOn" checked onchange="NP.on=this.checked;regenBreath()"> 音の個性を有効化
+        <span style="margin-left:.5rem">跳躍 leap</span>
+        <input type="range" min="0" max="1" step="0.05" value="0.3" style="width:50px" oninput="NP.leap=parseFloat(this.value);regenBreath()">
+      </label>
+      <div id="npBoardBody"></div>
+
+      <div class="panel-title" style="--acc:var(--upper);margin-top:.5rem;font-size:.6rem">装飾 — Ornament (ショパン)</div>
+      <div style="font-size:.44rem;color:var(--dim);line-height:1.5;margin-bottom:.3rem">
+        泳ぐ旋律に<strong style="color:var(--upper)">前打音・トリル・ターン</strong>を添える。頂点(APEX)で濃くなる。装飾音はスケール内(磁場内)。
+      </div>
+      <label style="font-size:.5rem;color:var(--dim);display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+        <input type="checkbox" id="ornOn" onchange="ORN.on=this.checked;regenBreath&&regenBreath()"> 装飾を有効化
+        <span>確率</span>
+        <input type="range" id="ornProb" min="0" max="1" step="0.05" value="0.25" style="width:54px" oninput="ORN.prob=parseFloat(this.value);regenBreath&&regenBreath()">
+        <label style="display:flex;align-items:center;gap:.2rem"><input type="checkbox" id="ornGrace" checked onchange="ORN.grace=this.checked;regenBreath&&regenBreath()">前打音</label>
+        <label style="display:flex;align-items:center;gap:.2rem"><input type="checkbox" id="ornTrill" checked onchange="ORN.trill=this.checked;regenBreath&&regenBreath()">トリル</label>
+        <label style="display:flex;align-items:center;gap:.2rem"><input type="checkbox" id="ornTurn" checked onchange="ORN.turn=this.checked;regenBreath&&regenBreath()">ターン</label>
+      </label>
+
+      <div class="panel-title" style="--acc:var(--acc3);margin-top:.5rem;font-size:.6rem">緊張の弧 — Tension Arc (磁場の旅)</div>
+      <div style="font-size:.44rem;color:var(--dim);line-height:1.5;margin-bottom:.3rem">
+        眠っていたARCの目覚め。<strong style="color:var(--acc3)">緊張の蓄積</strong>(Ciranda)+<strong style="color:var(--acc3)">セミトーン磁場移行</strong>(Jarrett)。<br>
+        緊張が溜まると<strong style="color:var(--acc3)">ルートが下降移行</strong>し、各磁場の滞在が段階的に伸びる(2→8→21の溜め)。移行中は<strong style="color:var(--acc3)">ルート抜き</strong>(浮遊・3:5拮抗)→着地。最後は元へ帰還。
+      </div>
+      <label style="font-size:.5rem;color:var(--dim);display:flex;align-items:center;gap:.3rem;margin-bottom:.3rem">
+        <input type="checkbox" id="tensionOn" onchange="TENSION_ARC.on=this.checked; if(this.checked)buildTensionArc(); regenBreath&&regenBreath()"> 緊張の弧を有効化
+        <button onclick="buildTensionArc(); updateTensionInfo()" style="background:rgba(96,200,176,.1);border:1px solid var(--acc3);color:var(--acc3);font-family:inherit;font-size:.5rem;padding:.1rem .4rem;border-radius:2px;cursor:pointer">⟳ 旅を生成</button>
+      </label>
+      <div id="tensionPanelBody"></div>
+      <label style="font-size:.5rem;color:var(--dim);display:flex;align-items:center;gap:.3rem;margin:.3rem 0">
+        <input type="checkbox" id="tensionApplyLower" onchange="TENSION_ARC.applyLower=this.checked"> 下層(和音/低音)も移行させる
+        <span style="color:var(--acc3);font-size:.44rem">★ON=全体転調(Jarrett) / OFF=土台は固定(Ciranda)</span>
+      </label>
+      <label style="font-size:.5rem;color:var(--dim);display:flex;align-items:center;gap:.3rem;margin:.3rem 0">
+        <input type="checkbox" id="tensionCpFollow" checked onchange="TENSION_ARC.cpFollow=this.checked; liveRegen&&liveRegen()"> 対位法を磁場で分ける
+        <span style="color:var(--acc3);font-size:.44rem">★斜行/反行: 移行帯=磁場越え / 滞在帯=スケール内</span>
+      </label>
+      <div id="tensionInfo" style="font-size:.46rem;color:var(--acc3);margin-top:.3rem"></div>
+    </div>
+
+    <div class="panel">
+
+      <div class="panel-title" style="--acc:var(--folk)">民謡断片注入</div>
+      <div class="panel-row">
+        <label>Prob</label>
+        <input type="range" id="folkProb" min="0" max="100" value="25" style="flex:1"
+          oninput="document.getElementById('folkProbV').textContent=this.value+'%'; liveRegen();">
+        <span class="param-val" id="folkProbV" style="color:var(--folk)">25%</span>
+      </div>
+      <div class="panel-row">
+        <label>Source</label>
+        <select id="folkSource" style="flex:1;font-size:.54rem" onchange="onFolkSourceChange()">
+        </select>
+      </div>
+      <!-- 民謡スワップ: シーケンスはそのまま音程だけ変更 -->
+      <div style="margin-top:.35rem;padding:.35rem .4rem;background:rgba(200,96,200,.06);border:1px solid rgba(200,96,200,.2);border-radius:3px">
+        <div style="font-size:.46rem;color:var(--folk);margin-bottom:.3rem;line-height:1.5">
+          ⊕ <strong>Folk Swap</strong> — リズムを保ったまま音程だけ民謡に差し替え
+        </div>
+        <div style="display:flex;gap:.3rem;margin-bottom:.25rem">
+          <button onclick="swapFolkPitch('upper')" style="flex:1;background:rgba(200,96,200,.08);border:1px solid rgba(200,96,200,.3);color:var(--folk);font-family:inherit;font-size:.54rem;padding:.2rem .4rem;border-radius:2px;cursor:pointer">↺ Upper</button>
+          <button onclick="swapFolkPitch('middle')" style="flex:1;background:rgba(200,96,200,.08);border:1px solid rgba(200,96,200,.3);color:var(--folk);font-family:inherit;font-size:.54rem;padding:.2rem .4rem;border-radius:2px;cursor:pointer">↺ Middle</button>
+          <button onclick="swapFolkPitch('lower')" style="flex:1;background:rgba(200,96,200,.08);border:1px solid rgba(200,96,200,.3);color:var(--folk);font-family:inherit;font-size:.54rem;padding:.2rem .4rem;border-radius:2px;cursor:pointer">↺ Lower</button>
+        </div>
+        <button onclick="swapFolkPitch('all')" style="width:100%;background:rgba(200,96,200,.12);border:1px solid rgba(200,96,200,.4);color:var(--folk);font-family:inherit;font-size:.54rem;padding:.22rem .4rem;border-radius:2px;cursor:pointer;font-weight:600">↺ All Voices</button>
+      </div>
+      <div id="folkStatus" class="folk-indicator" style="margin-top:.3rem;display:none">
+        <span>⊕</span><span id="folkStatusText">民謡断片注入中</span>
+      </div>
+    </div>
+
+    <!-- Gravity Engine -->
+    <div class="panel">
+      <div class="panel-title">重力エンジン</div>
+      <div class="panel-row">
+        <label>Gravity</label>
+        <input type="range" id="gravity" min="0" max="100" value="45" style="flex:1"
+          oninput="document.getElementById('gravityV').textContent=this.value; liveRegen();">
+        <span class="param-val" id="gravityV">45</span>
+      </div>
+      <div class="panel-row">
+        <label>Escape</label>
+        <input type="range" id="escape" min="0" max="100" value="55" style="flex:1"
+          oninput="document.getElementById('escapeV').textContent=this.value; liveRegen();">
+        <span class="param-val" id="escapeV">55</span>
+      </div>
+      <div style="font-size:.5rem;color:var(--dim)">トニックへの引力 vs 逃走エネルギー</div>
+    </div>
+
+    <!-- MIDI -->
+    <div class="panel">
+      <div class="panel-title">MIDI Output</div>
+      <div class="midi-row">
+        <div class="midi-dot" id="midiDot"></div>
+        <span style="font-size:.54rem;color:var(--dim)" id="midiStatus">Not connected</span>
+      </div>
+      <select id="midiPortSel" onchange="selectPort()" style="width:100%;font-size:.54rem;margin-bottom:.3rem">
+        <option value="">— select port —</option>
+      </select>
+      <button class="btn" onclick="refreshMIDI()" style="width:100%;font-size:.54rem;margin-bottom:.5rem">⟳ Refresh</button>
+
+      <!-- Ableton Clock Slave -->
+      <div style="border-top:1px solid var(--bd);padding-top:.5rem;margin-top:.2rem">
+        <div style="font-size:.5rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:.35rem">Ableton → Clock Slave</div>
+        <select id="midiInSel" style="width:100%;font-size:.54rem;margin-bottom:.3rem">
+          <option value="">— input port —</option>
+        </select>
+        <div style="display:flex;gap:.3rem;align-items:center;margin-bottom:.3rem">
+          <button class="btn" id="btnSlave" onclick="toggleClockSlave()" style="flex:1;font-size:.54rem">Slave: OFF</button>
+          <span style="font-size:.52rem;color:var(--acc)" id="slaveStatus">—</span>
+        </div>
+        <div style="font-size:.48rem;color:var(--dim);line-height:1.5">Preferences → MIDI → IAC Driver → Sync ON</div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /main -->
+
+<!-- ── インラインステップエディタ オーバーレイ ── -->
+<div id="stepEditorOverlay" style="display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(4px)">
+  <div style="position:absolute;inset:16px;background:#080a06;border:1px solid rgba(180,210,100,.2);border-radius:6px;overflow:hidden">
+    <!-- Overlay header -->
+    <div id="editorHeader" style="display:flex;align-items:center;gap:.8rem;padding:.6rem 1rem;background:#0d100a;border-bottom:1px solid rgba(180,210,100,.1)">
+      <span id="editorOverlayTitle" style="font-size:.9rem;letter-spacing:.1em;font-weight:600"></span>
+      <span style="font-size:.52rem;color:rgba(180,210,120,.4)">Oct / Note / Length / Vel / Chance + Tuplet</span>
+      <div style="display:flex;gap:.4rem;margin-left:auto;align-items:center">
+        <label style="font-size:.52rem;color:rgba(180,210,120,.4)">Cell W</label>
+        <select id="overlayCellW" onchange="setOverlayCellW(this.value)" style="font-size:.55rem">
+          <option value="20">Narrow</option><option value="28" selected>Normal</option>
+          <option value="36">Wide</option><option value="48">XL</option>
+        </select>
+        <button onclick="closeStepEditor()" style="background:none;border:1px solid rgba(232,80,80,.4);color:#e85050;font-family:inherit;font-size:.6rem;padding:.25rem .7rem;border-radius:2px;cursor:pointer">✕ Close</button>
+        <button onclick="applyStepEditor()" style="background:rgba(158,200,64,.1);border:1px solid rgba(158,200,64,.5);color:#9ec840;font-family:inherit;font-size:.6rem;padding:.25rem .8rem;border-radius:2px;cursor:pointer;font-weight:600">⇄ Apply</button>
+      </div>
+    </div>
+    <!-- Overlay toolbar -->
+    <div id="editorToolbar" style="display:flex;gap:.4rem;padding:.35rem 1rem;background:#121508;border-bottom:1px solid rgba(180,210,100,.08);flex-wrap:wrap;align-items:center">
+      <span style="font-size:.5rem;color:rgba(180,210,120,.4)">Click=edit · Shift=reset · RightClick=−</span>
+      <button onclick="overlayOp('clearAll')" style="background:none;border:1px solid rgba(255,255,255,.1);color:rgba(180,210,120,.5);font-family:inherit;font-size:.55rem;padding:.18rem .5rem;border-radius:2px;cursor:pointer">✕ Clear</button>
+      <button onclick="overlayOp('fillAll')" style="background:none;border:1px solid rgba(255,255,255,.1);color:rgba(180,210,120,.5);font-family:inherit;font-size:.55rem;padding:.18rem .5rem;border-radius:2px;cursor:pointer">● Fill</button>
+      <span id="overlayLaneButtons"></span>
+    </div>
+    <!-- Step numbers -->
+    <div id="overlayStepNums" style="display:flex;gap:2px;padding-left:90px;height:16px;overflow:hidden;margin-top:4px;padding-right:8px"></div>
+    <!-- Lanes - position absolute with calculated top/bottom -->
+    <div id="overlayLanes" style="position:absolute;left:0;right:0;top:160px;bottom:28px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:1px;padding:0 4px"></div>
+    <!-- Tuplet row -->
+    <div id="overlayTupletRow" style="position:absolute;left:0;right:0;bottom:4px;height:22px;display:flex;gap:2px;padding-left:90px;overflow:hidden;padding-right:8px"></div>
+  </div>
+</div>
+
+<!-- Transport -->
+<div class="transport">
+  <button class="btn green" id="tBtnPlay" onclick="togglePlay()" style="min-width:60px">▶ Play</button>
+  <button class="btn red" onclick="stopAll()">■</button>
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+  <span class="phase-label" id="phaseLabel">—</span>
+  <div class="sep"></div>
+  <span style="font-size:.55rem;color:var(--dim)">Space=Play/Stop</span>
+</div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════
+//  高精度タイマー（Web Worker + AudioContext）
+//  バックグラウンドタブでも正確に動作
+// ═══════════════════════════════════════════════════════
+let _timerWorker = null;
+let _workerCallbacks = {};
+let _workerIdCounter = 0;
+let _audioCtx = null;
+
+function getAudioCtx(){
+  if(!_audioCtx){
+    _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  }
+  if(_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+function initTimerWorker(){
+  if(_timerWorker) return;
+  // Web WorkerをBlobで生成（外部ファイル不要）
+  const workerCode = `
+    let timers = {};
+    self.onmessage = function(e){
+      const {type, id, delay} = e.data;
+      if(type === 'setTimeout'){
+        timers[id] = setTimeout(()=>{
+          self.postMessage({id});
+          delete timers[id];
+        }, delay);
+      } else if(type === 'clearTimeout'){
+        clearTimeout(timers[id]);
+        delete timers[id];
+      }
+    };
+  `;
+  const blob = new Blob([workerCode], {type:'application/javascript'});
+  _timerWorker = new Worker(URL.createObjectURL(blob));
+  _timerWorker.onmessage = (e)=>{
+    const cb = _workerCallbacks[e.data.id];
+    if(cb){ delete _workerCallbacks[e.data.id]; cb(); }
+  };
+}
+
+function accurateTimeout(fn, delayMs){
+  initTimerWorker();
+  const id = ++_workerIdCounter;
+  _workerCallbacks[id] = fn;
+  _timerWorker.postMessage({type:'setTimeout', id, delay:Math.max(1, delayMs)});
+  return id;
+}
+
+function clearAccurateTimeout(id){
+  if(!id) return;
+  delete _workerCallbacks[id];
+  if(_timerWorker) _timerWorker.postMessage({type:'clearTimeout', id});
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCALES
+// ═══════════════════════════════════════════════════════
+const SCALES = {
+  // ── 基本モーダル ──
+  dorian:           [0,2,3,5,7,9,10],
+  mixolydian:       [0,2,4,5,7,9,10],
+  lydian:           [0,2,4,6,7,9,11],
+  phrygian:         [0,1,3,5,7,8,10],
+  locrian:          [0,1,3,5,6,8,10],
+  major:            [0,2,4,5,7,9,11],
+  minor:            [0,2,3,5,7,8,10],
+  harmonicMinor:    [0,2,3,5,7,8,11],
+  harmonicMajor:    [0,2,4,5,7,8,11],
+  melodicMinor:     [0,2,3,5,7,9,11],
+  dorianSharp4:     [0,2,3,6,7,9,10],
+  lydianDom:        [0,2,4,6,7,9,10],
+  alteredDom:       [0,1,3,4,6,8,10],
+  superLocrian:     [0,1,3,4,6,8,10],
+  locrianNat6:      [0,1,3,5,6,9,10],
+  locrianSharp2:    [0,2,3,5,6,8,10],
+  lydianAug:        [0,2,4,6,8,9,11],
+  lydianSharp2:     [0,3,4,6,7,9,11],
+  phrygianDom:      [0,1,4,5,7,8,10],
+  neapolitanMaj:    [0,1,3,5,7,9,11],
+  neapolitanMin:    [0,1,3,5,7,8,11],
+  enigmatic:        [0,1,4,6,8,10,11],
+  prometheus:       [0,2,4,6,9,10],
+  // ── ブラジル・ラテン ──
+  baiao:            [0,2,3,5,7,8,10],
+  embolada:         [0,1,3,5,7,8,10],
+  nordestino:       [0,2,3,5,6,9,10],
+  // ── 中東・マカーム ──
+  hijaz:            [0,1,4,5,7,8,10],
+  hijazKar:         [0,1,4,5,7,8,11],
+  maqamRast:        [0,2,4,5,7,9,10],
+  maqamBayati:      [0,2,3,6,7,9,10],
+  maqamSaba:        [0,2,3,5,6,8,10],
+  maqamSikah:       [0,3,5,7,9,10,11],
+  doubleHarmonic:   [0,1,4,5,7,8,11],
+  // ── 東欧 ──
+  hungarianMinor:   [0,2,3,6,7,8,11],
+  hungarianMajor:   [0,3,4,6,7,9,10],
+  ukrainianDorian:  [0,2,3,6,7,9,10],
+  romanian:         [0,2,3,6,7,9,10],
+  gypsy:            [0,2,3,6,7,8,11],
+  // ── 中央アジア・ペルシャ ──
+  persian:          [0,1,4,5,6,8,11],
+  arabic:           [0,2,4,5,7,8,10],
+  purviRaga:        [0,1,4,6,7,8,11],
+  marvaRaga:        [0,1,4,6,7,9,11],
+  todiRaga:         [0,1,3,6,7,8,11],
+  bhairav:          [0,1,4,5,7,8,11],
+  bhairavi:         [0,1,3,5,7,8,10],
+  // ── インド ──
+  yaman:            [0,2,4,6,7,9,11],
+  kafi:             [0,2,3,5,7,9,10],
+  asavari:          [0,2,3,5,7,8,10],
+  bilawal:          [0,2,4,5,7,9,11],
+  kalyan:           [0,2,4,6,7,9,11],
+  khamaj:           [0,2,4,5,7,9,10],
+  bhupali:          [0,2,4,7,9],
+  // ── 東南アジア ──
+  pelog:            [0,1,3,7,8],
+  pelogSelisir:     [0,1,3,7,10],
+  slendro:          [0,2,5,7,10],
+  // ── 東アジア・日本 ──
+  hirajoshi:        [0,2,3,7,9],
+  inSen:            [0,1,5,7,10],
+  kumoi:            [0,2,3,7,9],
+  iwato:            [0,1,5,6,10],
+  ichikosucho:      [0,2,4,6,7,9,11],
+  yo:               [0,2,5,7,9],
+  ryukyu:           [0,4,5,7,11],
+  chinese:          [0,2,4,7,9],
+  // ── アフリカ ──
+  afroDorian:       [0,2,3,5,7,9,10],
+  afro5:            [0,2,5,7,9],
+  pygmy:            [0,3,5,7,10],
+  // ── ペンタトニック ──
+  majorPenta:       [0,2,4,7,9],
+  minorPenta:       [0,3,5,7,10],
+  bluesPenta:       [0,3,5,6,7,10],
+  suspendedPenta:   [0,2,5,7,10],
+  manPenta:         [0,2,4,7,9],
+  // ── 対称系・人工 ──
+  whole:            [0,2,4,6,8,10],
+  diminished:       [0,2,3,5,6,8,9,11],
+  halfWholeDim:     [0,1,3,4,6,7,9,10],
+  augmented:        [0,3,4,7,8,11],
+  tritone:          [0,1,4,6,7,10],
+  twoSemitoneTri:   [0,1,2,6,7,8],
+  // ── メシアン ──
+  messiaen1:        [0,2,4,6,8,10],
+  messiaen2:        [0,1,3,4,6,7,9,10],
+  messiaen3:        [0,2,3,4,6,7,8,10,11],
+  messiaen4:        [0,1,2,5,6,7,8,11],
+  messiaen5:        [0,1,5,6,7,11],
+  messiaen6:        [0,2,4,5,6,8,10,11],
+  messiaen7:        [0,1,2,3,5,6,7,8,9,11],
+  // ── スクリャービン ──
+  scriabinPrometheus:[0,2,4,6,9,10],
+  scriabinMystic:   [0,2,4,6,8,10],
+  // ── 実験的 ──
+  bebopDom:         [0,2,4,5,7,9,10,11],
+  bebopMaj:         [0,2,4,5,7,8,9,11],
+  bebopMin:         [0,2,3,5,7,8,9,10],
+  compositeBlues:   [0,2,3,4,5,6,7,9,10],
+  chromatic:        [0,1,2,3,4,5,6,7,8,9,10,11],
+  fibonacci:        [0,1,2,3,5,8],
+  primes:           [0,2,3,5,7,11],
+  // ── メインツール追加分 ──
+  wholeTone:        [0,2,4,6,8,10],
+  wholeHalfDim:     [0,2,3,5,6,8,9,11],
+  minorBlues:       [0,3,5,6,7,10],
+  bluesMajor:       [0,2,3,4,7,9],
+  lydianAug:        [0,2,4,6,8,9,11],
+  spanishTone8:     [0,1,3,4,5,6,8,10],
+  hijazKarKurd:     [0,1,3,5,7,8,11],
+  pelogTembung:     [0,1,3,5,8],
+  acoustic:         [0,2,4,6,7,9,10],
+  mixolydianB13:    [0,2,4,5,7,8,10],
+  lydianSharp2b:    [0,3,4,6,7,9,11],
+  lydianB3:         [0,2,3,6,7,9,11],
+  bebopHalfDim:     [0,1,3,4,6,7,9,10],
+  dimBlues:         [0,1,3,4,6,7,9,10],
+  flamenco:         [0,1,4,5,7,8,11],
+  overtone:         [0,2,4,6,7,9,10],
+  ultralocrian:     [0,1,3,4,6,8,9],
+  slendro:          [0,2,5,7,10],
+};
+// ═══════════ 和声進行エンジン(機能和声・ブーランジェ論理)═══════════
+// スケール配列から各度数の三和音を作り、機能(T/S/D)で進行を制御
+const HARMONY = {
+  enabled: true,
+  progression: [],     // [{deg:0, bars:1}, ...] degは0始まり(0=I)
+  presetName: 'I-IV-V-I',
+  barsLen: 4,          // 1コードあたりのステップ数(後で同期)
+  bias: 0.7,           // コード構成音へ寄せる強さ 0-1
+  chordVoice: false,   // 和声専用ボイス(進行を和音で鳴らす)
+  chordCh: 4,          // 和音ボイスのMIDI CH
+  chordOct: -1,        // 和音のオクターブ
+  chordVel: 0.5,
+  _lastChordDeg: -1,   // 直前に鳴らした和音(変化時のみ再発音)
+};
+// スケール上の度数degの三和音(根・3度・5度をスケール内で積む)を半音セットで返す
+function diatonicTriad(scale, deg){
+  const n=scale.length;
+  const r=scale[deg%n];
+  const t3=scale[(deg+2)%n];
+  const t5=scale[(deg+4)%n];
+  return [r%12, t3%12, t5%12];
+}
+// 三和音の種類(長/短/減/増)を判定
+function triadQuality(triad){
+  const i3=((triad[1]-triad[0])%12+12)%12;
+  const i5=((triad[2]-triad[0])%12+12)%12;
+  if(i5===6) return 'dim';
+  if(i5===8 && i3===4) return 'aug';
+  if(i3===4) return 'maj';
+  if(i3===3) return 'min';
+  return '?';
+}
+// 度数の機能(T/S/D) — メジャー基準の標準的機能
+// I,vi,iii=T  IV,ii=S  V,vii=D (7音スケール前提、それ以外は近似)
+function degreeFunction(deg, scaleLen){
+  if(scaleLen!==7){
+    // 非7音: 根=T, 4度上付近=S, 5度上付近=D で近似
+    if(deg===0) return 'T';
+    if(deg===Math.round(scaleLen*0.42)) return 'S';
+    if(deg===Math.round(scaleLen*0.58)) return 'D';
+    return ['T','S','T','S','D','T','D'][deg%7]||'T';
+  }
+  return ['T','S','T','S','D','T','D'][deg]||'T';
+}
+// 進行プリセット(度数は0始まり: I=0, ii=1, ... V=4)
+const PROG_PRESETS = {
+  'I-IV-V-I':       [{deg:0,bars:1},{deg:3,bars:1},{deg:4,bars:1},{deg:0,bars:1}],
+  'I-V-vi-IV':      [{deg:0,bars:1},{deg:4,bars:1},{deg:5,bars:1},{deg:3,bars:1}],
+  'ii-V-I':         [{deg:1,bars:1},{deg:4,bars:1},{deg:0,bars:2}],
+  'I-vi-IV-V':      [{deg:0,bars:1},{deg:5,bars:1},{deg:3,bars:1},{deg:4,bars:1}],
+  'vi-IV-I-V':      [{deg:5,bars:1},{deg:3,bars:1},{deg:0,bars:1},{deg:4,bars:1}],
+  'I-IV-I-V(blues)':[{deg:0,bars:2},{deg:3,bars:1},{deg:0,bars:1},{deg:4,bars:1},{deg:3,bars:1},{deg:0,bars:1}],
+  '完全終止 V-I':    [{deg:4,bars:1},{deg:0,bars:1}],
+  '変格終止 IV-I':   [{deg:3,bars:1},{deg:0,bars:1}],
+  '偽終止 V-vi':     [{deg:4,bars:1},{deg:5,bars:1}],
+  '半終止 I-V':      [{deg:0,bars:1},{deg:4,bars:1}],
+  'カノン I-V-vi-iii-IV-I-IV-V':[{deg:0,bars:1},{deg:4,bars:1},{deg:5,bars:1},{deg:2,bars:1},{deg:3,bars:1},{deg:0,bars:1},{deg:3,bars:1},{deg:4,bars:1}],
+};
+// 全ステップ数に対して、各ステップがどのコードかを返す配列を作る
+function buildChordMap(totalSteps){
+  if(!HARMONY.enabled || !HARMONY.progression.length) return null;
+  const prog=HARMONY.progression;
+  const totalBars=prog.reduce((a,c)=>a+c.bars,0);
+  const stepsPerBar=totalSteps/totalBars;
+  const map=new Array(totalSteps);
+  let step=0;
+  for(const ch of prog){
+    const span=Math.round(ch.bars*stepsPerBar);
+    for(let i=0;i<span && step<totalSteps;i++,step++) map[step]=ch.deg;
+  }
+  // 端数を最後のコードで埋める
+  while(step<totalSteps){ map[step]=prog[prog.length-1].deg; step++; }
+  return map;
+}
+// 候補midiを、現コードの構成音へ寄せる(bias強度で)
+function biasToChord(midi, chordDeg, scale, root){
+  if(chordDeg==null) return midi;
+  const triad=diatonicTriad(scale, chordDeg);
+  const pc=((midi-root)%12+12)%12;
+  if(triad.includes(pc)) return midi; // 既にコード音
+  if(Math.random()>HARMONY.bias) return midi; // bias未満は経過音として残す
+  // 最も近いコード構成音(同オクターブ内)へ
+  let best=midi, bd=99;
+  for(const ct of triad){
+    for(let oct=-1;oct<=1;oct++){
+      const cand=root + ct + Math.floor((midi-root)/12)*12 + oct*12;
+      const d=Math.abs(cand-midi);
+      if(d<bd){ bd=d; best=cand; }
+    }
+  }
+  return best;
+}
+
+
+// ── 民謡断片: 地域別 + 名前付き ──
+const FOLK_FRAGMENTS = {
+  // ブラジル
+  baiao:       { name:'バイアォン (NE Brasil)', frags:[[0,2,3],[5,3,2],[7,5,3,2,0],[0,3,5,7],[3,2,0,2,3]] },
+  embolada:    { name:'エンボラーダ (Brasil)', frags:[[0,2,0,2],[3,2,0],[5,3,2,0,2],[0,5,3],[2,0,2,5]] },
+  choro:       { name:'ショーロ (Brasil)', frags:[[0,4,7],[7,4,2,0],[0,2,4,5,7],[4,2,0],[0,7,5,4,2]] },
+  forró:       { name:'フォホー (NE Brasil)', frags:[[0,2,3,5],[5,3,2,0],[7,5,3],[0,5,3,2],[3,5,7]] },
+  // ラテン
+  cubanSon:    { name:'クバン・ソン', frags:[[0,3,5,7],[7,5,3,0],[0,5,7,5,3],[3,0,3,5],[5,7,5,3]] },
+  bossaNova:   { name:'ボサノヴァ', frags:[[0,2,4,7],[7,4,2,0],[0,4,7,9],[9,7,4,2],[0,2,4,2,0]] },
+  tango:       { name:'タンゴ (Argentina)', frags:[[0,1,3,5],[5,3,1,0],[0,3,5,8],[8,5,3,0],[1,3,5,3,1]] },
+  // 中東
+  hijazFrag:   { name:'ヒジャーズ (中東)', frags:[[0,1,4,5],[5,4,1,0],[0,4,5,7],[7,5,4,1,0],[1,4,5,4,1]] },
+  maqamFrag:   { name:'マカーム (アラブ)', frags:[[0,2,3,6],[6,3,2,0],[0,3,6,7],[7,6,3,0],[2,3,6,3,2]] },
+  syrianFrag:  { name:'シリア民謡', frags:[[0,1,3,5,6],[6,5,3,1,0],[0,3,5,6,8],[1,3,5,3,1],[0,5,6,5,3]] },
+  // 東欧
+  hungarian:   { name:'ハンガリー民謡', frags:[[0,2,3,6],[6,3,2,0],[0,3,6,8],[8,6,3,0],[2,3,6,3]] },
+  bulgarian:   { name:'ブルガリア民謡', frags:[[0,2,3,5,6],[0,3,5,6,8],[6,5,3,2,0],[0,6,5,3],[3,5,6,5,3]] },
+  romanian:    { name:'ルーマニア民謡', frags:[[0,2,3,6,7],[7,6,3,2,0],[0,3,6,7,9],[2,3,6,3,2],[0,7,6,3]] },
+  // 中央アジア
+  uzbek:       { name:'ウズベク民謡', frags:[[0,1,4,5,7],[7,5,4,1,0],[0,4,5,8],[1,4,5,4,1],[0,5,7,5,4]] },
+  kazakh:      { name:'カザフ民謡', frags:[[0,2,4,5,7],[5,4,2,0],[0,4,7,9],[7,5,4,2],[0,2,4,7,9]] },
+  // インド
+  hindustani:  { name:'ヒンドゥスターニー', frags:[[0,2,4,7],[7,4,2,0],[0,4,7,9,11],[2,4,7,4,2],[0,7,9,7,4]] },
+  carnatic:    { name:'カルナーティック', frags:[[0,1,3,5,7],[7,5,3,1,0],[0,3,5,8],[1,3,5,3,1],[0,5,7,5,3]] },
+  // 東南アジア
+  javanese:    { name:'ジャワ (Gamelan)', frags:[[0,1,3,7],[7,3,1,0],[0,3,7,8],[1,3,7,3,1],[0,7,8,7,3]] },
+  balinese:    { name:'バリ島', frags:[[0,1,3,8],[8,3,1,0],[0,3,8,10],[1,3,8,3,1],[0,8,10,8,3]] },
+  // 東アジア
+  japanese:    { name:'日本民謡 (都節)', frags:[[0,1,5,7],[7,5,1,0],[0,5,7,10],[1,5,7,5,1],[0,7,10,7,5]] },
+  okinawa:     { name:'沖縄民謡', frags:[[0,4,5,7,11],[11,7,5,4,0],[0,5,7,11],[4,5,7,5,4],[0,7,11,7,5]] },
+  chinese:     { name:'中国民謡', frags:[[0,2,4,7,9],[9,7,4,2,0],[0,4,7,9,11],[2,4,7,4,2],[0,9,7,4,2]] },
+  korean:      { name:'韓国民謡', frags:[[0,2,3,5,7],[7,5,3,2,0],[0,3,5,7,10],[2,3,5,3,2],[0,7,5,3,2]] },
+  // アフリカ
+  westAfrica:  { name:'西アフリカ', frags:[[0,2,5,7],[7,5,2,0],[0,5,7,10],[2,5,7,5,2],[0,7,10,7,5]] },
+  eastAfrica:  { name:'東アフリカ', frags:[[0,3,5,7,10],[10,7,5,3,0],[0,5,7,10,12],[3,5,7,5,3],[0,10,7,5,3]] },
+  gnawa:       { name:'グナワ (Morocco)', frags:[[0,3,5,7],[0,5,3,0],[7,5,3,0],[0,3,7,3,0],[5,3,5,7]] },
+  // ネイティブ
+  indigenous:  { name:'アマゾン先住民 Xingu', frags:[[0,3,7],[7,3,0],[0,7,5,3],[3,0,3,7],[0,5,7,5,0]] },
+};
+
+// Rate options for playback speed
+const RATE_OPTIONS = [
+  {label:'4×',    val:4},
+  {label:'3×',    val:3},
+  {label:'2×',    val:2},
+  {label:'3/2',   val:1.5},
+  {label:'5/4',   val:1.25},
+  {label:'1×',    val:1},
+  {label:'3/4',   val:0.75},
+  {label:'2/3',   val:0.667},
+  {label:'1/2',   val:0.5},
+  {label:'1/3',   val:0.333},
+  {label:'1/4',   val:0.25},
+  {label:'1/6',   val:0.167},
+  {label:'1/8',   val:0.125},
+  {label:'1/12',  val:0.0833},
+  {label:'1/16',  val:0.0625},
+  {label:'1/24',  val:0.0417},
+  {label:'1/32',  val:0.03125},
+];
+
+const voiceRate = {upper:1, middle:1, lower:1};
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let upperSteps  = 16;
+let middleSteps = 11;
+let lowerSteps  = 13;
+
+// Step data: { vel, active, folk, midi }
+let upper  = [];
+let middle = [];
+let lower  = [];
+
+let playing     = false;
+
+// ═══ 和音シーケンサー(第4ボイス)の状態 ═══
+let chordSeq = [];   // [{active:bool}, ...]
+let chordPos = 0;
+const ROMAN=['I','II','III','IV','V','VI','VII'];
+function degreeRoman(deg, quality){
+  let r=ROMAN[deg%7]||('?'+deg);
+  if(quality==='min') r=r.toLowerCase();
+  else if(quality==='dim') r=r.toLowerCase()+'°';
+  else if(quality==='aug') r=r+'+';
+  return r;
+}
+function initChordSeq(n){
+  n = n || parseInt(document.getElementById('chordStepsN')?.value||'16');
+  const old=chordSeq;
+  chordSeq = [];
+  for(let i=0;i<n;i++){
+    chordSeq.push(old[i] || {active: true, vel: 0.6});  // 既定: 全active(型が流れる)
+  }
+  buildChordGrid();
+}
+function buildChordGrid(){
+  const g=document.getElementById('chordGrid'); if(!g) return;
+  const driveModeG=document.getElementById('chordDrive')?.value||'follow';
+  // 追従モードは上部のステップ数に同期(斜めズレ解消、1対1表示)
+  const followSync = (driveModeG==='follow' && typeof upper!=='undefined' && upper.length);
+  const n = followSync ? upper.length : chordSeq.length;
+  const scale=getScale(), root=getRootMidi();
+  const oct=parseInt(document.getElementById('chordOctN')?.value||'-1');
+  const inv=parseInt(document.getElementById('chordInv')?.value||'0');
+  const add7=document.getElementById('chord7')?.checked;
+  const add9=document.getElementById('chord9')?.checked;
+  const add11=document.getElementById('chord11')?.checked;
+  const add13=document.getElementById('chord13')?.checked;
+  const open=document.getElementById('chordOpen')?.checked;
+  const pat=document.getElementById('chordPattern')?.value||'block';
+  const noteNames=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  g.innerHTML='';
+  for(let i=0;i<n;i++){
+    const st = chordSeq[i] || {active:true, vel:0.6};
+    const d=document.createElement('div');
+    d.className='step';
+    if(i%4===0) d.classList.add('bar4');
+    // このステップのコード(進行から)。追従なら上部位置=iがそのまま位相
+    const deg = HARMONY.enabled ? runtimeChordDeg(i/n) : 0;
+    const triadPc = diatonicTriad(scale, deg==null?0:deg);
+    const qual = triadQuality(triadPc);
+    const roman = (deg==null)?'-':degreeRoman(deg, qual);
+    // 型がこのステップで出す音
+    let tones=buildChordTones(triadPc, root, oct, {inversion:inv,add7,add9,add11,add13,open});
+    const nvG=parseInt(document.getElementById('chordVoices')?.value||'0');
+    if(nvG>0) tones=thickenVoicing(tones, root, nvG);
+    // 追従モード: そのステップに対応する旋律音の下にvoicing(実発音を反映)
+    const driveMode=document.getElementById('chordDrive')?.value||'follow';
+    let melodyActive=true;
+    if(driveMode==='follow' && typeof upper!=='undefined' && upper.length){
+      const ui = i % upper.length;  // 追従は1対1対応(斜めズレなし)
+      const ust=upper[ui];
+      if(ust){
+        const upOct=parseInt(document.getElementById('upperOct')?.value||'0');
+        const avoidMidi=ust.midi + upOct*12 + (ust.oct||0)*12;
+        // ECM和音体は声部進行せず塊ごと動く(掟: 声部単独で動かさない)
+        if(pat!=='ecm_body') tones=followVoicing(tones, avoidMidi, root);
+        melodyActive=!!ust.active; // 旋律が鳴る所だけ和音が出る
+      }
+    }
+    const res=chordPatternStep(pat, tones, i);
+    const noteLabels = res.notes.length ? res.notes.map(m=>noteNames[((m%12)+12)%12]).join(' ') : '·';
+    // 追従モードでは旋律の発音状態、それ以外はグリッドのactiveで表示
+    const showActive = (driveMode==='follow') ? melodyActive : st.active;
+    const h=Math.round(showActive ? 4 + (st.vel||0.6)*36 : 3);
+    const barColor=showActive ? 'var(--acc3)' : 'rgba(255,255,255,.05)';
+    d.innerHTML = `
+      <span class="step-note">
+        <span class="note-name" style="color:var(--acc3)">${roman}</span>
+        <span class="note-oct">${noteLabels}</span>
+      </span>
+      <div class="step-bar" style="height:${h}px;background:${barColor}"></div>
+      <span class="step-num">${i+1}</span>`;
+    d.title = roman + ': ' + (res.notes.map(m=>noteNames[((m%12)+12)%12]+(Math.floor(m/12)-1)).join(' '));
+    d.addEventListener('click', e=>{
+      if(e.altKey){ st.vel=Math.min(1,(st.vel||0.6)+0.1); }
+      else { st.active=!st.active; }
+      buildChordGrid();
+    });
+    d.addEventListener('contextmenu', e=>{ e.preventDefault(); st.vel=Math.max(0.1,(st.vel||0.6)-0.1); buildChordGrid(); });
+    g.appendChild(d);
+  }
+}
+
+let upperPos    = 0;
+let middlePos   = 0;
+let lowerPos    = 0;
+let tickTimer   = null;
+let freqPhase   = 0; // 0〜1 Frevo加速フェーズ
+
+let midiAccess  = null;
+let midiOut     = null;
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+function init(){
+  // 呼吸の波パネル(段階3)
+  if(typeof buildBreathPanel==='function') buildBreathPanel();
+  if(typeof buildNPBoard==='function') buildNPBoard();
+  if(typeof buildTensionPanel==='function') buildTensionPanel();
+  // Rate selectors
+  ['upper','middle','lower'].forEach(v=>{
+    const sel = document.getElementById(v+'Rate');
+    if(!sel) return;
+    RATE_OPTIONS.forEach(r=>{
+      const o = document.createElement('option');
+      o.value = r.val; o.textContent = r.label;
+      if(r.val === 1) o.selected = true;
+      sel.appendChild(o);
+    });
+  });
+
+  // Folk source selector
+  const folkSel = document.getElementById('folkSource');
+  if(folkSel){
+    folkSel.innerHTML = '';
+    Object.entries(FOLK_FRAGMENTS).forEach(([key, val])=>{
+      const o = document.createElement('option');
+      o.value = key; o.textContent = val.name || key;
+      folkSel.appendChild(o);
+    });
+  }
+
+  // Scale selector
+  const scaleSel = document.getElementById('scaleSel');
+  if(scaleSel){
+    scaleSel.innerHTML = '';
+    const groups = {
+      '── Modal':          ['dorian','mixolydian','lydian','phrygian','locrian','major','minor','harmonicMinor','harmonicMajor','melodicMinor','dorianSharp4','lydianDom','alteredDom','superLocrian','locrianNat6','locrianSharp2','lydianAug','lydianSharp2','phrygianDom','neapolitanMaj','neapolitanMin','enigmatic','prometheus'],
+      '── Brasil/Latino':  ['baiao','embolada','nordestino'],
+      '── 中東/Maqam':     ['hijaz','hijazKar','maqamRast','maqamBayati','maqamSaba','maqamSikah','doubleHarmonic'],
+      '── 東欧':           ['hungarianMinor','hungarianMajor','ukrainianDorian','romanian','gypsy'],
+      '── 中央アジア/ペルシャ':['persian','arabic','purviRaga','marvaRaga','todiRaga','bhairav','bhairavi'],
+      '── インド':         ['yaman','kafi','asavari','bilawal','kalyan','khamaj','bhupali'],
+      '── 東南アジア':     ['pelog','pelogSelisir','slendro'],
+      '── 東アジア/日本':  ['hirajoshi','inSen','kumoi','iwato','ichikosucho','yo','ryukyu','chinese'],
+      '── アフリカ':       ['afroDorian','afro5','pygmy'],
+      '── Pentatonic':     ['majorPenta','minorPenta','bluesPenta','suspendedPenta','manPenta'],
+      '── Symmetric':      ['whole','diminished','halfWholeDim','augmented','tritone','twoSemitoneTri'],
+      '── Messiaen':       ['messiaen1','messiaen2','messiaen3','messiaen4','messiaen5','messiaen6','messiaen7'],
+      '── Scriabin':       ['scriabinPrometheus','scriabinMystic'],
+      '── Bebop/Jazz':     ['bebopDom','bebopMaj','bebopMin','compositeBlues'],
+      '── Experimental':   ['chromatic','fibonacci','primes','wholeTone','wholeHalfDim','ultralocrian'],
+      '── Blues/Jazz追加': ['minorBlues','bluesMajor','dimBlues','bebopHalfDim'],
+      '── Modal追加':      ['lydianAug','acoustic','mixolydianB13','lydianSharp2b','lydianB3','overtone'],
+      '── 民族追加':       ['hijazKarKurd','pelogTembung','spanishTone8','flamenco','slendro'],
+    };
+    Object.entries(groups).forEach(([grpName, keys])=>{
+      const grp = document.createElement('optgroup');
+      grp.label = grpName;
+      keys.forEach(k=>{
+        if(!SCALES[k]) return;
+        const o = document.createElement('option');
+        o.value = k; o.textContent = k;
+        if(k==='dorian') o.selected = true;
+        grp.appendChild(o);
+      });
+      scaleSel.appendChild(grp);
+    });
+    // デフォルト選択を確認
+    if(!scaleSel.value) scaleSel.value = 'dorian';
+  }
+
+  initSteps('upper', 16);
+  initSteps('middle', 11);
+  initSteps('lower', 13);
+  buildGrid('upper');
+  buildGrid('middle');
+  buildGrid('lower');
+  buildTimeline();
+  drawCP();
+  initMIDI();
+  updateStats();
+}
+
+function initSteps(voice, n){
+  const arr = [];
+  for(let i=0;i<n;i++) arr.push({vel:0.7, active:false, folk:false, midi:60});
+  if(voice==='upper') upper=arr; else if(voice==='middle') middle=arr; else lower=arr;
+}
+
+// ═══════════════════════════════════════════════════════
+//  GENERATION ENGINES
+// ═══════════════════════════════════════════════════════
+function getScale(){ return SCALES[document.getElementById('scaleSel').value]||SCALES.dorian; }
+function getRootMidi(){ return parseInt(document.getElementById('rootSel').value)||60; }
+function getBpm(){ return parseInt(document.getElementById('bpmIn').value)||138; }
+
+function midiPool(octOffset, range){
+  const root = getRootMidi();
+  const scale = getScale();
+  const pool = [];
+  for(let o=-1;o<=2;o++){
+    scale.forEach(deg=>{
+      const m = root + deg + (o+octOffset)*12;
+      if(m>=24&&m<=108) pool.push(m);
+    });
+  }
+  return pool.sort((a,b)=>a-b);
+}
+
+// Frevo generation: rhythmically dense, syncopated, accelerating
+// ── Middle voice generator: 内声部 ──
+// Upper/Lowerの間を埋める対位法的内声部
+// 協和度を意識した音程選択
+// ═══ ブーランジェ的相補エンジン: 1+1=3 (第3の線を創発させる) ═══
+// 2声を独立に重ねるのでなく、合成から«書かれてない第3の旋律»が
+// 立ち上がるよう中部を上声部に対して設計する。
+// envelope = 上輪郭(頂点を交互に→高音が繋がり第3の線/複合旋律)
+// gap      = 間の動き(2声の距離自体が拍動して第3の流れになる)
+// rhythm   = リズム相補(上が休む時に中部が鳴り、流れを途切れさせない=frevo)
+const COMPLEMENT = { mode:'off', rhythmFill:false, gapDepth:5, alternate:0.6, arc:false };
+function generateMiddle(n, upperSteps, lowerSteps){
+  const pool = midiPool(0, 1); // 中音域
+  const root = getRootMidi();
+  const tension = parseInt(document.getElementById('cpTension').value)/100;
+  const interplay = parseInt(document.getElementById('cpInterplay').value)/100;
+  const resolve = parseInt(document.getElementById('cpResolve').value)/100;
+  const mode = document.getElementById('cpMode').value;
+  const intervalUM = document.getElementById('cpIntervalUM')?.value || '6th';
+  const intervalML = document.getElementById('cpIntervalML')?.value || '8ve';
+
+  // 協和音程（半音単位）
+  const CONSONANT = [3,4,7,8,9,12,15,16]; // 短3,長3,完全5,短6,長6,8ve...
+  const DISSONANT = [1,2,5,6,10,11];       // 短2,長2,完全4(文脈依存),増4...
+
+  // 目標音程（Upper基準）
+  const intervalSemitones = {
+    '3rd':4, '6th':9, '10th':16, 'free':-1, '5th':7, '8ve':12
+  };
+  const targetUM = intervalSemitones[intervalUM] || 9;
+  const targetML = intervalSemitones[intervalML] || 12;
+
+  let pos = Math.floor(pool.length * 0.5);
+  const steps = [];
+
+  for(let i=0;i<n;i++){
+    const t = i/n;
+    // ★大きな線(=10): 形式の弧に沿って相補の«種類»が変わる(論文の形式)
+    //   I(相補) → D(クライマックス=平行六度) → コーダ(蒸発)
+    let effMode = COMPLEMENT.mode;
+    let evap = 1;  // 蒸発による密度/音量の減衰(1=満ち / 0=霧散)
+    if(COMPLEMENT.arc){
+      if(t < 0.4)      effMode = 'envelope';   // 序盤A: 相補(第3の線が立つ)
+      else if(t < 0.7) effMode = 'chopin';     // 中盤D: 平行六度でクライマックス
+      else { effMode = 'gap'; evap = Math.max(0.12, 1 - (t-0.7)/0.3); } // 終盤: 蒸発(点描・ppp)
+    }
+    let active = Math.random() < 0.55 + tension*0.25;
+    // 上声部・下声部の対応音を取得
+    const ui = Math.floor(i * upperSteps.length / n);
+    const li = Math.floor(i * lowerSteps.length / n);
+    const uMidi = upperSteps[ui]?.midi;
+    const lMidi = lowerSteps[li]?.midi;
+    const uActive = !!upperSteps[ui]?.active;
+    // ★リズム相補(frevo): 上声部が休む時に中部が鳴り、流れを途切れさせない
+    if(COMPLEMENT.rhythmFill){
+      active = uActive ? (Math.random() < 0.30*evap)   // 上が鳴る所はまばらに(重なり少なめ)
+                       : (Math.random() < 0.92*evap);  // 上が休む所を埋める=奔流
+    } else if(COMPLEMENT.arc && evap<1){
+      active = active && (Math.random() < evap);  // 弧の終盤=蒸発(点描)
+    }
+
+    let midi = pool[pos] || root;
+    let forcedMidi = null;  // 移行帯ではクロマチック(スケール外)の音を直接指定
+
+    if(uMidi && Math.random() < interplay){
+      // 対位法モードに従って音程を選択
+      if(mode === 'contrary'){
+        // 上声部と逆方向 → 上声部より低い音
+        const target = uMidi - targetUM;
+        const fs = cpFieldState(i*0.5);
+        if(fs.transition){
+          // 移行帯: 反行の広がりの頂点で新磁場の音を掴む = 磁場変更(半音スリップ)
+          const targetPc = ((root + fs.rootShift)%12+12)%12;
+          let cand = target;
+          for(let sft=0;sft<=6;sft++){
+            if(((target-sft)%12+12)%12===targetPc){ cand=target-sft; break; }
+            if(((target+sft)%12+12)%12===targetPc){ cand=target+sft; break; }
+          }
+          forcedMidi = cand;
+        } else {
+          // 滞在帯: 磁場内の協和(スケール内・従来)
+          const nearPos = pool.findIndex(m=>Math.abs(m-target)<3);
+          if(nearPos>=0) pos=nearPos;
+        }
+      } else if(mode === 'oblique'){
+        // 斜行: 片方保持・片方動く
+        const fs = cpFieldState(i*0.5);
+        if(fs.transition){
+          // 移行帯: 斜行の下降が新root(root+rootShift)へ向かう = 磁場変更
+          const curMidi = pool[pos] || root;
+          const targetPc = ((root + fs.rootShift)%12+12)%12;
+          let cand = curMidi;
+          for(let sft=1;sft<=7;sft++){
+            if(((curMidi-sft)%12+12)%12===targetPc){ cand=curMidi-sft; break; }
+          }
+          forcedMidi = cand;
+        } else {
+          // 滞在帯: 磁場内のペダル歩行(スケール内・従来)
+          if(Math.random() < 0.4 && i > 0){
+            pos = Math.max(0,Math.min(pool.length-1, pos+(Math.random()<0.5?1:-1)));
+          }
+        }
+      } else if(mode === 'gismonti'){
+        // Gismonti式: 主にb6（st+8）とb3（st+3）を好む
+        const baiaoTargets = [uMidi-3, uMidi-8, uMidi+4, uMidi-4];
+        const t2 = baiaoTargets[Math.floor(Math.random()*baiaoTargets.length)];
+        const nearPos = pool.findIndex(m=>Math.abs(m-t2)<2);
+        if(nearPos>=0) pos=nearPos;
+      } else if(mode === 'similar'){
+        // 同行: 同じ方向だが独立した音程
+        const dir = i>0 && steps[i-1] ? (uMidi-(upperSteps[Math.max(0,ui-1)]?.midi||uMidi))>0 ? 1:-1 : 0;
+        pos = Math.max(0,Math.min(pool.length-1, pos+dir*(Math.floor(Math.random()*2)+1)));
+      } else {
+        // free/parallel: 上声部との協和を優先
+        const consonantPool = pool.filter(m=>{
+          const interval = Math.abs(m-uMidi)%12;
+          return CONSONANT.includes(interval);
+        });
+        if(consonantPool.length > 0 && Math.random() < resolve){
+          midi = consonantPool[Math.floor(Math.random()*consonantPool.length)];
+          pos = pool.indexOf(midi);
+          if(pos<0) pos=0;
+        }
+      }
+      midi = (forcedMidi!=null) ? Math.max(24,Math.min(108,forcedMidi))
+                                : (pool[Math.max(0,Math.min(pool.length-1,pos))] || midi);
+    }
+
+    // 不協和→協和の解決
+    // 不協和→協和の解決(ただし移行帯のクロマチックは保つ=磁場変更の毒)
+    if(uMidi && forcedMidi==null){
+      const interval = Math.abs(midi-uMidi)%12;
+      if(DISSONANT.includes(interval) && Math.random() < resolve){
+        // 半音上または下に解決
+        const resolved = [midi+1, midi-1].find(m=>{
+          const ni = Math.abs(m-uMidi)%12;
+          return CONSONANT.includes(ni) && pool.includes(m);
+        });
+        if(resolved) midi = resolved;
+      }
+    }
+
+    // ★第3の線の創発(ブーランジェ 1+1=3): 上声部に対して中部を設計
+    if(effMode!=='off' && uMidi){
+      const degs = (typeof getScale==='function') ? getScale() : [0,2,4,5,7,9,11];
+      if(effMode==='envelope'){
+        // 上輪郭: 上声部を«軸»で鏡像反転 → 上が登れば中部が下る(逆輪郭)。
+        // 両者の頂点を繋ぐと«第3の線»が知覚される(複合旋律)。平行を避ける。
+        const axis = root + 6;                     // 中音域の軸(ルートの上6半音あたり)
+        let cand = 2*axis - uMidi;                 // 鏡像反転 = 確実な逆輪郭
+        // スケール量子化
+        let best=99,bp=0;
+        for(const d of degs){ const dd=Math.abs(d-(((cand-root)%12+12)%12)); if(dd<best){best=dd;bp=d;} }
+        cand = cand - (((cand-root)%12+12)%12) + bp;
+        if(Math.random() < COMPLEMENT.alternate){ midi = Math.max(40,Math.min(88,cand)); }
+      } else if(effMode==='gap'){
+        // 間の動き: 上声部からの«距離»を、ゆっくり拍動させる。距離自体が
+        // 第3の流れになる。近(数半音)⇄遠(gapDepth半音)を波で。
+        const breathe = (Math.sin(i*0.5)+1)/2;     // 0..1 ゆっくり
+        const dist = 3 + breathe*COMPLEMENT.gapDepth;  // 3〜(3+gapDepth)半音 下
+        let cand = Math.round(uMidi - dist);
+        const pc=((cand-root)%12+12)%12; let best=99,bp=0;
+        for(const d of degs){ const dd=Math.abs(d-pc); if(dd<best){best=dd;bp=d;} }
+        cand = cand - (((cand-root)%12+12)%12) + bp;
+        midi = Math.max(36,Math.min(96,cand));
+      } else if(effMode==='chopin'){
+        // ショパン平行六度・五度(交互): 論文サブセクションD(Op.25-8)。
+        // ★ダイアトニック度数で六度(5度数下)/五度(4度数下)を交互に取る
+        //   (絶対半音でなく音度。C majorなら六度下=E等、調性内に収まる)
+        const upPc = ((uMidi-root)%12+12)%12;
+        let upIdx=0, bb=99;
+        for(let k=0;k<degs.length;k++){ const dd=Math.abs(degs[k]-upPc); if(dd<bb){bb=dd;upIdx=k;} }
+        const nd = degs.length;
+        const down = (i % 2 === 0) ? 5 : 4;        // 六度 / 五度(交互, ダイアトニック)
+        let idx = upIdx - down, oct = 0;
+        while(idx < 0){ idx += nd; oct--; }
+        let cand = root + degs[idx] + oct*12;
+        while(cand > uMidi-2)  cand -= 12;         // 上声部の下に置く
+        while(cand < uMidi-14) cand += 12;
+        midi = Math.max(36,Math.min(96,cand));
+      }
+    }
+
+    const vel = 0.3 + Math.random()*0.45 + (i%4===0?0.08:0);
+    steps.push({vel:Math.min(1,vel), active, folk:false, midi:Math.max(24,Math.min(108,midi))});
+    pos = pool.indexOf(midi);
+    if(pos<0) pos=Math.floor(pool.length*0.5);
+  }
+  return steps;
+}
+
+function generateFrevo(n, isLower){
+  const pool = midiPool(isLower?-1:0, 2);
+  const chordMap = buildChordMap(n);          // 和声: 各ステップのコード
+  const hScale = getScale(), hRoot = getRootMidi();
+  const density = parseInt(document.getElementById('freqDens').value)/100;
+  const gravity = parseInt(document.getElementById('gravity').value)/100;
+  const escape = parseInt(document.getElementById('escape').value)/100;
+  const folkProb = parseInt(document.getElementById('folkProb').value)/100;
+
+  let pos = Math.floor(pool.length * (isLower ? 0.25 : 0.5));
+  const steps = [];
+
+  for(let i=0;i<n;i++){
+    const t = i/n; // 0〜1
+    // 基本密度(density)で音符/休符を決める。時間的な密度変化はARCが担う
+    const active = Math.random() < Math.min(0.95, 0.4 + density * 0.5);
+
+    // 重力 vs 逃走
+    const dir = Math.random() < escape ? (Math.random()<0.5?1:-1) :
+                Math.random() < gravity ? (pos < pool.length/2 ? 1 : -1) : 0;
+    const stepSize = Math.random() < 0.3 ? Math.floor(Math.random()*4)+2 : 1;
+    pos = Math.max(0, Math.min(pool.length-1, pos + dir*stepSize));
+
+    // 民謡断片注入
+    let isFolk = false;
+    if(Math.random() < folkProb * 0.3 && i > 2){
+      const src = document.getElementById('folkSource').value;
+      const folkEntry = FOLK_FRAGMENTS[src] || FOLK_FRAGMENTS.baiao;
+      const fragList = folkEntry.frags || folkEntry; // 旧形式互換
+      const folkName = folkEntry.name || src;
+      const frag = fragList[Math.floor(Math.random()*fragList.length)];
+      frag.forEach((deg,fi)=>{
+        if(i+fi < n){
+          const root = getRootMidi();
+          const fm = Math.max(24,Math.min(108, root+deg+(isLower?-12:0)));
+          steps[i+fi] = {vel:0.6+Math.random()*0.3, active:true, folk:true, folkName, midi:fm};
+        }
+      });
+      // 注入した民謡名を表示
+      const st = document.getElementById('folkStatusText');
+      if(st) st.textContent = '⊕ '+folkName;
+      const fs = document.getElementById('folkStatus');
+      if(fs) fs.style.display='inline-flex';
+      isFolk = true;
+    }
+
+    if(!isFolk){
+      // ベロシティ: Frevo的ダイナミクス（アクセントが不規則）
+      const vel = 0.4 + Math.random()*0.5 + (i%3===0?0.15:0) + (i%4===0?0.1:0);
+      steps.push({vel:Math.min(1,vel), active, folk:false, midi:pool[pos]||60});
+    }
+  }
+
+  return steps.slice(0, n);
+}
+
+// Bach-mode: strict counterpoint
+function generateBach(n, isLower, otherSteps){
+  const pool = midiPool(isLower?-1:0, 2);
+  const cpMode = document.getElementById('cpMode').value;
+  const tension = parseInt(document.getElementById('cpTension').value)/100;
+  const interplay = parseInt(document.getElementById('cpInterplay').value)/100;
+
+  let pos = Math.floor(pool.length * (isLower ? 0.3 : 0.7));
+  const steps = [];
+
+  for(let i=0;i<n;i++){
+    const active = Math.random() < 0.65 + tension*0.2;
+    let midi = pool[pos]||60;
+
+    // Contrapuntal motion
+    if(otherSteps && otherSteps[Math.floor(i*otherSteps.length/n)] && Math.random()<interplay){
+      const otherMidi = otherSteps[Math.floor(i*otherSteps.length/n)].midi;
+      if(cpMode === 'contrary'){
+        // 反行: 相手が上がったら下がる
+        const otherDir = i>0 && otherSteps[i-1] ? (otherMidi - otherSteps[i-1].midi) : 0;
+        const move = otherDir > 0 ? -1 : otherDir < 0 ? 1 : 0;
+        pos = Math.max(0, Math.min(pool.length-1, pos + move));
+      } else if(cpMode === 'parallel'){
+        // 並行: 相手に追従
+        const targetPos = pool.findIndex(m=>Math.abs(m-(otherMidi+(isLower?-7:-7)))<3);
+        if(targetPos>=0) pos = targetPos;
+      } else if(cpMode === 'oblique'){
+        // 斜行: 片方が動き片方が保持
+        if(i%2===0) pos = Math.max(0,Math.min(pool.length-1,pos+(Math.random()<0.5?1:-1)));
+      } else {
+        // Free
+        pos = Math.max(0,Math.min(pool.length-1,pos+(Math.random()<0.5?1:-1)));
+      }
+      midi = pool[pos]||60;
+    } else {
+      pos = Math.max(0,Math.min(pool.length-1,pos+(Math.random()<0.5?1:-1)));
+    }
+
+    const vel = 0.35 + Math.random()*0.45 + (i%4===0?0.1:0);
+    steps.push({vel:Math.min(1,vel), active, folk:false, midi});
+  }
+  return steps;
+}
+
+
+function randomize(){
+  generateAll(['frevo','bach','folk'][Math.floor(Math.random()*3)]);
+}
+
+// ═══════════════════════════════════════════════════════
+//  GRID
+// ═══════════════════════════════════════════════════════
+function buildGrid(voice){
+  const id = voice+'Grid';
+  const el = document.getElementById(id);
+  if(!el) return;
+  const steps = voice==='upper' ? upper : voice==='middle' ? middle : lower;
+  const color = voice==='upper' ? 'var(--upper)' : voice==='middle' ? 'var(--middle)' : 'var(--lower)';
+  const isLower = voice==='lower';
+
+  el.innerHTML = '';
+  steps.forEach((step,i)=>{
+    const d = document.createElement('div');
+    d.className = 'step'+(isLower?' lower-step':'')+(step.folk?' folk-step':'');
+    if(i%4===0) d.classList.add('bar4');
+
+    const h = Math.round(step.active ? 4 + step.vel*36 : 3);
+    const barColor = step.active ? (step.folk ? 'var(--folk)' : color) : 'rgba(255,255,255,.05)';
+    const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const noteName = noteNames[step.midi % 12];
+    const noteOct  = Math.floor(step.midi / 12) - 1;
+    d.innerHTML = `
+      <span class="step-note">
+        <span class="note-name">${noteName}</span>
+        <span class="note-oct">${noteOct}</span>
+      </span>
+      <div class="step-bar" style="height:${h}px;background:${barColor}"></div>
+      <span class="step-num">${i+1}</span>`;
+    if(step.folk && step.folkName) d.title = '⊕ '+step.folkName;
+
+    d.addEventListener('click', e=>{
+      if(e.shiftKey){ steps[i].active=!steps[i].active; }
+      else if(e.altKey){ steps[i].vel=Math.min(1,steps[i].vel+0.1); }
+      else { steps[i].active=!steps[i].active; }
+      buildGrid(voice);
+      drawCP();
+    });
+    d.addEventListener('contextmenu', e=>{
+      e.preventDefault();
+      steps[i].vel = Math.max(0.1, steps[i].vel-0.1);
+      buildGrid(voice);
+    });
+    el.appendChild(d);
+  });
+
+  // Update info
+  const n = steps.filter(s=>s.active).length;
+  const info = document.getElementById(voice+'Info');
+  if(info) info.textContent = `${steps.length} steps · ${n} active`;
+}
+
+function resizeGrid(voice, n){
+  const newN = parseInt(n);
+  if(voice==='upper'){
+    upperSteps=newN;
+    while(upper.length<newN) upper.push({vel:0.7,active:false,folk:false,midi:getRootMidi()});
+    upper=upper.slice(0,newN);
+  } else if(voice==='middle'){
+    middleSteps=newN;
+    while(middle.length<newN) middle.push({vel:0.7,active:false,folk:false,midi:getRootMidi()-5});
+    middle=middle.slice(0,newN);
+  } else {
+    lowerSteps=newN;
+    while(lower.length<newN) lower.push({vel:0.7,active:false,folk:false,midi:getRootMidi()-12});
+    lower=lower.slice(0,newN);
+  }
+  buildGrid(voice);
+  buildTimeline();
+  updateStats();
+}
+
+// ═══════════════════════════════════════════════════════
+//  COUNTERPOINT VISUALIZER
+// ═══════════════════════════════════════════════════════
+function drawCP(){
+  const canvas = document.getElementById('cpCanvas');
+  if(!canvas) return;
+  const W = canvas.parentElement.offsetWidth;
+  const H = 60;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const allMidi = [...upper.filter(s=>s.active).map(s=>s.midi),
+                   ...(typeof middle!=='undefined'?middle.filter(s=>s.active).map(s=>s.midi):[]),
+                   ...lower.filter(s=>s.active).map(s=>s.midi)];
+  if(!allMidi.length) return;
+  const mn = Math.min(...allMidi)-2, mx = Math.max(...allMidi)+2;
+  const norm = m => H - ((m-mn)/(mx-mn||1))*(H-8)-4;
+
+  // Draw upper voice line
+  ctx.beginPath();
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--upper');
+  ctx.lineWidth = 1.5;
+  let first = true;
+  upper.forEach((s,i)=>{
+    if(!s.active) return;
+    const x = (i/upper.length)*W;
+    const y = norm(s.midi);
+    first ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    first=false;
+  });
+  ctx.stroke();
+
+  // Draw middle voice line
+  ctx.beginPath();
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--middle');
+  ctx.lineWidth = 1; ctx.setLineDash([2,3]);
+  first=true;
+  middle.forEach((s,i)=>{
+    if(!s.active) return;
+    const x = (i/middle.length)*W;
+    const y = norm(s.midi);
+    first ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    first=false;
+  });
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Draw lower voice line
+  ctx.beginPath();
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--lower');
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,3]);
+  first=true;
+  lower.forEach((s,i)=>{
+    if(!s.active) return;
+    const x = (i/lower.length)*W;
+    const y = norm(s.midi);
+    first ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    first=false;
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 和音(chord)の可視化: 各ステップの和音構成音を縦の点群で
+  if(typeof HARMONY!=='undefined' && HARMONY.enabled && typeof chordSeq!=='undefined' && chordSeq.length){
+    const cn = chordSeq.length;
+    const scaleC=getScale(), rootC=getRootMidi();
+    const octC=parseInt(document.getElementById('chordOctN')?.value||'-1');
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--acc3')||'#60c8b0';
+    ctx.globalAlpha=0.5;
+    for(let i=0;i<cn;i++){
+      const st=chordSeq[i]; if(st && st.active===false) continue;
+      const deg=runtimeChordDeg(i/cn); if(deg==null) continue;
+      const triad=diatonicTriad(scaleC,deg);
+      const x=(i/cn)*W;
+      triad.forEach(pc=>{
+        const m=rootC+pc+octC*12;
+        if(m>=mn && m<=mx){ const y=norm(m); ctx.beginPath(); ctx.arc(x,y,1.6,0,Math.PI*2); ctx.fill(); }
+      });
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // Folk fragments
+  [...upper,...lower].filter(s=>s.folk).forEach((s,i)=>{
+    const isU = i < upper.length;
+    const arr = isU ? upper : lower;
+    const idx = isU ? i : i-upper.length;
+    const x = (idx/(arr.length))*W;
+    const y = norm(s.midi);
+    ctx.beginPath();
+    ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle='var(--folk)';
+    ctx.fill();
+  });
+
+  // Playhead
+  if(playing){
+    const ux = (upperPos/upperSteps)*W;
+    const lx = (lowerPos/lowerSteps)*W;
+    [ux,lx].forEach((x,i)=>{
+      ctx.beginPath();
+      ctx.strokeStyle = i===0?'rgba(158,200,64,.6)':'rgba(232,160,48,.6)';
+      ctx.lineWidth=1;
+      ctx.moveTo(x,0); ctx.lineTo(x,H);
+      ctx.stroke();
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  TIMELINE
+// ═══════════════════════════════════════════════════════
+function buildTimeline(){
+  const chordLen = (typeof chordSeq!=='undefined' && chordSeq.length) ? chordSeq.length : 1;
+  const lcm = lcmOf(lcmOf(lcmOf(upperSteps,middleSteps), lowerSteps), chordLen);
+  const display = Math.min(lcm, 64);
+
+  ['tlUpper','tlMiddle','tlLower','tlFolk','tlChord'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = '';
+    for(let i=0;i<display;i++){
+      const d = document.createElement('div');
+      d.className = 'tl-beat'+(id.includes('Lower')?' lower':id.includes('Middle')?' middle':'');
+      d.id = id+'-'+i;
+      el.appendChild(d);
+    }
+  });
+  updateTimeline();
+}
+
+function updateTimeline(){
+  const chordLen = (typeof chordSeq!=='undefined' && chordSeq.length) ? chordSeq.length : 1;
+  const lcm = lcmOf(lcmOf(lcmOf(upperSteps,middleSteps), lowerSteps), chordLen);
+  const display = Math.min(lcm, 64);
+
+  for(let i=0;i<display;i++){
+    const ui = i % upperSteps;
+    const mi = i % middleSteps;
+    const li = i % lowerSteps;
+    const ub = document.getElementById('tlUpper-'+i);
+    const mb = document.getElementById('tlMiddle-'+i);
+    const lb = document.getElementById('tlLower-'+i);
+    const fb = document.getElementById('tlFolk-'+i);
+    const cb = document.getElementById('tlChord-'+i);
+    if(ub) ub.className = 'tl-beat'+(upper[ui]?.active?' on':'');
+    if(mb) mb.className = 'tl-beat middle'+(middle[mi]?.active?' on':'');
+    if(lb) lb.className = 'tl-beat lower'+(lower[li]?.active?' on':'');
+    if(fb) fb.className = 'tl-beat'+(upper[ui]?.folk||lower[li]?.folk?' on':'');
+    if(cb){ const ci=i%chordLen; const on=(typeof chordSeq!=='undefined' && chordSeq[ci] && chordSeq[ci].active!==false && typeof HARMONY!=='undefined' && HARMONY.enabled); cb.className='tl-beat'+(on?' on':''); cb.style.background=on?'var(--acc3)':''; }
+  }
+}
+
+function lcmOf(a,b){ return a*b/gcdOf(a,b); }
+function gcdOf(a,b){ return b===0?a:gcdOf(b,a%b); }
+
+// ═══════════════════════════════════════════════════════
+//  PLAYBACK
+// ═══════════════════════════════════════════════════════
+function togglePlay(){
+  playing ? stopAll() : startPlay();
+}
+
+function startPlay(){
+  if(!upper.length||!lower.length){ generateAll(); return; }
+  playing=true;
+  upperPos=0; lowerPos=0; chordPos=0; freqPhase=0; arcGlobalStep=0;
+  if(upperContinuous() && !upperFloat.length) buildFloatBreath('upper');
+  if(middleContinuous() && !middleFloat.length) buildFloatBreath('middle');
+  floatStart();
+  document.getElementById('btnPlay').textContent='■ Stop';
+  document.getElementById('btnPlay').classList.add('active');
+  document.getElementById('tBtnPlay').textContent='■ Stop';
+  tick();
+}
+
+function stopAll(){
+  playing=false;
+  clearAccurateTimeout(tickTimer);
+  // AllNotesOff
+  if(midiOut){
+    for(let ch=0;ch<16;ch++){
+      midiOut.send([0xB0|ch,123,0]);
+      midiOut.send([0xB0|ch,120,0]);
+    }
+  }
+  document.getElementById('btnPlay').textContent='▶ Play';
+  document.getElementById('btnPlay').classList.remove('active');
+  document.getElementById('tBtnPlay').textContent='▶ Play';
+  document.getElementById('progressBar').style.width='0%';
+  document.getElementById('phaseLabel').textContent='—';
+  drawCP();
+}
+
+
+
+// ═══════════ 和音ボイスのパターン展開エンジン ═══════════
+// 三和音[pc配列]を、パターンとステップ位置に応じて「鳴らす音(midi配列)」に展開
+const CHORD_PATTERNS = {
+  block:'ブロック(同時)', sustained:'保続', rhythmic:'刻み',
+  ecm_body:'ECM和音体(呼吸)',
+  chopin_wide:'ショパン左手(広域分散)',
+  arp_up:'アルペジオ上行', arp_down:'アルペジオ下行', arp_updown:'アルペジオ山', arp_random:'アルペジオ乱', arp_converge:'アルペジオ収束',
+  alberti:'アルベルティ', waltz:'ワルツ', boom_chick:'ブンチャ', murky:'マーキー',
+  strum_down:'ストラム下', strum_updown:'ストラム上下', rasgueado:'ラスゲアード', ostinato:'オスティナート',
+  comping:'コンピング', shell:'シェル', cluster:'クラスター', quartal:'4度堆積',
+  cascade:'カスケード', pedal_arp:'ペダル+分散', polyrhythmic:'ポリリズム', wave:'波',
+};
+// ═══ ECM和音体エンジン ═══
+// 掟: 和音は«一つの有機体»。声部を単独で動かさない。塊ごと動き、
+// 中心から開閉して«懐»を呼吸する。低音ほど深い懐(長いレングス・残響)。
+const ECM = {
+  breathRate: 0.22,   // 懐の開閉の速さ(ゆっくり)
+  spread: 1.0,        // 開きの最大(オクターブ単位)
+  longLow: true       // 低音ほど長く保つ(深い懐pocket・ECM残響)
+};
+// 三和音pc[3]を、転回・テンション・オクターブで実音(midi昇順)に
+function buildChordTones(triadPc, root, oct, opts){
+  opts=opts||{};
+  const r=triadPc[0];
+  const isMaj = (((triadPc[1]-triadPc[0]+12)%12)===4);
+  // 三和音は基準オクターブ。テンションはその上に積む(高音域=テンションらしい響き)
+  let notes=triadPc.map(pc=>root+pc+oct*12);
+  // 7th: 長三和音→長7(+11)、短/減→短7(+10)。属七的に使うなら短7が基本だが調性は機能依存なのでここは三和音種で近似
+  if(opts.add7){ notes.push(root + ((r+(isMaj?11:10))%12) + oct*12); }
+  // 9th(長2度=+2)、11th(完全4度=+5)、13th(長6度=+9) を1オクターブ上に積む(テンション=上部構造)
+  if(opts.add9){  notes.push(root + ((r+2)%12)  + (oct+1)*12); }
+  if(opts.add11){ notes.push(root + ((r+5)%12)  + (oct+1)*12); }
+  if(opts.add13){ notes.push(root + ((r+9)%12)  + (oct+1)*12); }
+  notes.sort((a,b)=>a-b);
+  // 転回(inversion): 下の音をオクターブ上へ
+  const inv=opts.inversion||0;
+  for(let k=0;k<inv;k++){ notes.push(notes.shift()+12); }
+  notes.sort((a,b)=>a-b);
+  // open voicing: 真ん中の音を1オクターブ上げて開離
+  if(opts.open && notes.length>=3){ notes[1]+=12; notes.sort((a,b)=>a-b); }
+  return notes;
+}
+
+// ═══ 柱①ボイスリーディング: 前の和音から最小移動で次の転回を選ぶ ═══
+function voiceLead(prevNotes, triadPc, root, octBase){
+  // 候補: 各転回×オクターブで三和音実音を作り、前の和音との総移動距離が最小のものを選ぶ
+  if(!prevNotes || !prevNotes.length){
+    return triadPc.map(pc=>root+pc+octBase*12).sort((a,b)=>a-b);
+  }
+  let best=null, bestCost=1e9;
+  for(let octShift=-1;octShift<=1;octShift++){
+    for(let inv=0;inv<3;inv++){
+      let notes=triadPc.map(pc=>root+pc+(octBase+octShift)*12).sort((a,b)=>a-b);
+      for(let k=0;k<inv;k++){ notes.push(notes.shift()+12); }
+      notes.sort((a,b)=>a-b);
+      // 各声部を前の和音の最寄り音と対応づけ、総移動を測る
+      let cost=0;
+      notes.forEach(n=>{ let d=Math.min(...prevNotes.map(p=>Math.abs(p-n))); cost+=d; });
+      // 声部の重心が大きく動きすぎるのを避ける
+      const center=notes.reduce((a,b)=>a+b,0)/notes.length;
+      const prevCenter=prevNotes.reduce((a,b)=>a+b,0)/prevNotes.length;
+      cost += Math.abs(center-prevCenter)*0.5;
+      if(cost<bestCost){ bestCost=cost; best=notes; }
+    }
+  }
+  return best;
+}
+
+
+
+// ═══ 柱⑤ARC: 曲全体の緊張アーチ(一本の曲線が全パラメータを駆動)═══
+const ARC = { enabled:false, shape:'arch', depth:0.6, bars:8, _startTime:0 };
+const ARC_SHAPES = { arch:'山(黄金頂点)', rising:'上昇', wave:'波', terraced:'段階' };
+
+// ═══ 段階5: 緊張の弧 — 眠っていたARCの目覚め ═══
+// CIRANDAの緊張蓄積 + Jarrettのセミトーン磁場移行を統合。
+// 緊張が閾値を超えるとルートが下降移行(半音/全音)し、各磁場の
+// 滞在が段階的に長くなる(2→8→21→25のような«溜め»)。
+// 解決後: 最初に戻る or 次の磁場へ(ルート変更)。
+const TENSION_ARC = {
+  on:false,
+  applyLower:false,   // 下層(和音/低音)も磁場移行に追従させるか(Jarrett的「全体転調」)
+  cpFollow:true,      // 対位法の斜行/反行を磁場の移行帯/滞在帯で分けるか
+  fields:[],        // [{rootShift, dwellBeats}] 磁場の旅(セミトーンと滞在)
+  moveBias:-1,      // 移行の方向(下降=Jarrett的・内面化)
+  semitonePref:0.6, // 半音スリップ(署名)の比率 vs 全音
+  dwellGrow:1.6,    // 滞在時間の増加率(段階的な溜め)
+  fieldCount:3,     // 磁場の数
+  rootlessOnMove:true  // 移行中はルート抜き(浮遊・3:5拮抗)
+};
+// 緊張の弧の磁場の旅を生成(Jarrettロジック)
+function buildTensionArc(){
+  const fc = Math.max(2, TENSION_ARC.fieldCount);
+  const fields=[]; let shift=0; let dwell=4;
+  for(let i=0;i<fc;i++){
+    fields.push({ rootShift: shift, dwellBeats: dwell, rootless:false });
+    // 次の磁場へ: 半音 or 全音、moveBias方向へ(下降)
+    const semi = Math.random()<TENSION_ARC.semitonePref ? 1 : 2;
+    shift += TENSION_ARC.moveBias * semi;
+    dwell = dwell * TENSION_ARC.dwellGrow;   // 段階的に滞在が伸びる(溜め)
+  }
+  // 帰還: 最後に元(shift=0)へ戻る磁場を足す(並行 or 明るく)
+  fields.push({ rootShift:0, dwellBeats: dwell*0.8, rootless:false, homecoming:true });
+  TENSION_ARC.fields = fields;
+  return fields;
+}
+// 現在のビート位置から、今いる磁場(rootShift)と«移行中か»を返す
+function tensionFieldAt(globalBeat){
+  if(!TENSION_ARC.on || !TENSION_ARC.fields.length) return {rootShift:0, rootless:false, prog:0};
+  const fields=TENSION_ARC.fields;
+  const totalDwell = fields.reduce((a,f)=>a+f.dwellBeats,0);
+  let b = ((globalBeat % totalDwell)+totalDwell)%totalDwell;
+  for(let i=0;i<fields.length;i++){
+    if(b < fields[i].dwellBeats){
+      const local = b / fields[i].dwellBeats;   // この磁場内の進行0-1
+      // 磁場の«入り»は移行帯=ルート抜き(浮遊)、後半で着地
+      const inTransition = TENSION_ARC.rootlessOnMove && local < 0.25 && i>0;
+      return { rootShift: fields[i].rootShift, rootless: inTransition,
+               prog: i/(fields.length-1), local, fieldIdx:i, homecoming:!!fields[i].homecoming };
+    }
+    b -= fields[i].dwellBeats;
+  }
+  return {rootShift:0, rootless:false, prog:1};
+}
+// ═══ 対位法 × 磁場の接続点 ═══
+// CPの斜行/反行が「磁場内の遂行」か「磁場変更」かを判定する。
+// Köln解剖の「ルート抜き=移行の技術」: 移行帯(rootless)では運動が
+// 磁場境界を越え、滞在帯ではスケール内に閉じる。
+function cpFieldState(beatPos){
+  if(!TENSION_ARC.on || !TENSION_ARC.cpFollow || typeof tensionFieldAt!=='function')
+    return {transition:false, rootShift:0};
+  const tf = tensionFieldAt(beatPos);
+  return {transition: !!tf.rootless, rootShift: tf.rootShift||0};
+}
+
+// 進行度prog(0-1)→緊張度(0-1)
+function arcTension(prog){
+  const phi=0.618;
+  switch(ARC.shape){
+    case 'arch':{ // 黄金分割で頂点。前半上昇・後半下降
+      return prog<phi ? (prog/phi) : (1-(prog-phi)/(1-phi));
+    }
+    case 'rising': return prog; // 終始上昇
+    case 'wave': return 0.5+0.5*Math.sin(prog*Math.PI*3 - Math.PI/2); // 3つの波
+    case 'terraced': return Math.min(1, Math.floor(prog*4)/3); // 4段
+    default: return prog;
+  }
+}
+// 現在の曲の進行度(0-1)。ARC.bars 小節で一巡
+function arcProgress(){
+  if(!ARC.enabled) return 0;
+  const total = ARC.bars * upperSteps; // 全ステップ数
+  return (arcGlobalStep % total) / total;
+}
+let arcGlobalStep = 0;
+
+// ═══ 柱④6-7声化: 三和音を指定声部数まで厚くする(ジャレット的断面) ═══
+function thickenVoicing(tones, root, targetVoices){
+  if(!tones.length || targetVoices<=tones.length) return tones;
+  let out=[...tones];
+  const pcs=tones.map(t=>((t-root)%12+12)%12);
+  // 足りない分: テンション(7,9,11,13=10/11,2,5,9)→オクターブ重複 の順で足す
+  const tensions=[10,2,5,9,11]; // 短7/9/11/13/長7相当(pc)
+  let ti=0;
+  const top=Math.max(...tones);
+  while(out.length<targetVoices){
+    if(ti<tensions.length){
+      out.push(root + ((tones[0]-root+tensions[ti])%12) + Math.ceil((top-root)/12)*12 + 12);
+      ti++;
+    } else {
+      // オクターブ重複(下に根を足す)
+      out.push(Math.min(...out)-12);
+    }
+    out=[...new Set(out)];
+    if(out.length>=targetVoices) break;
+    if(ti>=tensions.length && Math.min(...out)<24) break;
+  }
+  return out.sort((a,b)=>a-b).slice(0,targetVoices);
+}
+
+// 追従モードのvoicing調整: 和音を旋律(avoidMidi)の下へ、旋律と同pcを省く
+function followVoicing(tones, avoidMidi, root){
+  if(avoidMidi==null) return tones;
+  let t=[...tones];
+  while(Math.max(...t) >= avoidMidi-1 && Math.min(...t)>36){ t=t.map(x=>x-12); }
+  const avoidPc=((avoidMidi-root)%12+12)%12;
+  const filtered=t.filter(x=>(((x-root)%12+12)%12)!==avoidPc);
+  if(filtered.length>=2) t=filtered;
+  return t;
+}
+// パターンに応じて、ステップposで鳴らす音を返す。{notes:[], strumMs:0}
+function chordPatternStep(pattern, tones, pos){
+  const n=tones.length;
+  const r=tones[0], t3=tones[1%n], t5=tones[2%n];
+  const hi=r+12;
+  switch(pattern){
+    case 'block': case 'sustained': return {notes:tones};
+    case 'chopin_wide':{
+      // ショパン左手: 低音の根を置き、大きく跳んで上の和音音を分散
+      // (根 → 5度 → 上のオクターブ和音音 を広い音域で波のように)
+      const bass = r - 12;                       // 深い低音の根
+      const wide = [bass, t5, t3+12, t5+12, r+12, t3+12];
+      return {notes:[ wide[pos % wide.length] ]};
+    }
+    case 'ecm_body':{
+      // ECM和音体: 塊を中心から«対称に»開閉(懐の呼吸)。声部単独で動かさない。
+      const breath=(Math.sin(pos*ECM.breathRate)+1)/2;  // 0(閉)..1(開) ゆっくり
+      const center=tones[Math.floor(n/2)];
+      const body=tones.map(m=>{
+        const dir = m<center?-1:(m>center?1:0);
+        return Math.round(m + dir*breath*ECM.spread*12);  // 外声ほど中心から離れる
+      });
+      return {notes:body, ecm:true, breath};
+    }
+    case 'rhythmic': return {notes:tones}; // 毎ステップ同時(刻みはレートで)
+    case 'arp_up':   return {notes:[ [r,t3,t5,hi][pos%4] ]};
+    case 'arp_down': return {notes:[ [hi,t5,t3,r][pos%4] ]};
+    case 'arp_updown':{ const seq=[r,t3,t5,hi,t5,t3]; return {notes:[seq[pos%seq.length]]}; }
+    case 'arp_random': return {notes:[ tones[Math.floor(Math.random()*n)] ]};
+    case 'arp_converge':{ const seq=[r,hi,t3,t5]; return {notes:[seq[pos%4]]}; }
+    case 'alberti':{ const seq=[r,t5,t3,t5]; return {notes:[seq[pos%4]]}; } // 低高中高
+    case 'waltz':   return {notes: pos%3===0 ? [r] : [t3,t5]}; // ズンチャッチャッ
+    case 'boom_chick': return {notes: pos%2===0 ? [r] : [t3,t5,hi]};
+    case 'murky':   return {notes:[ pos%2===0 ? r : r+12 ]}; // オクターブ刻み
+    case 'strum_down': return {notes:tones, strumMs:18};
+    case 'strum_updown': return {notes: pos%2===0?tones:[...tones].reverse(), strumMs:14};
+    case 'rasgueado': return {notes:tones, strumMs:8};
+    case 'ostinato':{ const seq=[r,t5,t3,t5,r,hi]; return {notes:[seq[pos%seq.length]]}; }
+    case 'comping': return {notes: (pos%4===1||pos%4===3)?tones:[]}; // シンコペで差す
+    case 'shell':   return {notes:[r,t3]}; // 根と3度
+    case 'cluster': return {notes:[r,r+1,t3]}; // 2度をぶつける
+    case 'quartal': return {notes:[r,r+5,r+10]}; // 4度堆積
+    case 'cascade':{ const seq=[r,t3,t5,hi,t5+5,hi+5]; return {notes:[seq[pos%seq.length]]}; }
+    case 'pedal_arp': return {notes: pos%4===0?[r-12, [r,t3,t5,hi][pos%4]]:[[r,t3,t5,hi][pos%4]]}; // 低音保続+分散
+    case 'polyrhythmic':{ const seq=[r,t5,t3]; return {notes:[seq[pos%3]]}; } // 3周期
+    case 'wave':{ const dens=Math.abs(Math.sin(pos*0.4)); return dens>0.5?{notes:tones}:{notes:[tones[pos%n]]}; }
+    default: return {notes:tones};
+  }
+}
+
+
+
+// ═══ 柱③動機発展: 動機を変形して旋律を構築 ═══
+const MOTIF_OPS = { repeat:'反復', sequence:'移高反復', inversion:'反行', augment:'拡大', retrograde:'逆行' };
+function developMotif(steps, motifLen, op){
+  if(!steps.length || motifLen<1) return steps;
+  const motif=steps.slice(0, motifLen).map(s=>({...s}));
+  const out=motif.map(s=>({...s}));
+  const baseMidi=motif[0]?.midi||60;
+  let pos=motifLen;
+  let rep=1;
+  while(pos<steps.length){
+    motif.forEach((m,i)=>{
+      if(pos>=steps.length) return;
+      let nm={...m};
+      if(op==='sequence'){ nm.midi=m.midi + rep*2; }          // 2半音ずつ上へ移高
+      else if(op==='inversion'){ nm.midi=baseMidi - (m.midi-baseMidi); } // 軸反転
+      else if(op==='retrograde'){ nm=({...motif[motifLen-1-i]}); }
+      else if(op==='augment'){ if(i%2!==0){ nm.active=false; } } // 音価2倍=間引き
+      out[pos]=nm; pos++;
+    });
+    rep++;
+  }
+  return out.slice(0,steps.length);
+}
+
+// ═══ 柱②終止形(カデンツ): 進行の末尾に終止を付ける ═══
+const CADENCES = {
+  none:'なし',
+  authentic:'完全終止 V-I', plagal:'変格終止 IV-I',
+  half:'半終止 -V', deceptive:'偽終止 V-vi',
+};
+function applyCadence(prog, cad){
+  if(!cad || cad==='none' || !prog.length) return prog;
+  const p=prog.slice();
+  const add={authentic:[{deg:4,bars:1},{deg:0,bars:1}], plagal:[{deg:3,bars:1},{deg:0,bars:1}],
+             half:[{deg:0,bars:1},{deg:4,bars:1}], deceptive:[{deg:4,bars:1},{deg:5,bars:1}]}[cad];
+  // 末尾を終止で置換(最後の2和音を終止に)
+  return p.slice(0, Math.max(0,p.length-2)).concat(add);
+}
+
+// 再生時(リアルタイム)の和声: 位相(0-1)→コード度数
+function runtimeChordDeg(phase01){
+  if(!HARMONY.enabled || !HARMONY.progression.length) return null;
+  const prog=HARMONY.progression;
+  const totalBars=prog.reduce((a,c)=>a+c.bars,0);
+  let acc=0;
+  const target=phase01*totalBars;
+  for(const ch of prog){ acc+=ch.bars; if(target<acc) return ch.deg; }
+  return prog[prog.length-1].deg;
+}
+// 再生時に1音を現コードへ寄せる(強拍判定込み)
+function applyHarmonyLive(midi, pos, totalSteps){
+  if(!HARMONY.enabled) return midi;
+  const deg=runtimeChordDeg(pos/totalSteps);
+  if(deg==null) return midi;
+  const strong=(pos%2===0);
+  if(strong || Math.random()<HARMONY.bias) return biasToChord(midi, deg, getScale(), getRootMidi());
+  return midi;
+}
+
+
+// ═══ ①リアルタイム反映: 生成パラメータ変更で即再生成(位置維持)═══
+let _liveRegenTimer=null;
+function liveRegen(){
+  // 連続入力をまとめる(デバウンス)
+  if(_liveRegenTimer) clearTimeout(_liveRegenTimer);
+  _liveRegenTimer=setTimeout(()=>{
+    const wasPlaying=playing;
+    // 位置を保持
+    const up=upperPos, mp=middlePos, lp=lowerPos, cp=chordPos, ag=arcGlobalStep;
+    if(typeof generateAll==='function') generateAll(currentGenMode||'frevo');
+    // 位置を復元(止めずに続ける)
+    upperPos=up%Math.max(1,upperSteps); middlePos=mp%Math.max(1,middleSteps);
+    lowerPos=lp%Math.max(1,lowerSteps); chordPos=cp; arcGlobalStep=ag;
+  }, 120);
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  連続時間エンジン(CIRANDA移植・段階1: 再生基盤)
+//  上声部を「格子(Frevo)⇄連続(Ciranda)」で切替。
+//  連続モードでは upperFloat イベント列を lookahead で発火。
+// ═══════════════════════════════════════════════════════
+let upperFloat = [];          // [{startBeat, durBeat, midi, vel}]
+let floatStartWall = 0;       // 再生開始時刻(performance.now)
+let floatScheduledUntil = 0;  // ここまでのビートはスケジュール済み
+let floatLoopBeats = 8;       // 連続層が一巡するビート長(=upperSteps/2 を既定に)
+let middleFloat = [];
+let floatScheduledUntilMid = 0;
+let floatLoopBeatsMid = 8;
+function middleContinuous(){ return document.getElementById('middleEngine')?.value === 'cont'; }
+function onUpperEngineChange(){
+  if(upperContinuous()){
+    buildFloatBreath('upper');   // 段階2: 呼吸の波で泳ぐ
+    if(playing) floatStart();
+  }
+}
+function onMiddleEngineChange(){
+  if(middleContinuous()){
+    buildFloatBreath('middle');
+    if(playing) floatStart();
+  }
+}
+function upperContinuous(){ return document.getElementById('upperEngine')?.value === 'cont'; }
+
+// 連続層の再生開始(startPlayから呼ぶ)
+function floatStart(){
+  floatStartWall = performance.now();
+  floatScheduledUntil = 0;
+  floatScheduledUntilMid = 0;
+}
+// lookaheadスケジューラ: tickのたびに呼ばれ、先読み窓内のイベントを発火
+function floatSchedule(){
+  if(!upperContinuous() || !midiOut || muted.upper || !upperFloat.length) return;
+  const bpm = getBpm();
+  const beatMs = 60000/bpm;
+  const nowBeat = (performance.now() - floatStartWall) / beatMs;
+  const lookaheadBeats = (200/beatMs) + 0.5;   // 約200ms先読み
+  const targetBeat = nowBeat + lookaheadBeats;
+  const loopLen = floatLoopBeats > 0 ? floatLoopBeats : 8;
+  const upperCh = (parseInt(document.getElementById('upperCh').value)||2) - 1;
+  const upperOct = parseInt(document.getElementById('upperOct').value)||0;
+  // [floatScheduledUntil, targetBeat) に start が入る音を、全ループ周回ぶん発火
+  const firstCycle = Math.floor(floatScheduledUntil / loopLen);
+  const lastCycle  = Math.floor(targetBeat / loopLen);
+  for(let cyc=firstCycle; cyc<=lastCycle; cyc++){
+    for(const n of upperFloat){
+      const gBeat = n.startBeat + cyc*loopLen;
+      if(gBeat >= floatScheduledUntil && gBeat < targetBeat){
+        const whenMs = (gBeat * beatMs) - (performance.now() - floatStartWall);
+        const durMs = Math.max(20, n.durBeat * beatMs);
+        // 和声に協和(既存HARMONY参照)。upperPos相当は位相で渡す
+        const phase01 = ((gBeat % loopLen)/loopLen);
+        const pseudoPos = Math.floor(phase01 * Math.max(1,upperSteps));
+        const tf = tensionFieldAt(gBeat);   // 段階5: 緊張の弧の磁場
+        const mm = Math.max(0,Math.min(127, applyHarmonyLive(n.midi, pseudoPos, upperSteps) + upperOct*12 + tf.rootShift));
+        const vv = Math.max(1,Math.min(127, Math.round(n.vel*127)));
+        accurateTimeout(()=>{ if(midiOut&&!muted.upper) midiOut.send([0x90|upperCh, mm, vv]); }, Math.max(0,whenMs));
+        accurateTimeout(()=>{ if(midiOut) midiOut.send([0x80|upperCh, mm, 0]); }, Math.max(0,whenMs)+durMs);
+      }
+    }
+  }
+  floatScheduledUntil = targetBeat;
+}
+
+// 中部の連続スケジューラ
+function floatScheduleMid(){
+  if(!middleContinuous() || !midiOut || muted.middle || !middleFloat.length) return;
+  const bpm = getBpm();
+  const beatMs = 60000/bpm;
+  const lookaheadBeats = (200/beatMs) + 0.5;
+  const targetBeat = ((performance.now() - floatStartWall) / beatMs) + lookaheadBeats;
+  const loopLen = floatLoopBeatsMid > 0 ? floatLoopBeatsMid : 8;
+  const middleCh = (parseInt(document.getElementById('middleCh').value)||3) - 1;
+  const middleOct = parseInt(document.getElementById('middleOct').value)||0;
+  const firstCycle = Math.floor(floatScheduledUntilMid / loopLen);
+  const lastCycle  = Math.floor(targetBeat / loopLen);
+  for(let cyc=firstCycle; cyc<=lastCycle; cyc++){
+    for(const n of middleFloat){
+      const gBeat = n.startBeat + cyc*loopLen;
+      if(gBeat >= floatScheduledUntilMid && gBeat < targetBeat){
+        const whenMs = (gBeat * beatMs) - (performance.now() - floatStartWall);
+        const durMs = Math.max(20, n.durBeat * beatMs);
+        const phase01 = ((gBeat % loopLen)/loopLen);
+        const pseudoPos = Math.floor(phase01 * Math.max(1,middleSteps));
+        const tf = tensionFieldAt(gBeat);
+        const mm = Math.max(0,Math.min(127, applyHarmonyLive(n.midi, pseudoPos, middleSteps) + middleOct*12 + tf.rootShift));
+        const vv = Math.max(1,Math.min(127, Math.round(n.vel*127)));
+        accurateTimeout(()=>{ if(midiOut&&!muted.middle) midiOut.send([0x90|middleCh, mm, vv]); }, Math.max(0,whenMs));
+        accurateTimeout(()=>{ if(midiOut) midiOut.send([0x80|middleCh, mm, 0]); }, Math.max(0,whenMs)+durMs);
+      }
+    }
+  }
+  floatScheduledUntilMid = targetBeat;
+}
+
+// 段階1の仮生成: 格子のupperを連続イベントに変換(フォールバック)
+function buildUpperFloatFromGrid(){
+  upperFloat = [];
+  const n = upperSteps||16;
+  floatLoopBeats = n/2;
+  for(let i=0;i<n;i++){
+    const st = upper[i];
+    if(st && st.active){
+      upperFloat.push({ startBeat: i*0.5, durBeat: 0.4, midi: st.midi, vel: st.vel });
+    }
+  }
+}
+
+
+// ═══ 段階4: 音の個性エンジン(指紋・NP) CIRANDA移植 ═══
+// 各スケール度数に weight(重み) center(中心音) ascAvoid(上行回避)
+// descAvoid(下行回避) octaveBias(8va) を与える。呼吸の波がこれに従い
+// 音を選ぶ → 同じスケールでも固有の「指紋」を持つ旋律になる(ラーガ的)。
+const NP = { weight:{}, center:{}, ascAvoid:{}, descAvoid:{}, octaveBias:{},
+             leap:0.3, restWeight:1.0, on:true };
+function npReset(degs){
+  NP.weight={};NP.center={};NP.ascAvoid={};NP.descAvoid={};NP.octaveBias={};
+  for(let i=0;i<degs.length;i++){
+    NP.weight[i]=1;
+    NP.center[i]=(i===0?0.7:(i===4?0.3:0));  // 主音=家, 5度=準
+    NP.ascAvoid[i]=0; NP.descAvoid[i]=0; NP.octaveBias[i]=0;
+  }
+}
+// 音の個性で次の度数indexを選ぶ(curIdx=現在の度数index, dir=+1上行/-1下行)
+function npNextIdx(curIdx, dir, degs){
+  if(!NP.on) { return ((curIdx+dir)%degs.length+degs.length)%degs.length; }
+  const len=degs.length; const cands=[];
+  for(let step=-4; step<=4; step++){
+    if(step===0) continue;
+    let idx=((curIdx+step)%len+len)%len;
+    let w=(NP.weight[idx]!=null?NP.weight[idx]:1);
+    if(w<=0.001) continue;
+    if(dir>0 && NP.ascAvoid[idx]>Math.random()) continue;
+    if(dir<0 && NP.descAvoid[idx]>Math.random()) continue;
+    const dist=Math.abs(step);
+    const stepPref=(1-NP.leap)*(dist===1?1.6:dist===2?0.8:0.3)+NP.leap*(dist>=3?1.4:dist===2?0.9:0.5);
+    const dirPref=((dir>0&&step>0)||(dir<0&&step<0))?1.3:0.7;
+    const centerPref=1+(NP.center[idx]||0)*1.2*NP.restWeight;
+    cands.push({idx:idx,w:w*stepPref*dirPref*centerPref});
+  }
+  if(!cands.length) return curIdx;
+  let sum=cands.reduce((a,c)=>a+c.w,0); let r=Math.random()*sum;
+  for(let i=0;i<cands.length;i++){ r-=cands[i].w; if(r<=0) return cands[i].idx; }
+  return cands[cands.length-1].idx;
+}
+// midi → 度数index
+function npDegIndex(midi, degs, root){
+  const rel=((midi-root)%12+12)%12; let idx=0,best=99;
+  for(let i=0;i<degs.length;i++){const d=Math.abs(degs[i]-rel); if(d<best){best=d;idx=i;}}
+  return idx;
+}
+// 音の個性に従って off(midi)を方向dirへ動かす。octaveBiasも反映。
+function npStep(off, dir, degs, root){
+  const curIdx=npDegIndex(off,degs,root);
+  const ni=npNextIdx(curIdx,dir,degs);
+  let oct=Math.floor((off-root)/12);
+  // index循環で跨いだoctを補正(方向に沿う)
+  if(dir>0 && ni<curIdx) oct++;
+  if(dir<0 && ni>curIdx) oct--;
+  // octaveBias: その度数が高め/低めレジスタを好む
+  const ob=NP.octaveBias[ni]||0;
+  if(ob>0.5 && Math.random()<ob) oct++;
+  else if(ob<-0.5 && Math.random()<-ob) oct--;
+  return root + oct*12 + degs[ni];
+}
+
+// ═══ ショパン: 装飾エンジン(オーナメント) ═══
+// 旋律音の前後に微小音を添える。前打音(grace)・トリル(trill)・
+// ターン(turn)。装飾音はスケール内(磁場内)。頂点(APEX)で濃くなる。
+const ORN = {
+  on:false, prob:0.25, apexBoost:2.0,   // 付与確率、頂点での増幅
+  grace:true, trill:true, turn:true,     // 使う装飾の種類
+  graceLen:0.07, trillN:4
+};
+// スケール度数上で midi を step だけ動かした隣接音
+function ornNeighbor(midi, step, degs, root){
+  return breathStep(midi, step, degs, root);
+}
+// 装飾を付けて out に音を積む(本音含む)。phase: 'rise'|'apex'|'fall'
+function ornamentAdd(out, midi, startBeat, dur, vel, degs, root, phase){
+  const p = ORN.prob * (phase==='apex' ? ORN.apexBoost : 1);
+  const types = [];
+  if(ORN.grace) types.push('grace');
+  if(ORN.trill) types.push('trill');
+  if(ORN.turn)  types.push('turn');
+  if(!ORN.on || !types.length || Math.random() > p || dur < 0.12){
+    out.push({startBeat, durBeat:dur, midi, vel}); return;
+  }
+  const type = types[Math.floor(Math.random()*types.length)];
+  if(type === 'grace'){
+    // 前打音: 直前にスケール隣接音(上下ランダム)をごく短く
+    const g = ornNeighbor(midi, Math.random()<0.5?1:-1, degs, root);
+    out.push({startBeat: Math.max(0,startBeat-ORN.graceLen), durBeat:ORN.graceLen*0.9, midi:g, vel:Math.max(0.08,vel*0.65)});
+    out.push({startBeat, durBeat:dur, midi, vel});
+  } else if(type === 'trill'){
+    // トリル: 本音と上隣接音を高速交替
+    const up = ornNeighbor(midi, 1, degs, root);
+    const n = ORN.trillN, seg = dur/n;
+    for(let k=0;k<n;k++) out.push({startBeat:startBeat+k*seg, durBeat:seg*0.92, midi:(k%2?up:midi), vel:Math.max(0.1,vel*(k%2?0.85:1))});
+  } else {
+    // ターン: 上→本→下→本
+    const up = ornNeighbor(midi, 1, degs, root), dn = ornNeighbor(midi, -1, degs, root);
+    const seq = [up, midi, dn, midi], seg = dur/4;
+    seq.forEach((m,k)=> out.push({startBeat:startBeat+k*seg, durBeat:seg*0.92, midi:m, vel:Math.max(0.1,vel*(k===0?0.8:1))}));
+  }
+}
+
+
+// フレーズ = 呼吸の連なり。各呼吸 = RISE(詰めて登る)→APEX(鋭く置いて
+// 引力の懐=音の後のSPACE)→FALL(ほどけて下る)→SETTLE(息継ぎ)。
+// 呼吸を運ぶのは音の長さでなく、音の後のSPACE(次までの間)。
+// パラメータ(段階3で表に出す。今は既定値):
+const BREATH = {
+  riseMin:2, riseRand:3,      // 登りの音数
+  fallMin:2, fallRand:3,      // 下りの音数
+  apexHollowMin:0.6, apexHollowRand:1.4,  // 引力の懐(頂点後の空間, 拍)
+  settleMin:0.4, settleRand:0.8,          // 息継ぎ(拍)
+  riseGap:0.05, fallGapBase:0.12, fallGapRand:0.18,  // 詰まり/緩み
+  range:7, center:5,          // 音域中心と幅(スケール度数)
+  intensityMin:0.5, intensityRand:0.4,
+  apexTension:0.5             // 頂点を緊張音(属音側)へ寄せる確率
+};
+// スケール度数(現在のkey/scaleから)。upperの音をスケール音に量子化して使う。
+function breathScaleDegs(){
+  // ★実スケールに接続: getScale()が現在選択中の度数配列を返す
+  try{ if(typeof getScale==='function'){ const s=getScale(); if(s&&s.length) return s.slice(); } }catch(e){}
+  // フォールバック: メジャースケール度数
+  return [0,2,4,5,7,9,11];
+}
+// ★実ルートに接続(pitch class 0-11に変換。breath/np/tensionはpc前提)
+function breathRoot(){
+  try{ if(typeof getRootMidi==='function') return ((getRootMidi()%12)+12)%12; }catch(e){}
+  return 0;
+}
+// 度数配列上を step だけ動かす(オクターブ跨ぎ対応)
+function breathStep(midi, step, degs, root){
+  const rel=((midi-root)%12+12)%12;
+  let oct=Math.floor((midi-root)/12);
+  let idx=0, best=99;
+  for(let i=0;i<degs.length;i++){ const d=Math.abs(degs[i]-rel); if(d<best){best=d;idx=i;} }
+  idx+=step;
+  while(idx<0){idx+=degs.length;oct--;}
+  while(idx>=degs.length){idx-=degs.length;oct++;}
+  return root + oct*12 + degs[idx];
+}
+// 呼吸の波で連続イベント列を生成。targetVoice='upper'|'middle'
+function buildFloatBreath(targetVoice){
+  const voiceArr = targetVoice==='middle' ? middle : upper;
+  const stepsN = targetVoice==='middle' ? middleSteps : upperSteps;
+  const root = breathRoot();
+  const degs = breathScaleDegs();
+  // 基準レジスタ: その声部の既存の音の平均、無ければroot+60
+  let base = 60 + root;
+  const actives = voiceArr.filter(x=>x&&x.active);
+  if(actives.length) base = Math.round(actives.reduce((a,b)=>a+b.midi,0)/actives.length);
+  const total = (stepsN||16)/2;   // ループのビート長
+  // 音の個性をこのスケールに合わせる(度数数が変わったら初期化)
+  if(Object.keys(NP.weight).length!==degs.length) npReset(degs);
+  const out = [];
+  const centerMidi = breathStep(base, BREATH.center, degs, root);
+  let off = centerMidi;
+  let t = 0;
+  const microLen = kind => kind==='apex'
+    ? [0.5,0.75,1.0][Math.floor(Math.random()*3)]
+    : [0.125,0.1667,0.25,0.25,0.333,0.5][Math.floor(Math.random()*6)];
+  let guard=0;
+  while(t < total-0.02 && guard++<400){
+    const riseN = BREATH.riseMin + Math.floor(Math.random()*BREATH.riseRand);
+    const fallN = BREATH.fallMin + Math.floor(Math.random()*BREATH.fallRand);
+    const intensity = BREATH.intensityMin + Math.random()*BREATH.intensityRand;
+    // RISE: 詰めて登る(音の個性に従う)
+    for(let i=0;i<riseN && t<total-0.02;i++){
+      off = npStep(off, 1, degs, root);
+      const len = microLen('rise');
+      ornamentAdd(out, off, t, len, Math.max(0.1,Math.min(1, 0.45+intensity*0.3*(i/riseN))), degs, root, 'rise');
+      t += len + BREATH.riseGap;
+    }
+    // APEX: 鋭く置いて、引力の懐(長いSPACE)
+    if(t<total-0.02){
+      if(Math.random()<BREATH.apexTension) off = npStep(off, 1, degs, root); // 属音側へ一歩
+      const len = microLen('apex');
+      ornamentAdd(out, off, t, len, Math.max(0.1,Math.min(1, 0.6+intensity*0.35)), degs, root, 'apex');
+      const hollow = BREATH.apexHollowMin + Math.random()*BREATH.apexHollowRand;  // ★引力の懐=音の後の空間
+      t += len + hollow;
+    }
+    // FALL: ほどけて下る(滞在帯=音の個性でスケール内 / 移行帯=磁場越えて新rootへ)
+    for(let i=0;i<fallN && t<total-0.02;i++){
+      const fs = (typeof cpFieldState==='function') ? cpFieldState(t) : {transition:false,rootShift:0};
+      if(fs.transition){
+        // 移行帯: 新root(root+rootShift)へクロマチック下降 = 磁場変更(半音の毒)
+        const targetPc = (((root + fs.rootShift)%12)+12)%12;
+        let cand = off;
+        for(let sft=1;sft<=7;sft++){ if(((off-sft)%12+12)%12===targetPc){ cand=off-sft; break; } }
+        off = cand;
+      } else {
+        off = npStep(off, -1, degs, root);  // 滞在帯: 音の個性でスケール内を下る
+      }
+      const len = microLen('fall');
+      ornamentAdd(out, off, t, len, Math.max(0.1,Math.min(1, 0.5-0.2*(i/fallN))), degs, root, 'fall');
+      t += len + BREATH.fallGapBase + Math.random()*BREATH.fallGapRand;
+    }
+    // SETTLE: 息継ぎ(中心へ戻り、空間)
+    off = centerMidi;
+    t += BREATH.settleMin + Math.random()*BREATH.settleRand;
+  }
+  if(targetVoice==='middle'){ middleFloat = out; floatLoopBeatsMid = total; }
+  else { upperFloat = out; floatLoopBeats = total; }
+  return out;
+}
+
+// ═══ 段階3: 呼吸パラメータ操作(スライダー+上下ボタン) ═══
+// 連続モードの声部だけ呼吸を再生成(位置保持・止めない)
+let _breathRegenTimer=null;
+function regenBreath(){
+  if(_breathRegenTimer) clearTimeout(_breathRegenTimer);
+  _breathRegenTimer=setTimeout(()=>{
+    if(upperContinuous()) buildFloatBreath('upper');
+    if(middleContinuous()) buildFloatBreath('middle');
+    // スケジュール済みカーソルを今に合わせ直す(切れ目なく次の呼吸へ)
+    if(playing){ const bpm=getBpm(); const beatMs=60000/bpm; const nb=(performance.now()-floatStartWall)/beatMs;
+      floatScheduledUntil=nb; floatScheduledUntilMid=nb; }
+    drawCP&&drawCP();
+  }, 120);
+}
+// パラメータ定義(キー: [ラベル, min, max, step, 小数桁])
+const BREATH_PARAMS = {
+  riseMin:      ['登り最小音数', 1, 8, 1, 0],
+  riseRand:     ['登りランダム幅', 0, 8, 1, 0],
+  fallMin:      ['下り最小音数', 1, 8, 1, 0],
+  fallRand:     ['下りランダム幅', 0, 8, 1, 0],
+  apexHollowMin:['引力の懐 最小', 0, 4, 0.1, 1],
+  apexHollowRand:['引力の懐 幅', 0, 4, 0.1, 1],
+  settleMin:    ['息継ぎ 最小', 0, 3, 0.1, 1],
+  settleRand:   ['息継ぎ 幅', 0, 3, 0.1, 1],
+  riseGap:      ['登り 詰まり(隙間)', 0, 0.5, 0.01, 2],
+  fallGapBase:  ['下り 緩み(基本)', 0, 0.6, 0.01, 2],
+  fallGapRand:  ['下り 緩み 幅', 0, 0.6, 0.01, 2],
+  range:        ['音域 幅', 2, 14, 1, 0],
+  center:       ['音域 中心', 0, 12, 1, 0],
+  intensityMin: ['強度 最小', 0, 1, 0.05, 2],
+  intensityRand:['強度 幅', 0, 1, 0.05, 2],
+  apexTension:  ['頂点を緊張へ', 0, 1, 0.05, 2]
+};
+function fmtBreath(key){ const p=BREATH_PARAMS[key]; return (+BREATH[key]).toFixed(p[4]); }
+function setBreath(key,val){
+  const p=BREATH_PARAMS[key]; let v=Math.max(p[1],Math.min(p[2], val));
+  BREATH[key]=v; const el=document.getElementById('bv_'+key); if(el) el.textContent=fmtBreath(key);
+  const sl=document.getElementById('bs_'+key); if(sl) sl.value=v;
+  regenBreath();
+}
+function stepBreath(key,dir){ const p=BREATH_PARAMS[key]; setBreath(key, +(BREATH[key]+dir*p[3]).toFixed(4)); }
+
+// ═══ 段階4: 音の個性ボード(指紋グリッド) ═══
+function npAttrSet(idx, attr, val){
+  NP[attr][idx] = val;
+  const el=document.getElementById('npv_'+attr+'_'+idx); if(el) el.textContent=(+val).toFixed(2);
+  regenBreath();
+}
+function npAttrStep(idx, attr, dir){
+  const cur=NP[attr][idx]||0; let v=cur+dir*0.1;
+  v=Math.max((attr==='octaveBias'?-1:0), Math.min((attr==='weight'?3:1), v));
+  const sl=document.getElementById('nps_'+attr+'_'+idx); if(sl) sl.value=v;
+  npAttrSet(idx, attr, +v.toFixed(2));
+}
+
+// ═══ 段階5: 緊張の弧パラメータUI ═══
+const TENSION_PARAMS = {
+  fieldCount:  ['磁場の数', 2, 6, 1, 0],
+  semitonePref:['半音スリップ比率', 0, 1, 0.05, 2],
+  dwellGrow:   ['滞在の増加率(溜め)', 1, 2.5, 0.1, 1],
+  moveBias:    ['移行方向(−下降/+上昇)', -2, 2, 1, 0]
+};
+function setTension(key,val){
+  const p=TENSION_PARAMS[key]; let v=Math.max(p[1],Math.min(p[2],val));
+  TENSION_ARC[key]=v; const el=document.getElementById('tv_'+key); if(el) el.textContent=(+v).toFixed(p[4]);
+  const sl=document.getElementById('ts_'+key); if(sl) sl.value=v;
+  if(TENSION_ARC.on){ buildTensionArc(); updateTensionInfo(); regenBreath&&regenBreath(); }
+}
+function stepTension(key,dir){ const p=TENSION_PARAMS[key]; setTension(key, +(TENSION_ARC[key]+dir*p[3]).toFixed(3)); }
+function buildTensionPanel(){
+  const host=document.getElementById('tensionPanelBody'); if(!host) return;
+  let html='';
+  for(const key in TENSION_PARAMS){
+    const p=TENSION_PARAMS[key];
+    html+='<div style="display:flex;align-items:center;gap:.3rem;margin:.1rem 0">'
+      +'<span style="font-size:.48rem;color:var(--dim);width:110px;flex-shrink:0">'+p[0]+'</span>'
+      +'<button onclick="stepTension(\''+key+'\',-1)" style="background:none;border:1px solid rgba(96,200,176,.3);color:var(--acc3);font-size:.5rem;padding:.05rem .25rem;border-radius:2px;cursor:pointer">−</button>'
+      +'<input type="range" id="ts_'+key+'" min="'+p[1]+'" max="'+p[2]+'" step="'+p[3]+'" value="'+TENSION_ARC[key]+'" style="flex:1;min-width:50px" oninput="setTension(\''+key+'\',parseFloat(this.value))">'
+      +'<button onclick="stepTension(\''+key+'\',1)" style="background:none;border:1px solid rgba(96,200,176,.3);color:var(--acc3);font-size:.5rem;padding:.05rem .25rem;border-radius:2px;cursor:pointer">+</button>'
+      +'<span id="tv_'+key+'" style="font-size:.5rem;color:var(--acc3);width:28px;text-align:right">'+(+TENSION_ARC[key]).toFixed(p[4])+'</span>'
+      +'</div>';
+  }
+  host.innerHTML=html;
+}
+function updateTensionInfo(){
+  const el=document.getElementById('tensionInfo'); if(!el) return;
+  if(!TENSION_ARC.fields.length){ el.textContent=''; return; }
+  const NN=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const root=breathRoot();
+  const journey=TENSION_ARC.fields.map(f=>{
+    const nm=NN[((root+f.rootShift)%12+12)%12];
+    return nm+'('+(f.rootShift>=0?'+':'')+f.rootShift+', '+f.dwellBeats.toFixed(0)+'拍)';
+  }).join(' → ');
+  el.textContent='磁場の旅: '+journey;
+}
+
+function buildNPBoard(){
+  const host=document.getElementById('npBoardBody'); if(!host) return;
+  const root=breathRoot();
+  const degs=breathScaleDegs();
+  if(Object.keys(NP.weight).length!==degs.length) npReset(degs);
+  const NN=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const attrs=[['weight','重',0,3],['center','心',0,1],['ascAvoid','↑避',0,1],['descAvoid','↓避',0,1],['octaveBias','8va',-1,1]];
+  // 列ヘッダ: 各度数(実音名 + ST番号)
+  let html='<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:.46rem;width:100%">';
+  html+='<tr><td style="padding:.1rem"></td>';
+  for(let i=0;i<degs.length;i++){
+    const nm=NN[(root+degs[i])%12];
+    html+='<td style="text-align:center;padding:.1rem;color:var(--upper)"><div>'+nm+'</div><div style="color:var(--dim)">ST'+degs[i]+'</div></td>';
+  }
+  html+='</tr>';
+  for(const [attr,label,mn,mx] of attrs){
+    html+='<tr><td style="padding:.1rem;color:var(--dim);white-space:nowrap">'+label+'</td>';
+    for(let i=0;i<degs.length;i++){
+      const v=NP[attr][i]!=null?NP[attr][i]:0;
+      html+='<td style="padding:.05rem;text-align:center">'
+        +'<input type="range" min="'+mn+'" max="'+mx+'" step="0.05" value="'+v+'" id="nps_'+attr+'_'+i+'" '
+        +'style="width:38px;height:10px" oninput="npAttrSet('+i+',\''+attr+'\',parseFloat(this.value))">'
+        +'<div id="npv_'+attr+'_'+i+'" style="color:var(--upper);font-size:.42rem">'+(+v).toFixed(2)+'</div>'
+        +'</td>';
+    }
+    html+='</tr>';
+  }
+  html+='</table></div>';
+  host.innerHTML=html;
+}
+
+function buildBreathPanel(){
+  const host=document.getElementById('breathPanelBody'); if(!host) return;
+  let html='';
+  for(const key in BREATH_PARAMS){
+    const p=BREATH_PARAMS[key];
+    html+='<div style="display:flex;align-items:center;gap:.3rem;margin:.12rem 0">'
+      +'<span style="font-size:.5rem;color:var(--dim);width:88px;flex-shrink:0">'+p[0]+'</span>'
+      +'<button onclick="stepBreath(\''+key+'\',-1)" style="background:none;border:1px solid rgba(158,200,64,.3);color:var(--upper);font-size:.5rem;padding:.05rem .25rem;border-radius:2px;cursor:pointer">−</button>'
+      +'<input type="range" id="bs_'+key+'" min="'+p[1]+'" max="'+p[2]+'" step="'+p[3]+'" value="'+BREATH[key]+'" style="flex:1;min-width:50px" oninput="setBreath(\''+key+'\',parseFloat(this.value))">'
+      +'<button onclick="stepBreath(\''+key+'\',1)" style="background:none;border:1px solid rgba(158,200,64,.3);color:var(--upper);font-size:.5rem;padding:.05rem .25rem;border-radius:2px;cursor:pointer">+</button>'
+      +'<span id="bv_'+key+'" style="font-size:.5rem;color:var(--upper);width:30px;text-align:right">'+fmtBreath(key)+'</span>'
+      +'</div>';
+  }
+  host.innerHTML=html;
+}
+
+
+
+
+function tick(){
+  if(!playing) return;
+  // 柱⑤ARC: 現在の緊張度(0-1)。全パラメータを駆動
+  const arcT = ARC.enabled ? arcTension(arcProgress()) : 0;
+  const arcAmt = ARC.depth;
+
+  const bpm = getBpm();
+  const beatMs = (60000/bpm);
+  const baseStepMs = beatMs / 2; // 16th note base
+
+  // Tuplet補正: 三連符=2/3倍、二連符=3/2倍
+  const upperTuplet  = upper[upperPos]?.tuplet   || 'none';
+  const middleTuplet = middle[middlePos]?.tuplet  || 'none';
+  const lowerTuplet  = lower[lowerPos]?.tuplet    || 'none';
+  // 連符の時間補正: factor = (直近下の2の冪)/N。3=2/3, 5=4/5, 7=4/7, 9=8/9, 11=8/11
+  const tupletFactor = t => {
+    if(t==='none'||t==null) return 1;
+    if(t==='dup') return 3/2;
+    if(t==='trip') t=3;
+    const n = (typeof t==='number') ? t : parseInt(t);
+    if(!n || n<2) return 1;
+    let b=1; while(b*2<=n) b*=2;   // 直近下の2の冪
+    return b/n;
+  };
+
+  const upperStepMs  = baseStepMs / (voiceRate.upper||1)  * tupletFactor(upperTuplet);
+  const lowerStepMs  = baseStepMs / (voiceRate.lower||1)  * tupletFactor(lowerTuplet);
+  const stepMs = Math.min(upperStepMs, lowerStepMs);
+
+  const upperCh = (parseInt(document.getElementById('upperCh').value)||2) - 1;
+  const lowerCh = (parseInt(document.getElementById('lowerCh').value)||3) - 1;
+  const upperOct = parseInt(document.getElementById('upperOct').value)||0;
+  const lowerOct = parseInt(document.getElementById('lowerOct').value)||-1;
+
+  // 連続時間エンジン: 連続モードの声部を先読みスケジューラで発火
+  if(upperContinuous()){ floatSchedule(); }
+  if(middleContinuous()){ floatScheduleMid(); }
+  // Play upper step (格子モードのみ)
+  const us = upper[upperPos];
+  // ARC: 緊張度が低い時は弱拍を間引く(密度↓)、高い時は密(そのまま)
+  const arcGate = !ARC.enabled || us && (us.active) && (Math.random() < 0.4 + 0.6*arcT || upperPos%4===0);
+  if(!upperContinuous() && us && us.active && arcGate && midiOut && !muted.upper){
+    const swDelay = applySwing('upper', upperPos, upperStepMs);
+    const m = Math.max(0,Math.min(127, applyHarmonyLive(us.midi, upperPos, upperSteps) + upperOct*12 + (us.oct||0)*12 + (us.noteOffset||0)));
+    const v = Math.max(1,Math.min(127,Math.round(us.vel*127*(ARC.enabled?(0.55+0.65*arcT):1))));
+    accurateTimeout(()=>{ if(midiOut&&!muted.upper) midiOut.send([0x90|upperCh, m, v]); }, swDelay);
+    accurateTimeout(()=>{ if(midiOut) midiOut.send([0x80|upperCh, m, 0]); }, swDelay+upperStepMs*0.8);
+  }
+
+  // Play middle step
+  const middleCh = (parseInt(document.getElementById('middleCh').value)||3)-1;
+  const middleOct = parseInt(document.getElementById('middleOct').value)||0;
+  const middleStepMs2 = baseStepMs / (voiceRate.middle||1) * tupletFactor(middleTuplet);
+  const ms2 = middle[middlePos];
+  if(!middleContinuous() && ms2 && ms2.active && midiOut && !muted.middle){
+    const swDelay = applySwing('middle', middlePos, middleStepMs2);
+    const m = Math.max(0,Math.min(127, applyHarmonyLive(ms2.midi, middlePos, middleSteps) + middleOct*12));
+    const v = Math.max(1,Math.min(127,Math.round(ms2.vel*127)));
+    accurateTimeout(()=>{ if(midiOut&&!muted.middle) midiOut.send([0x90|middleCh, m, v]); }, swDelay);
+    accurateTimeout(()=>{ if(midiOut) midiOut.send([0x80|middleCh, m, 0]); }, swDelay+middleStepMs2*0.8);
+  }
+
+  // Play lower step
+  const ls = lower[lowerPos];
+  if(ls && ls.active && midiOut && !muted.lower){
+    const swDelay = applySwing('lower', lowerPos, lowerStepMs);
+    // 緊張の弧を下層にも適用する場合、現在の磁場のrootShiftを足す(全体転調)
+    let lowerTShift = 0;
+    if(TENSION_ARC.on && TENSION_ARC.applyLower){
+      const gBeatNow = (performance.now() - floatStartWall) / beatMs;
+      lowerTShift = tensionFieldAt(gBeatNow).rootShift || 0;
+    }
+    const m = Math.max(0,Math.min(127, applyHarmonyLive(ls.midi, lowerPos, lowerSteps) + lowerOct*12 + (ls.oct||0)*12 + (ls.noteOffset||0) + lowerTShift));
+    const v = Math.max(1,Math.min(127,Math.round(ls.vel*127)));
+    accurateTimeout(()=>{ if(midiOut&&!muted.lower) midiOut.send([0x90|lowerCh, m, v]); }, swDelay);
+    accurateTimeout(()=>{ if(midiOut) midiOut.send([0x80|lowerCh, m, 0]); }, swDelay+lowerStepMs*0.8);
+  }
+
+  // Highlight playing steps
+
+  // ═══ 和音シーケンサー(第4ボイス): 3モード(型駆動/グリッド駆動/追従駆動)═══
+  if(HARMONY.enabled && midiOut && !muted.chord && chordSeq.length){
+    const mode = document.getElementById('chordDrive')?.value || 'follow';
+    const cstep=chordSeq[chordPos % chordSeq.length];
+    const chRate=parseFloat(document.getElementById('chordRate')?.value||'1');
+    const chordStepMs = baseStepMs / chRate;
+    // 発火判定
+    let fire=false, avoidMidi=null;
+    if(mode==='follow'){                                         // 追従: 上声部が鳴る瞬間
+      fire = !!(us && us.active);
+      if(us) avoidMidi = us.midi + upperOct*12 + (us.oct||0)*12;
+    } else {                                                     // 型駆動/グリッド: activeセルで発火
+      fire = !!(cstep && cstep.active);
+    }
+    if(fire){
+      // 追従モードは上部に完全同期(位相も型位置も上部基準=斜めズレ解消)
+      const phase = (mode==='follow') ? (upperPos / upperSteps) : (chordPos / chordSeq.length);
+      const patPos = (mode==='follow') ? upperPos : chordPos;
+      const deg=runtimeChordDeg(phase);
+      if(deg!=null){
+        const scale=getScale(), root=getRootMidi();
+        const triadPc=diatonicTriad(scale, deg);
+        let oct=parseInt(document.getElementById('chordOctN')?.value||'-1');
+        const ch=(parseInt(document.getElementById('chordChN')?.value||'4'))-1;
+        const inv=parseInt(document.getElementById('chordInv')?.value||'0');
+        const add7=document.getElementById('chord7')?.checked;
+        const add9=document.getElementById('chord9')?.checked;
+        const add11=document.getElementById('chord11')?.checked;
+        const add13=document.getElementById('chord13')?.checked;
+        const open=document.getElementById('chordOpen')?.checked;
+        const human=parseInt(document.getElementById('chordHumanize')?.value||'12')/100;
+        let tones=buildChordTones(triadPc, root, oct, {inversion:inv,add7,add9,add11,add13,open});
+        let nv=parseInt(document.getElementById('chordVoices')?.value||'0');
+        // ARC: 緊張度で声部数を自動(頂点で厚く、終息で薄く)
+        if(ARC.enabled){ const arcVoices=3+Math.round(arcT*arcAmt*4); nv=Math.max(nv,arcVoices); }
+        if(nv>0) tones=thickenVoicing(tones, root, nv);
+        // 柱①ボイスリーディング: 前の和音から最小移動で繋ぐ
+        if(document.getElementById('chordVL')?.checked){
+          const led=voiceLead(HARMONY._vlPrev, triadPc, root, oct);
+          // テンションは led の上に積み直す(三和音部分だけVL)
+          const tens=tones.filter(t=>!triadPc.includes(((t-root)%12+12)%12) || t>Math.max(...led)+1);
+          tones=led.concat(tens.filter(t=>t>Math.max(...led))).sort((a,b)=>a-b);
+          HARMONY._vlPrev=led;
+        }
+        // 追従モード: 和音の最高音が旋律より下になるようオクターブ調整(協和)
+        const _pat0=document.getElementById('chordPattern')?.value||'block';
+        if(mode==='follow' && avoidMidi!=null && _pat0!=='ecm_body'){ tones=followVoicing(tones, avoidMidi, root); }
+        const pat=_pat0;
+        const res=chordPatternStep(pat, tones, patPos);
+        const baseVel=Math.round(((cstep&&cstep.vel)||0.5)*127);
+        if(HARMONY._lastChordNotes){ HARMONY._lastChordNotes.forEach(pn=>midiOut.send([0x80|ch,pn,0])); }
+        const playNotes=[];
+        res.notes.forEach((pn,idx)=>{
+          const mm=Math.max(0,Math.min(127,pn));
+          const humV=Math.round(baseVel*(1 + (Math.random()-0.5)*human*0.4));
+          const v=Math.max(1,Math.min(127,humV));
+          const swDelay = applySwing('chord', patPos, chordStepMs);
+          const strum=swDelay + (res.strumMs||0)*idx + (Math.random()*human*8);
+          accurateTimeout(()=>{ if(midiOut&&!muted.chord) midiOut.send([0x90|ch,mm,v]); }, strum);
+          playNotes.push(mm);
+        });
+        const sustain=(pat==='block'||pat==='sustained'||pat==='strum_down'||pat==='ecm_body') ? chordStepMs*3 : chordStepMs*0.9;
+        const offNotes=[...playNotes];
+        if(pat==='ecm_body' && ECM.longLow && offNotes.length){
+          // ECM: 低音ほど深い懐(長く保つ・長い残響)。音ごとにoff時刻を変える
+          const lo=Math.min(...offNotes), hi=Math.max(...offNotes), span=Math.max(1,hi-lo);
+          offNotes.forEach(pn=>{
+            const depth=(hi-pn)/span;            // 低音=1, 高音=0
+            const hold=sustain*(1 + depth*1.4);  // 低音ほど長い懐
+            accurateTimeout(()=>{ if(midiOut) midiOut.send([0x80|ch,pn,0]); }, hold);
+          });
+        } else {
+          accurateTimeout(()=>{ if(midiOut) offNotes.forEach(pn=>midiOut.send([0x80|ch,pn,0])); }, sustain+ (res.strumMs||0)*offNotes.length);
+        }
+        HARMONY._lastChordNotes=null;
+      }
+    }
+    highlightStep('chord', (mode==='follow') ? (upperPos % chordSeq.length) : chordPos);
+    if(mode!=='follow') chordPos = (chordPos+1) % chordSeq.length;
+    // 追従モードはchordPosを使わない(上部に同期)
+  }
+
+  highlightStep('upper', upperPos);
+  highlightStep('middle', middlePos);
+  highlightStep('lower', lowerPos);
+
+  // Advance positions
+  upperPos  = (upperPos+1)  % upperSteps;
+  if(ARC.enabled){ arcGlobalStep++;
+  }
+  middlePos = (middlePos+1) % middleSteps;
+  lowerPos  = (lowerPos+1)  % lowerSteps;
+
+  // 協和度リアルタイム更新
+  if(upperPos%4===0) updateConsonanceDisplay();
+
+  // Update UI
+  const progress = (upperPos/upperSteps*100).toFixed(1);
+  const pb=document.getElementById('progressBar'); if(pb) pb.style.width = progress+'%';
+  const pl=document.getElementById('phaseLabel'); if(pl) pl.textContent = progress+'%';
+
+  // Redraw CP
+  if(upperPos%4===0) drawCP();
+
+  tickTimer = accurateTimeout(tick, stepMs);
+}
+
+function highlightStep(voice, pos){
+  const grid = document.getElementById(voice+'Grid');
+  if(!grid) return;
+  if(voice==='chord'){
+    grid.querySelectorAll('.step-cell').forEach((s,i)=>{
+      s.style.outline = (i===pos) ? '2px solid #fff' : 'none';
+    });
+    return;
+  }
+  grid.querySelectorAll('.step').forEach((s,i)=>{
+    s.classList.toggle('playing', i===pos);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  MIDI
+// ═══════════════════════════════════════════════════════
+function initMIDI(){
+  if(!navigator.requestMIDIAccess) return;
+  navigator.requestMIDIAccess().then(access=>{
+    midiAccess=access;
+    populatePorts();
+    access.onstatechange=populatePorts;
+  });
+}
+
+
+function selectPort(){
+  const id = document.getElementById('midiPortSel').value;
+  if(!id){ midiOut=null; setMidiStatus(false,'—'); return; }
+  midiOut = midiAccess.outputs.get(id);
+  if(midiOut) setMidiStatus(true, midiOut.name);
+}
+
+function refreshMIDI(){ initMIDI(); }
+
+function setMidiStatus(ok, msg){
+  const dot = document.getElementById('midiDot');
+  const txt = document.getElementById('midiStatus');
+  if(dot) dot.className = 'midi-dot'+(ok?' connected':'');
+  if(txt) txt.textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════
+//  MIDI EXPORT
+// ═══════════════════════════════════════════════════════
+function exportMIDI(){
+  recordFeedback('exported','gismonti');
+  const bpm = getBpm();
+  const ppq = 480;
+  const tempo = Math.round(60000000/bpm);
+  const upperCh = (parseInt(document.getElementById('upperCh').value)||2)-1;
+  const lowerCh = (parseInt(document.getElementById('lowerCh').value)||3)-1;
+  const upperOct = parseInt(document.getElementById('upperOct').value)||0;
+  const lowerOct = parseInt(document.getElementById('lowerOct').value)||-1;
+
+  const voices = [
+    {steps:upper, ch:upperCh, oct:upperOct, name:'Gismonti-Upper'},
+    {steps:lower, ch:lowerCh, oct:lowerOct, name:'Gismonti-Lower'},
+  ];
+
+  const tracks = [];
+  // Tempo track
+  const tt = [0,0xFF,0x51,0x03,(tempo>>16)&0xFF,(tempo>>8)&0xFF,tempo&0xFF,0,0xFF,0x2F,0x00];
+  tracks.push(tt);
+
+  voices.forEach(({steps,ch,oct,name})=>{
+    const td = [];
+    const nb = [...name].map(c=>c.charCodeAt(0));
+    td.push(0,0xFF,0x03,nb.length,...nb);
+    let last=0;
+    const evs = [];
+    let ticks=0;
+    steps.forEach(s=>{
+      const dur = ppq/2;
+      if(s.active){
+        const m = Math.max(0,Math.min(127,s.midi+oct*12+(s.oct||0)*12+(s.noteOffset||0)));
+        const v = Math.max(1,Math.min(127,Math.round(s.vel*127)));
+        evs.push({tick:ticks,type:0x90,note:m,val:v});
+        evs.push({tick:ticks+Math.round(dur*.88),type:0x80,note:m,val:0});
+      }
+      ticks+=dur;
+    });
+    evs.sort((a,b)=>a.tick-b.tick);
+    last=0;
+    evs.forEach(e=>{
+      const d=e.tick-last; last=e.tick;
+      td.push(...varLen(d),e.type|ch,e.note,e.val);
+    });
+    td.push(...varLen(0),0xFF,0x2F,0x00);
+    tracks.push(td);
+  });
+
+  const n=tracks.length;
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1,(n>>8)&0xFF,n&0xFF,(ppq>>8)&0xFF,ppq&0xFF];
+  const all=[...hdr];
+  tracks.forEach(td=>{
+    all.push(0x4D,0x54,0x72,0x6B,(td.length>>24)&0xFF,(td.length>>16)&0xFF,(td.length>>8)&0xFF,td.length&0xFF,...td);
+  });
+
+  const blob=new Blob([new Uint8Array(all)],{type:'audio/midi'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`gismonti-${document.getElementById('scaleSel').value}-${bpm}bpm.mid`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function varLen(v){
+  if(v<128)return[v];
+  if(v<16384)return[((v>>7)|0x80),v&0x7f];
+  if(v<2097152)return[((v>>14)|0x80),((v>>7)&0x7f)|0x80,v&0x7f];
+  return[((v>>21)|0x80),((v>>14)&0x7f)|0x80,((v>>7)&0x7f)|0x80,v&0x7f];
+}
+
+// ═══════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════
+// ── Folk Swap: シーケンスはそのまま音程だけ民謡に差し替え ──
+function swapFolkPitch(target){
+  const src = document.getElementById('folkSource').value;
+  const folkEntry = FOLK_FRAGMENTS[src];
+  if(!folkEntry) return;
+
+  const frags = folkEntry.frags || folkEntry;
+  const root = getRootMidi();
+  const scale = getScale();
+
+  // 民謡スケールの音階を構築（全オクターブ）
+  const folkPool = [];
+  const fragIntervals = frags.flat();
+  const uniqueIntervals = [...new Set(fragIntervals.map(d=>((d%12)+12)%12))];
+  for(let oct=-1; oct<=2; oct++){
+    uniqueIntervals.forEach(deg=>{
+      const m = root + deg + oct*12;
+      if(m>=24&&m<=108) folkPool.push(m);
+    });
+  }
+  folkPool.sort((a,b)=>a-b);
+
+  const swap = (steps) => {
+    steps.forEach((s,i)=>{
+      if(!s.active) return;
+      // 現在の音に最も近い民謡音程に差し替え
+      const nearest = folkPool.reduce((a,b)=>
+        Math.abs(b-s.midi)<Math.abs(a-s.midi)?b:a
+      );
+      s.midi = nearest;
+      s.folk = true;
+      s.folkName = folkEntry.name || src;
+    });
+  };
+
+  pushHistory();
+  if(target==='upper' || target==='all') swap(upper);
+  if(target==='middle'|| target==='all') swap(middle);
+  if(target==='lower' || target==='all') swap(lower);
+
+  if(target==='upper'||target==='all') buildGrid('upper');
+  if(target==='middle'||target==='all') buildGrid('middle');
+  if(target==='lower'||target==='all') buildGrid('lower');
+  drawCP(); updateTimeline();
+
+  const fs = document.getElementById('folkStatus');
+  const ft = document.getElementById('folkStatusText');
+  if(fs) fs.style.display='inline-flex';
+  if(ft) ft.textContent = '⊕ '+( folkEntry.name||src)+' → '+(target==='all'?'全声部':target);
+}
+
+function onFolkSourceChange(){
+  // sourceが変わった時、最後にswapしたvoiceがあれば自動的に再swap
+  // （なければ何もしない）
+  const ft = document.getElementById('folkStatusText');
+  if(ft && ft.textContent && ft.textContent !== '民謡断片注入中'){
+    // 前回swapした痕跡がある場合、ステータスを更新するだけ
+    const src = document.getElementById('folkSource').value;
+    const entry = FOLK_FRAGMENTS[src];
+    if(entry && ft) ft.textContent = (entry.name||src)+' — Swapボタンで適用';
+  }
+}
+
+function updateConsonanceDisplay(){
+  // 現在のUpper/Middle/Lower間の協和度を計算して表示
+  const CONSONANT_SCORE = {0:1.0,3:0.8,4:0.8,7:0.9,8:0.7,9:0.75,12:1.0};
+  const DISSONANT_SCORE = {1:0.1,2:0.3,5:0.5,6:0.2,10:0.3,11:0.15};
+
+  const activeU = upper.filter(s=>s.active);
+  const activeM = middle.filter(s=>s.active);
+  const activeL = lower.filter(s=>s.active);
+
+  if(!activeU.length || !activeM.length) return;
+
+  // サンプリング: 最初の8ペアの平均
+  let totalScore = 0; let count = 0;
+  const n = Math.min(8, Math.min(activeU.length, activeM.length));
+  for(let i=0;i<n;i++){
+    const um = Math.abs(activeU[i].midi - activeM[i].midi) % 12;
+    const ml = activeM[i] && activeL[i] ? Math.abs(activeM[i].midi - activeL[i].midi) % 12 : 7;
+    const s1 = CONSONANT_SCORE[um] || DISSONANT_SCORE[um] || 0.5;
+    const s2 = CONSONANT_SCORE[ml] || DISSONANT_SCORE[ml] || 0.5;
+    totalScore += (s1+s2)/2; count++;
+  }
+  const score = count > 0 ? totalScore/count : 0.5;
+
+  const fill = document.getElementById('consonanceFill');
+  const label = document.getElementById('consonanceLabel');
+  if(!fill||!label) return;
+
+  fill.style.width = (score*100).toFixed(0)+'%';
+  fill.style.background = score > 0.7 ? 'var(--acc3)' :
+                          score > 0.4 ? 'var(--acc2)' : '#e85050';
+
+  const terms = score > 0.75 ? '協和 — 安定' :
+                score > 0.55 ? '半協和 — 緊張準備' :
+                score > 0.35 ? '不協和 — 解決待ち' : '強不協和 — 緊張最大';
+  label.textContent = terms + ' (' + (score*100).toFixed(0)+'%)';
+  label.style.color = fill.style.background;
+}
+
+function midiToName(m){
+  const names=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  return names[m%12]+(Math.floor(m/12)-1);
+}
+
+function updateStats(){
+  document.getElementById('statUpper').textContent = upperSteps;
+  document.getElementById('statLower').textContent = lowerSteps;
+  const ml = lcmOf(lcmOf(upperSteps,middleSteps),lowerSteps);
+  const cyc=document.getElementById('statCycle'); if(cyc) cyc.textContent = ml+'beat';
+  document.getElementById('statBpm').textContent = getBpm();
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP EDITOR (別窓)
+// ═══════════════════════════════════════════════════════
+// Editor state
+let editVoice = null;
+let editSteps = [];
+let overlayCellW = 28;
+let editorDragging = false;
+
+const EDITOR_LANES = [
+  {key:'midi',   name:'Note',    color:'#9ec840',  min:24,  max:108, def:60},
+  {key:'vel',    name:'Velocity',color:'#f08060',  min:1,   max:127, def:80},
+  {key:'length', name:'Length',  color:'#60d090',  min:5,   max:200, def:100},
+  {key:'chance', name:'Chance',  color:'#c860c8',  min:0,   max:100, def:100},
+];
+
+function openStepEditor(voice){
+  editVoice = voice;
+  const src = voice==='upper' ? upper : voice==='middle' ? middle : lower;
+  editSteps = src.map(s=>({...s,
+    oct:s.oct??0, noteOffset:s.noteOffset??0,
+    length:s.length??100, vel127:s.vel127??Math.round((s.vel||0.7)*127),
+    chance:s.chance??100, tuplet:s.tuplet||'none',
+  }));
+  const color = voice==='upper'?'#9ec840':voice==='middle'?'#60c8d0':'#e8a030';
+  const title = voice==='upper'?'上声部 Upper':voice==='middle'?'中声部 Middle':'下声部 Lower';
+  const titleEl = document.getElementById('editorOverlayTitle');
+  if(titleEl){ titleEl.textContent='✎ '+title; titleEl.style.color=color; }
+  buildOverlayLaneButtons(color);
+  buildOverlayNums(); buildOverlayTuplets(); buildOverlayLanes();
+  document.getElementById('stepEditorOverlay').style.display='block';
+  // ヘッダー+ツールバー+ステップ番号の高さを計算してlanesのtopを設定
+  requestAnimationFrame(()=>{
+    const hdr = document.getElementById('editorHeader');
+    const tbr = document.getElementById('editorToolbar');
+    const nums = document.getElementById('overlayStepNums');
+    if(hdr&&tbr&&nums){
+      const top = hdr.offsetHeight + tbr.offsetHeight + nums.offsetHeight + 8;
+      const lanes = document.getElementById('overlayLanes');
+      if(lanes) lanes.style.top = top+'px';
+    }
+  });
+}
+
+function closeStepEditor(){
+  document.getElementById('stepEditorOverlay').style.display='none';
+  editSteps=[];
+}
+
+function applyStepEditor(){
+  if(!editVoice) return;
+  const out = editSteps.map(s=>({
+    ...s,
+    vel:    (s.vel127 != null ? s.vel127 : Math.round((s.vel||0.7)*127)) / 127,
+    dur:    (s.length||100)/100,
+    chance: (s.chance!=null ? s.chance : 100)/100,
+    tuplet: s.tuplet||'none',
+  }));
+  if(editVoice==='upper') upper=out; else if(editVoice==='middle') middle=out; else lower=out;
+  pushHistory(); buildGrid(editVoice); drawCP(); updateTimeline();
+  closeStepEditor();
+}
+
+function buildOverlayLaneButtons(color){
+  const el=document.getElementById('overlayLaneButtons'); if(!el)return;
+  el.innerHTML=EDITOR_LANES.map(lane=>
+    `<span style="display:inline-flex;gap:2px;margin-right:5px;align-items:center">
+      <span style="font-size:.48rem;color:${lane.color}">${lane.name}</span>
+      <button onclick="overlayLaneOp('rnd','${lane.key}')" style="background:none;border:1px solid ${lane.color}44;color:${lane.color};font-size:.42rem;padding:.06rem .2rem;border-radius:1px;cursor:pointer">⚄</button>
+      <button onclick="overlayLaneOp('sm','${lane.key}')" style="background:none;border:1px solid ${lane.color}44;color:${lane.color};font-size:.42rem;padding:.06rem .2rem;border-radius:1px;cursor:pointer">~</button>
+      <button onclick="overlayLaneOp('clr','${lane.key}')" style="background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.3);font-size:.42rem;padding:.06rem .2rem;border-radius:1px;cursor:pointer">✕</button>
+    </span>`
+  ).join('');
+}
+
+function setOverlayCellW(w){ overlayCellW=parseInt(w); buildOverlayNums(); buildOverlayTuplets(); buildOverlayLanes(); }
+function overlayOp(op){ if(op==='clearAll')editSteps.forEach(s=>s.active=false); else editSteps.forEach(s=>s.active=true); buildOverlayLanes(); }
+function overlayLaneOp(op,key){
+  const lane=EDITOR_LANES.find(l=>l.key===key); if(!lane)return;
+  if(op==='rnd'){ editSteps.forEach(s=>{ if(key==='oct')s.oct=Math.round((Math.random()-.5)*4); else if(key==='note')s.noteOffset=Math.round((Math.random()-.5)*12); else if(key==='length')s.length=Math.round(20+Math.random()*180); else if(key==='vel')s.vel127=Math.round(30+Math.random()*97); else s.chance=Math.round(50+Math.random()*50); }); }
+  else if(op==='sm'){ const vals=editSteps.map(s=>getEV(lane,s)); const sm=vals.map((v,i)=>(vals[Math.max(0,i-1)]+v+vals[Math.min(editSteps.length-1,i+1)])/3); sm.forEach((v,i)=>setEV(lane,editSteps[i],Math.round(v))); }
+  else editSteps.forEach(s=>setEV(lane,s,lane.def));
+  buildOverlayLanes();
+}
+function getEV(lane,s){ if(lane.key==='midi')return s.midi||60; if(lane.key==='vel')return s.vel127||Math.round((s.vel||0.7)*127); if(lane.key==='length')return s.length||100; return s.chance!=null?s.chance:100; }
+function setEV(lane,s,v){ if(lane.key==='midi')s.midi=Math.max(24,Math.min(108,v)); else if(lane.key==='vel')s.vel127=v; else if(lane.key==='length')s.length=v; else s.chance=v; }
+function nh2(lane,v){ return((v-lane.min)/(lane.max-lane.min))*100; }
+
+function buildOverlayNums(){
+  const el=document.getElementById('overlayStepNums'); if(!el)return; el.innerHTML='';
+  editSteps.forEach((s,i)=>{ const d=document.createElement('div'); d.style.cssText=`flex-shrink:0;width:${overlayCellW}px;font-size:.38rem;color:${i%4===0?'rgba(158,200,64,.7)':'rgba(180,210,120,.25)'};text-align:center;line-height:14px`; d.textContent=i%4===0?(i+1):''; el.appendChild(d); });
+}
+
+function buildOverlayTuplets(){
+  const el=document.getElementById('overlayTupletRow'); if(!el)return; el.innerHTML='';
+  const TUPLET_CYCLE=['none',3,5,7,9,11];  // クリックで循環
+  const tupLabel=t=>{ if(t==='none'||t==null)return '·'; if(t==='trip')return '3'; if(t==='dup')return '2'; return ''+t; };
+  const tupColor=t=>{ const n=t==='trip'?3:(typeof t==='number'?t:parseInt(t)); if(t==='none'||t==null||isNaN(n))return 'rgba(180,210,120,.3)'; const hues={3:'#f0c840',5:'#7ad0ff',7:'#ff8cc8',9:'#a0ff90',11:'#c0a8ff'}; return hues[n]||'#f08060'; };
+  editSteps.forEach((s,i)=>{ let t=s.tuplet||'none'; if(t==='dup')t='none'; const d=document.createElement('div'); const col=tupColor(t); d.style.cssText=`flex-shrink:0;width:${overlayCellW}px;font-size:.42rem;text-align:center;line-height:20px;cursor:pointer;border-radius:2px;border:1px solid transparent;background:${t==='none'?'transparent':'rgba(255,255,255,.08)'};color:${col}`; d.textContent=tupLabel(t); d.onclick=()=>{ let c=s.tuplet||'none'; if(c==='trip')c=3; if(c==='dup')c='none'; const idx=TUPLET_CYCLE.indexOf(c); const next=TUPLET_CYCLE[(idx+1)%TUPLET_CYCLE.length]; s.tuplet=next; buildOverlayTuplets(); buildOverlayLanes(); }; el.appendChild(d); });
+}
+
+function buildOverlayLanes(){
+  const container=document.getElementById('overlayLanes'); if(!container)return; container.innerHTML='';
+  EDITOR_LANES.forEach(lane=>{
+    const laneEl=document.createElement('div'); laneEl.style.cssText='display:flex;align-items:stretch;height:52px;flex-shrink:0;';
+    const lbl=document.createElement('div'); lbl.style.cssText=`width:90px;flex-shrink:0;display:flex;align-items:center;padding:0 .6rem;border-right:1px solid rgba(180,210,100,.1);background:#0d100a`; lbl.innerHTML=`<div style="font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${lane.color}">${lane.name}</div>`; laneEl.appendChild(lbl);
+    const cells=document.createElement('div'); cells.style.cssText='flex:1;display:flex;overflow-x:scroll;overflow-y:hidden;gap:2px;padding:3px 0;scrollbar-width:thin;'; cells.dataset.laneKey=lane.key;
+    editSteps.forEach((s,i)=>{
+      const cell=document.createElement('div'); const t=s.tuplet||'none';
+      cell.style.cssText=`flex-shrink:0;width:${overlayCellW}px;height:100%;position:relative;cursor:pointer;border:1px solid rgba(255,255,255,.04);border-radius:1px;${i%4===0?'border-left:1px solid rgba(158,200,64,.2);':''}${t==='trip'?'border-top:2px solid #f0c840;':t==='dup'?'border-top:2px solid #f08060;':''}`;
+      const v=getEV(lane,s); const h=nh2(lane,v); const isC=lane.key==='oct'||lane.key==='note';
+      if(isC){ const z=document.createElement('div'); z.style.cssText=`position:absolute;left:0;right:0;height:1px;background:rgba(255,255,255,.1);bottom:${nh2(lane,0)}%`; cell.appendChild(z); }
+      const bar=document.createElement('div'); bar.style.cssText=`position:absolute;left:1px;right:1px;border-radius:2px 2px 0 0;background:${lane.color};opacity:${v===lane.def?0.2:0.85};`;
+      if(isC){ const c=nh2(lane,0); if(h>=c){bar.style.bottom=c+'%';bar.style.height=(h-c)+'%';}else{bar.style.bottom=h+'%';bar.style.height=(c-h)+'%';} } else { bar.style.bottom='0'; bar.style.height=h+'%'; }
+      const val=document.createElement('div'); val.style.cssText='position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:.38rem;color:rgba(255,255,255,.45);pointer-events:none;';
+      if(lane.key==='midi'){
+        const names=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        val.textContent = names[v%12]+(Math.floor(v/12)-1);
+        val.style.fontSize='.44rem'; val.style.color='rgba(255,255,255,.7)';
+      } else {
+        val.textContent=(v===lane.def&&(lane.key==='chance'||lane.key==='length'))?'':v;
+      }
+      cell.appendChild(bar); cell.appendChild(val);
+      cell.addEventListener('mousedown',e=>{ if(e.button!==0)return; if(e.shiftKey){setEV(lane,editSteps[i],lane.def);buildOverlayLanes();return;} editorDragging=true; fromEY(e,lane,i); e.preventDefault(); });
+      cell.addEventListener('mousemove',e=>{ if(editorDragging&&e.buttons===1)fromEY(e,lane,i); });
+      cell.addEventListener('contextmenu',e=>{ e.preventDefault(); setEV(lane,editSteps[i],Math.max(lane.min,getEV(lane,editSteps[i])-1)); buildOverlayLanes(); });
+      cells.appendChild(cell);
+    });
+    document.addEventListener('mouseup',()=>{ editorDragging=false; });
+    laneEl.appendChild(cells); container.appendChild(laneEl);
+  });
+  // scroll sync
+  const nums=document.getElementById('overlayStepNums'); const tup=document.getElementById('overlayTupletRow');
+  container.querySelectorAll('[data-lane-key]').forEach(el=>{ el.addEventListener('scroll',()=>{ container.querySelectorAll('[data-lane-key]').forEach(o=>{ if(o!==el)o.scrollLeft=el.scrollLeft; }); if(nums)nums.scrollLeft=el.scrollLeft; if(tup)tup.scrollLeft=el.scrollLeft; }); });
+}
+
+function fromEY(e,lane,i){ const rect=e.currentTarget.getBoundingClientRect(); const relY=1-(e.clientY-rect.top)/rect.height; const v=Math.round(lane.min+relY*(lane.max-lane.min)); setEV(lane,editSteps[i],Math.max(lane.min,Math.min(lane.max,v))); buildOverlayLanes(); }
+let clockSlaveOn = false;
+let clockPulseTimes = [];
+let midiInPort = null;
+
+function toggleClockSlave(){
+  clockSlaveOn ? stopClockSlave() : startClockSlave();
+}
+
+function startClockSlave(){
+  if(!midiAccess){ initMIDI().then(()=>{ if(midiAccess) startClockSlave(); }); return; }
+  const sel = document.getElementById('midiInSel');
+  if(!sel || !sel.value){ alert('Input portを選択してください'); return; }
+  midiInPort = midiAccess.inputs.get(sel.value);
+  if(!midiInPort) return;
+  clockPulseTimes = [];
+  clockSlaveOn = true;
+  midiInPort.onmidimessage = onClockMsg;
+  const btn = document.getElementById('btnSlave');
+  if(btn){ btn.textContent='Slave: ON'; btn.style.borderColor='rgba(158,200,64,.7)'; btn.style.color='var(--acc)'; }
+  document.getElementById('slaveStatus').textContent = '受信待機中...';
+}
+
+function stopClockSlave(){
+  clockSlaveOn = false;
+  if(midiInPort){ midiInPort.onmidimessage = null; midiInPort = null; }
+  const btn = document.getElementById('btnSlave');
+  if(btn){ btn.textContent='Slave: OFF'; btn.style.borderColor=''; btn.style.color=''; }
+  document.getElementById('slaveStatus').textContent = '—';
+}
+
+function onClockMsg(e){
+  const [status] = e.data;
+  if(status === 0xFA){ // Start
+    clockPulseTimes = [];
+  } else if(status === 0xFC){ // Stop
+    clockPulseTimes = [];
+  } else if(status === 0xF8){ // Clock pulse (24PPQ)
+    const now = performance.now();
+    clockPulseTimes.push(now);
+    if(clockPulseTimes.length > 24) clockPulseTimes.shift();
+    if(clockPulseTimes.length >= 4){
+      // 直近の間隔から平均BPMを計算
+      const diffs = [];
+      for(let i=1;i<clockPulseTimes.length;i++)
+        diffs.push(clockPulseTimes[i]-clockPulseTimes[i-1]);
+      const avgMs = diffs.reduce((s,d)=>s+d,0)/diffs.length;
+      const bpm = Math.round(60000 / (avgMs * 24));
+      if(bpm >= 40 && bpm <= 300){
+        document.getElementById('bpmIn').value = bpm;
+        document.getElementById('statBpm').textContent = bpm;
+        document.getElementById('slaveStatus').textContent = bpm+' BPM';
+      }
+    }
+  }
+}
+
+function populatePorts(){
+  const sel = document.getElementById('midiPortSel');
+  const inSel = document.getElementById('midiInSel');
+  const prevOut = sel.value;
+  const prevIn = inSel ? inSel.value : '';
+  sel.innerHTML = '<option value="">— select port —</option>';
+  if(inSel) inSel.innerHTML = '<option value="">— input port —</option>';
+  midiAccess.outputs.forEach((port,id)=>{
+    const o = document.createElement('option');
+    o.value=id; o.textContent=port.name;
+    sel.appendChild(o);
+  });
+  midiAccess.inputs.forEach((port,id)=>{
+    if(!inSel) return;
+    const o = document.createElement('option');
+    o.value=id; o.textContent=port.name;
+    inSel.appendChild(o);
+  });
+  if(prevOut) sel.value=prevOut;
+  if(prevIn && inSel) inSel.value=prevIn;
+  // Auto-select OUTPUT: Bus 1 優先 → IAC → 最初の実ポート(prevが無い時のみ)
+  if(!prevOut){
+    const opts=[...sel.options];
+    const picked = opts.find(o=>/bus\s*1\b/i.test(o.textContent))
+                || opts.find(o=>o.textContent.includes('IAC'))
+                || opts.find(o=>o.value);
+    if(picked){ sel.value=picked.value; selectPort(); }
+  }
+  // Auto-select INPUT: Bus 1 優先 → IAC
+  if(inSel && !prevIn){
+    const iopts=[...inSel.options];
+    const ipick = iopts.find(o=>/bus\s*1\b/i.test(o.textContent))
+               || iopts.find(o=>o.textContent.includes('IAC'));
+    if(ipick) inSel.value=ipick.value;
+  }
+}
+const muted = {upper:false, middle:false, lower:false, chord:false};
+
+function toggleMute(voice){
+  muted[voice] = !muted[voice];
+  const btn = document.getElementById('mute'+voice.charAt(0).toUpperCase()+voice.slice(1));
+  if(btn){
+    const vcol = voice==='upper'?'var(--upper)':voice==='middle'?'var(--middle)':'var(--lower)';
+    btn.style.background = muted[voice] ? vcol : 'transparent';
+    btn.style.color = muted[voice] ? 'var(--bg)' : vcol;
+    btn.textContent = muted[voice] ? '●M' : 'M';
+  }
+  // ミュート時に即NoteOff
+  if(muted[voice] && midiOut){
+    const ch = (parseInt(document.getElementById(voice+'Ch').value)||(voice==='upper'?2:3))-1;
+    for(let n=0;n<128;n++) midiOut.send([0x80|ch,n,0]);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  SWING
+// ═══════════════════════════════════════════════════════
+const voiceSwing = {upper:0, middle:0, lower:0, chord:0};
+
+function adjustSwingVoice(voice, delta){
+  voiceSwing[voice] = Math.max(-50, Math.min(100, voiceSwing[voice]+delta));
+  const el = document.getElementById(voice+'SwingVal');
+  if(el) el.textContent = voiceSwing[voice];
+}
+
+function setSwingVoice(voice, val){
+  voiceSwing[voice] = val;
+  const el = document.getElementById(voice+'SwingVal');
+  if(el) el.textContent = val;
+}
+
+// ═══════════════════════════════════════════════════════
+//  UNDO — 最大10世代を記録
+// ═══════════════════════════════════════════════════════
+const history = [];
+const redoHistory = [];
+const MAX_HISTORY = 10;
+
+function pushHistory(){
+  history.push({
+    upper: upper.map(s=>({...s})),
+    lower: lower.map(s=>({...s})),
+    upperSteps, lowerSteps,
+    scale: document.getElementById('scaleSel').value,
+    bpm:   document.getElementById('bpmIn').value,
+  });
+  if(history.length > MAX_HISTORY) history.shift();
+  redoHistory.length = 0; // 新しい操作でRedoをクリア
+}
+
+function applyState(state){
+  upper = state.upper;
+  lower = state.lower;
+  upperSteps = state.upperSteps;
+  lowerSteps = state.lowerSteps;
+  document.getElementById('scaleSel').value = state.scale;
+  document.getElementById('bpmIn').value = state.bpm;
+  document.getElementById('upperSteps').value = upperSteps;
+  document.getElementById('lowerSteps').value = lowerSteps;
+  buildGrid('upper');
+  buildGrid('lower');
+  buildTimeline();
+  drawCP();
+  updateStats();
+}
+
+function undo(){
+  if(!history.length) return;
+  // 現在の状態をRedoに保存
+  redoHistory.push({
+    upper: upper.map(s=>({...s})),
+    lower: lower.map(s=>({...s})),
+    upperSteps, lowerSteps,
+    scale: document.getElementById('scaleSel').value,
+    bpm:   document.getElementById('bpmIn').value,
+  });
+  applyState(history.pop());
+}
+
+function redo(){
+  if(!redoHistory.length) return;
+  // 現在の状態をUndoに保存
+  history.push({
+    upper: upper.map(s=>({...s})),
+    lower: lower.map(s=>({...s})),
+    upperSteps, lowerSteps,
+    scale: document.getElementById('scaleSel').value,
+    bpm:   document.getElementById('bpmIn').value,
+  });
+  applyState(redoHistory.pop());
+}
+
+// generateAllをhistory対応に
+const _origGenerateAll = generateAll;
+// ※初回は上書きするためここで再定義
+let currentGenMode="frevo";
+function generateAll(mode){
+  pushHistory();
+  currentGenMode = mode || currentGenMode;
+  const m = mode || 'frevo';
+  if(m==='frevo'||m==='folk'){
+    upper  = generateFrevo(upperSteps, false);
+    lower  = generateFrevo(lowerSteps, true);
+  } else if(m==='bach'){
+    upper  = generateBach(upperSteps, false, null);
+    lower  = generateBach(lowerSteps, true, upper);
+    upper  = generateBach(upperSteps, false, lower);
+  } else {
+    upper  = generateFrevo(upperSteps, false);
+    lower  = generateBach(lowerSteps, true, upper);
+  }
+  // 柱③動機発展: 上声部に適用(動機を変形して構築)
+  const moOp=document.getElementById('motifOp')?.value;
+  if(moOp && moOp!=='off'){ const ml=parseInt(document.getElementById('motifLen')?.value||'4'); upper=developMotif(upper, ml, moOp); }
+  // Middle: 常に対位法エンジンで生成（Upper/Lowerを参照）
+  middle = generateMiddle(middleSteps, upper, lower);
+
+  buildGrid('upper');
+  buildGrid('middle');
+  buildGrid('lower');
+  if(typeof buildChordGrid==='function' && chordSeq.length) buildChordGrid();
+  drawCP();
+  updateTimeline();
+  updateStats();
+  updateConsonanceDisplay();
+  const hasFolk = [...upper,...lower].some(s=>s.folk);
+  const fs = document.getElementById('folkStatus');
+  if(fs){ fs.style.display = hasFolk ? 'inline-flex' : 'none'; }
+}
+
+// ═══════════════════════════════════════════════════════
+//  PRESET SAVE / LOAD
+// ═══════════════════════════════════════════════════════
+function buildPresetState(){
+  const name = document.getElementById('presetName')?.value.trim()
+    || 'gismonti-'+new Date().toISOString().slice(0,16).replace('T','-');
+  return {
+    name, version:1,
+    createdAt: new Date().toISOString(),
+    upper, middle, lower, upperSteps, middleSteps, lowerSteps,
+    voiceSwing,
+    scale: document.getElementById('scaleSel').value,
+    bpm:   document.getElementById('bpmIn').value,
+    root:  document.getElementById('rootSel').value,
+    freqDens:   document.getElementById('freqDens').value,
+    cpTension:  document.getElementById('cpTension').value,
+    cpInterplay:document.getElementById('cpInterplay').value,
+    cpMode:     document.getElementById('cpMode').value,
+    folkProb:   document.getElementById('folkProb').value,
+    folkSource: document.getElementById('folkSource').value,
+    gravity:    document.getElementById('gravity').value,
+    escape:     document.getElementById('escape').value,
+    upperCh:    document.getElementById('upperCh').value,
+    lowerCh:    document.getElementById('lowerCh').value,
+    upperOct:   document.getElementById('upperOct').value,
+    lowerOct:   document.getElementById('lowerOct').value,
+    // ── 連続モード(Ciranda統合)の全設定 ──
+    middleCh:    document.getElementById('middleCh')?.value,
+    middleOct:   document.getElementById('middleOct')?.value,
+    upperEngine: document.getElementById('upperEngine')?.value,
+    middleEngine:document.getElementById('middleEngine')?.value,
+    breath:    JSON.parse(JSON.stringify(BREATH)),
+    np:        JSON.parse(JSON.stringify(NP)),
+    tensionArc:JSON.parse(JSON.stringify(TENSION_ARC)),
+    ecm:       JSON.parse(JSON.stringify(ECM)),
+    orn:       JSON.parse(JSON.stringify(ORN)),
+    complement:JSON.parse(JSON.stringify(COMPLEMENT)),
+    chordPattern: document.getElementById('chordPattern')?.value,
+    tensionOn: document.getElementById('tensionOn')?.checked,
+    npOn:      document.getElementById('npOn')?.checked,
+  };
+}
+
+function savePreset(){
+  const state = buildPresetState();
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url;
+  a.download=`gismonti-${state.name.replace(/[^a-zA-Z0-9]/g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadPresetFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const s = JSON.parse(e.target.result);
+      pushHistory(); // ロード前に現状をundo履歴へ
+      upper=s.upper; lower=s.lower;
+      if(s.middle){ middle=s.middle; middleSteps=s.middleSteps||middle.length; }
+      upperSteps=s.upperSteps||upper.length;
+      lowerSteps=s.lowerSteps||lower.length;
+      if(s.voiceSwing){
+        Object.assign(voiceSwing, s.voiceSwing);
+        document.getElementById('upperSwingVal').textContent=voiceSwing.upper;
+        document.getElementById('lowerSwingVal').textContent=voiceSwing.lower;
+      }
+      const set=(id,v)=>{ const el=document.getElementById(id); if(el&&v!==undefined) el.value=v; };
+      set('scaleSel',s.scale); set('bpmIn',s.bpm); set('rootSel',s.root);
+      set('freqDens',s.freqDens);
+      set('cpTension',s.cpTension); set('cpInterplay',s.cpInterplay); set('cpMode',s.cpMode);
+      set('folkProb',s.folkProb); set('folkSource',s.folkSource);
+      set('gravity',s.gravity); set('escape',s.escape);
+      set('upperCh',s.upperCh); set('lowerCh',s.lowerCh);
+      set('upperOct',s.upperOct); set('lowerOct',s.lowerOct);
+      set('upperSteps',upperSteps); set('lowerSteps',lowerSteps);
+      // ── 連続モード(Ciranda統合)の復元 ──
+      set('middleCh',s.middleCh); set('middleOct',s.middleOct);
+      set('upperEngine',s.upperEngine); set('middleEngine',s.middleEngine);
+      if(s.breath){ Object.keys(BREATH).forEach(k=>delete BREATH[k]); Object.assign(BREATH, s.breath); }
+      if(s.np){ ['weight','center','ascAvoid','descAvoid','octaveBias'].forEach(k=>{ if(s.np[k]) NP[k]=s.np[k]; }); if(s.np.leap!==undefined)NP.leap=s.np.leap; if(s.np.on!==undefined)NP.on=s.np.on; }
+      if(s.tensionArc){ Object.assign(TENSION_ARC, s.tensionArc); }
+      if(s.ecm){ Object.assign(ECM, s.ecm);
+        const er=document.getElementById('ecmRate'); if(er) er.value=ECM.breathRate;
+        const es=document.getElementById('ecmSpread'); if(es) es.value=ECM.spread;
+        const el2=document.getElementById('ecmLongLow'); if(el2) el2.checked=ECM.longLow;
+      }
+      if(s.complement){ Object.assign(COMPLEMENT, s.complement);
+        const cm=document.getElementById('complementMode'); if(cm) cm.value=COMPLEMENT.mode;
+        const cr=document.getElementById('complementRhythm'); if(cr) cr.checked=COMPLEMENT.rhythmFill;
+        const ca=document.getElementById('complementArc'); if(ca) ca.checked=!!COMPLEMENT.arc;
+      }
+      if(s.orn){ Object.assign(ORN, s.orn);
+        const setv=(id,v)=>{ const e=document.getElementById(id); if(e){ if(e.type==='checkbox') e.checked=v; else e.value=v; } };
+        setv('ornOn',ORN.on); setv('ornProb',ORN.prob); setv('ornGrace',ORN.grace); setv('ornTrill',ORN.trill); setv('ornTurn',ORN.turn);
+      }
+      if(s.chordPattern){ const cp=document.getElementById('chordPattern'); if(cp){ cp.value=s.chordPattern; cp.dispatchEvent(new Event('change')); } }
+      const setChk=(id,v)=>{ const el=document.getElementById(id); if(el&&v!==undefined) el.checked=v; };
+      setChk('tensionOn', s.tensionOn); setChk('npOn', s.npOn);
+      if(s.tensionArc) setChk('tensionApplyLower', s.tensionArc.applyLower);
+      if(s.npOn!==undefined) NP.on=s.npOn;
+      if(s.tensionOn!==undefined) TENSION_ARC.on=s.tensionOn;
+      // パネル再描画(設定を画面に反映)
+      try{ if(typeof buildBreathPanel==='function') buildBreathPanel(); }catch(e){}
+      try{ if(typeof buildNPBoard==='function') buildNPBoard(); }catch(e){}
+      try{ if(typeof buildTensionPanel==='function') buildTensionPanel(); }catch(e){}
+      try{ if(typeof updateTensionInfo==='function'){ if(TENSION_ARC.on && typeof buildTensionArc==='function' && !TENSION_ARC.fields.length) buildTensionArc(); updateTensionInfo(); } }catch(e){}
+      // 連続層の再生成(復元した呼吸/個性で)
+      try{ if(document.getElementById('upperEngine')?.value==='cont') buildFloatBreath('upper'); }catch(e){}
+      try{ if(document.getElementById('middleEngine')?.value==='cont') buildFloatBreath('middle'); }catch(e){}
+      // sliders display update
+      ['freqDens','cpTension','cpInterplay','folkProb','gravity','escape'].forEach(id=>{
+        const v=document.getElementById(id)?.value;
+        const vEl=document.getElementById(id+'V');
+        if(vEl) vEl.textContent=v+(id==='folkProb'?'%':'');
+      });
+      buildGrid('upper'); buildGrid('lower'); if(s.middle) buildGrid('middle');
+      buildTimeline(); drawCP(); updateStats();
+    }catch(err){ alert('読み込み失敗: '+err.message); }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+// swingをtickに適用
+function applySwing(voice, stepIdx, stepMs){
+  const sw = voiceSwing[voice]||0;
+  const amt = (sw/100)*stepMs*0.33;
+  return stepIdx%2===1 ? Math.max(0, amt) : 0;
+}
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space'){
+    const tag=document.activeElement.tagName.toLowerCase();
+    if(tag==='input'||tag==='select') return;
+    e.preventDefault();
+    togglePlay();
+  }
+  if((e.ctrlKey||e.metaKey) && e.code==='KeyZ' && !e.shiftKey){ e.preventDefault(); undo(); }
+  if((e.ctrlKey||e.metaKey) && e.shiftKey && e.code==='KeyZ'){ e.preventDefault(); redo(); }
+  if(!e.ctrlKey && !e.metaKey){
+    if(e.code==='KeyG') generateAll();
+    if(e.code==='KeyF') generateAll('frevo');
+    if(e.code==='KeyB') generateAll('bach');
+    if(e.code==='KeyR') randomize();
+  }
+});
+
+// BPM live update
+document.getElementById('bpmIn').addEventListener('input',()=>{
+  document.getElementById('statBpm').textContent=getBpm();
+});
+
+// ═══════════════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════════════
+// Start
+init();
+generateAll('frevo');
+
+// 和声UI初期化
+(function initHarmonyUI(){
+  const sel=document.getElementById('progSel'); if(!sel) return;
+  Object.keys(PROG_PRESETS).forEach(name=>{
+    const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o);
+  });
+  sel.value='I-IV-V-I';
+  // 終止形
+  const cadSel=document.getElementById('cadenceSel');
+  if(cadSel){ Object.entries(CADENCES).forEach(([k,v])=>{ const o=document.createElement('option'); o.value=k;o.textContent=v;cadSel.appendChild(o);}); cadSel.value='none'; }
+  // 動機操作
+  const moSel=document.getElementById('motifOp');
+  if(moSel){ Object.entries(MOTIF_OPS).forEach(([k,v])=>{ const o=document.createElement('option'); o.value=k;o.textContent=v;moSel.appendChild(o);}); }
+  // ARC
+  const arcShapeSel=document.getElementById('arcShape');
+  if(arcShapeSel){ Object.entries(ARC_SHAPES).forEach(([k,v])=>{ const o=document.createElement('option'); o.value=k;o.textContent=v;arcShapeSel.appendChild(o);}); arcShapeSel.value='arch'; arcShapeSel.addEventListener('change',()=>ARC.shape=arcShapeSel.value); }
+  const arcOnSel=document.getElementById('arcOn');
+  if(arcOnSel) arcOnSel.addEventListener('change',()=>ARC.enabled=arcOnSel.value==='on');
+  HARMONY.progression=PROG_PRESETS['I-IV-V-I'];
+  function rebuildProg(){ let p=PROG_PRESETS[sel.value]||[]; const cad=document.getElementById('cadenceSel')?.value; p=applyCadence(p,cad); HARMONY.progression=p; HARMONY.presetName=sel.value; buildChordGrid&&buildChordGrid(); }
+  sel.addEventListener('change', rebuildProg);
+  document.getElementById('cadenceSel')?.addEventListener('change', rebuildProg);
+  const on=document.getElementById('harmonyOn');
+  on.addEventListener('change',()=>{ HARMONY.enabled = on.value==='on'; });
+  // 和音パターンドロップダウン
+  const psel=document.getElementById('chordPattern');
+  if(psel){ Object.entries(CHORD_PATTERNS).forEach(([k,v])=>{ const o=document.createElement('option'); o.value=k; o.textContent=v; psel.appendChild(o); }); psel.value='block'; }
+  // ステップ数変更で再構築
+  const cs=document.getElementById('chordStepsN');
+  if(cs) cs.addEventListener('change',()=>{ initChordSeq(parseInt(cs.value)); const ci=document.getElementById('chordInfo'); if(ci)ci.textContent=cs.value+' steps · ch'+(document.getElementById('chordChN')?.value||4); });
+
+  // 和音設定変更でグリッド再描画(見た目に反映)
+  ['chordPattern','chordInv','chordOctN','chordVoices'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('change',()=>buildChordGrid()); });
+  // ECM和音体モード選択時だけECMコントロールを表示
+  const _cpSel=document.getElementById('chordPattern');
+  const _toggleEcm=()=>{ const ec=document.getElementById('ecmControls'); if(ec) ec.style.display = (_cpSel.value==='ecm_body')?'inline-flex':'none'; };
+  if(_cpSel){ _cpSel.addEventListener('change', _toggleEcm); _toggleEcm(); }
+  ['chord7','chord9','chord11','chord13','chordOpen'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('change',()=>buildChordGrid()); });
+  const progSel2=document.getElementById('progSel'); if(progSel2) progSel2.addEventListener('change',()=>buildChordGrid());
+  // 駆動切替: 型駆動=全ON, グリッド=強拍, 追従=現状維持
+  const drive=document.getElementById('chordDrive');
+  if(drive) drive.addEventListener('change',()=>{
+    if(drive.value==='pattern'){ chordSeq.forEach(s=>s.active=true); }
+    else if(drive.value==='grid'){ chordSeq.forEach((s,i)=>s.active=(i%4===0)); }
+    buildChordGrid(); // 追従に切替えたら旋律ベースの表示に更新
+  });
+  // 和音グリッド初期化
+  initChordSeq();
+  // 和音ボイスUI連動
+  const cvOn=document.getElementById('chordVoiceOn');
+  if(cvOn) cvOn.addEventListener('change',()=>{ HARMONY.chordVoice = cvOn.value==='on'; HARMONY._lastChordDeg=-1; });
+
+})();
+
+</script>
+</body>
+</html>
