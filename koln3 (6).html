@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KÖLN — 数値化解剖台</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d1b2a; --ink2:#16263a; --deep:#060f18;
+  --paper:#f4f1ea; --mist:#7a8a9a; --mist2:#4a5a6a;
+  --gold:#b08d57; --glow:rgba(176,141,87,0.55);
+  --bass:#c77b4a;    /* 低音=暖色 */
+  --inner:#6a8caf;   /* 内声=藍 */
+  --top:#d8c48a;     /* 上声=淡金 */
+  --line:rgba(176,141,87,0.22);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--deep);color:var(--paper);font-family:'JetBrains Mono',monospace;font-weight:300;height:100%;overflow:hidden;}
+body{display:flex;flex-direction:column;}
+
+.masthead{padding:0.6rem 1.3rem;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:1rem;background:linear-gradient(180deg,var(--ink) 0%,var(--deep) 100%);}
+.masthead h1{font-family:'IM Fell English',serif;font-weight:400;font-size:1.5rem;letter-spacing:0.16em;}
+.masthead .sub{font-family:'IM Fell English',serif;font-style:italic;font-size:0.82rem;color:var(--mist);}
+.masthead .spacer{flex:1;}
+.masthead .dims{font-size:0.58rem;color:var(--gold);letter-spacing:0.04em;opacity:0.85;}
+
+.bar{display:flex;align-items:center;gap:0.8rem;padding:0.45rem 1.3rem;border-bottom:1px solid var(--line);background:var(--ink);flex-wrap:wrap;}
+.bar .field{display:flex;align-items:center;gap:0.4rem;}
+.bar .field label{font-size:0.62rem;color:var(--mist);letter-spacing:0.03em;}
+.bar input[type=number]{width:3rem;background:var(--ink2);color:var(--paper);border:1px solid var(--line);border-radius:3px;padding:0.2rem 0.3rem;font-family:'JetBrains Mono',monospace;font-size:0.62rem;}
+.bar .rootname{color:var(--gold);font-size:0.66rem;min-width:2rem;}
+.btn{background:transparent;border:1px solid var(--gold);color:var(--gold);padding:0.35rem 0.8rem;font-family:'IM Fell English',serif;font-size:0.82rem;letter-spacing:0.06em;cursor:pointer;border-radius:4px;transition:all 0.2s;}
+.btn:hover{background:var(--gold);color:var(--deep);}
+.btn.ghost{border-color:var(--line);color:var(--mist);font-family:'JetBrains Mono',monospace;font-size:0.58rem;padding:0.3rem 0.6rem;}
+.btn.ghost:hover{border-color:var(--gold);color:var(--paper);background:transparent;}
+.bar .spacer{flex:1;}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;}
+.seg button{background:transparent;color:var(--mist);border:none;border-right:1px solid var(--line);padding:0.3rem 0.6rem;font-family:'JetBrains Mono',monospace;font-size:0.58rem;cursor:pointer;transition:all 0.2s;}
+.seg button:last-child{border-right:none;}
+.seg button.on{background:var(--gold);color:var(--deep);}
+.seg button:hover:not(.on){background:rgba(176,141,87,0.12);color:var(--paper);}
+.legend{display:flex;gap:0.8rem;font-size:0.56rem;color:var(--mist);}
+.legend span{display:flex;align-items:center;gap:0.3rem;}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+.scroll{flex:1;overflow-y:auto;padding:0.5rem 1.3rem 2rem;}
+.scroll::-webkit-scrollbar{width:6px;}
+.scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+
+.graph{margin-bottom:0.7rem;border:1px solid var(--line);border-radius:6px;background:rgba(13,27,42,0.5);overflow:hidden;}
+.graph .head{display:flex;align-items:baseline;gap:0.6rem;padding:0.4rem 0.7rem;border-bottom:1px solid var(--line);background:rgba(0,0,0,0.2);}
+.graph .head .num{font-family:'IM Fell English',serif;font-style:italic;color:var(--gold);font-size:0.78rem;}
+.graph .head .title{font-size:0.7rem;color:var(--paper);letter-spacing:0.03em;}
+.graph .head .note{font-size:0.56rem;color:var(--mist);margin-left:auto;}
+.graph canvas{display:block;width:100%;box-sizing:border-box;}
+.graph canvas[data-h="300"]{height:300px;}
+.graph canvas[data-h="220"]{height:220px;}
+.graph canvas[data-h="230"]{height:230px;}
+.graph canvas[data-h="170"]{height:170px;}
+.graph canvas[data-h="150"]{height:150px;}
+.graph canvas[data-h="130"]{height:130px;}
+.graph canvas[data-h="320"]{height:320px;}
+.graph canvas[data-h="200"]{height:200px;}
+
+.hover-readout{position:fixed;pointer-events:none;background:var(--ink2);border:1px solid var(--gold);border-radius:4px;padding:0.4rem 0.6rem;font-size:0.58rem;color:var(--paper);z-index:50;display:none;line-height:1.6;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+.hover-readout b{color:var(--gold);font-weight:400;}
+
+.input-modal{position:fixed;inset:0;background:rgba(6,15,24,0.94);z-index:100;display:none;flex-direction:column;padding:2rem 3rem;}
+.input-modal.show{display:flex;}
+.input-modal h2{font-family:'IM Fell English',serif;font-style:italic;color:var(--gold);font-size:1.1rem;margin-bottom:0.5rem;}
+.input-modal p{font-size:0.64rem;color:var(--mist);margin-bottom:1rem;line-height:1.6;}
+.input-modal textarea{flex:1;background:var(--ink);color:var(--paper);border:1px solid var(--line);border-radius:6px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.6rem;line-height:1.5;resize:none;}
+.input-modal .actions{display:flex;gap:0.8rem;margin-top:1rem;justify-content:flex-end;}
+</style>
+</head>
+<body>
+<div class="masthead">
+  <h1>KÖLN</h1>
+  <span class="sub">数値化解剖台 — seven-dimensional</span>
+  <span class="spacer"></span>
+  <span class="dims">ST · OCT · ROLE · t · vel · JI(3,5,7) · dur</span>
+</div>
+
+<div class="bar">
+  <div class="field"><label>root ST=0</label><input type="number" id="rootInput" value="50" min="21" max="96"><span class="rootname" id="rootName">D3</span></div>
+  <button class="btn ghost" id="btnMidi">MIDIを開く</button>
+  <button class="btn ghost" id="btnData">テキスト貼付</button>
+  <input type="file" id="midiFile" accept=".mid,.midi" style="display:none;">
+  <button class="btn ghost" id="btnAuto">ルート自動推定</button>
+  <div class="seg" id="pieceSeg" style="margin-left:0.4rem;"><button data-piece="koln" class="on">Köln</button><button data-piece="joe">久石 L&amp;D</button><button data-piece="frevo">Gismonti Frevo</button></div>
+  <button class="btn ghost" id="btnReset">全体表示</button>
+  <button class="btn ghost" id="btnExportJSON" title="解剖の全成果をJSONで書き出し">⬇ JSON</button>
+  <div class="spacer"></div>
+  <div class="legend">
+    <span><i style="background:var(--bass)"></i>低音 bass</span>
+    <span><i style="background:var(--inner)"></i>内声 inner</span>
+    <span><i style="background:var(--top)"></i>上声 top</span>
+  </div>
+</div>
+
+<div class="scroll" id="scroll">
+  <div class="graph" style="margin-bottom:1rem">
+  <div class="head">
+    <span class="num">◈</span>
+    <span class="title">ST断面分析 — 磁場の旅と、入ってくるST・抜けるST</span>
+    <span class="note">窓ごとに精密解剖</span><span style="margin-left:.4rem;font-size:.5rem;color:#9a7ab0;border:1px solid #4a3a5a;border-radius:2px;padding:.05rem .25rem">◷ 独立窓(csWin)</span>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:.4rem;font-size:.6rem;color:#888">
+      窓(秒) <input type="number" id="csWin" value="5" min="1" max="30" step="1"
+        style="width:50px;background:#1a1a1a;color:#ddd;border:1px solid #333;border-radius:2px;padding:.15rem .3rem;font-family:JetBrains Mono"
+        onchange="try{renderCrossSections();}catch(e){}">
+      <button onclick="try{renderCrossSections();}catch(e){}"
+        style="background:transparent;color:#b08d57;border:1px solid #444;border-radius:2px;padding:.18rem .5rem;font-size:.6rem;cursor:pointer;font-family:JetBrains Mono">更新</button>
+    </span>
+  </div>
+  <div id="csBody" style="max-height:420px;overflow-y:auto;padding:.3rem">
+    <div style="color:#666;padding:1rem;font-size:.62rem">MIDIを読み込むと、5秒ごとの磁場・STセット・出入りが表示されます。</div>
+  </div>
+</div>
+
+<div class="graph">
+  <div class="head">
+    <span class="num">♯</span>
+    <span class="title">和声進行分析表 — 各和音の機能と進行</span>
+    <span class="note">ルートからの度数・推定コード・ルート省略・進行</span><span style="margin-left:.4rem;font-size:.5rem;color:#9a7ab0;border:1px solid #4a3a5a;border-radius:2px;padding:.05rem .25rem">◷ 独立窓(hpTol)</span>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:.4rem;font-size:.6rem;color:#888">
+      和音間隔(秒) <input type="number" id="hpTol" value="0.28" min="0.05" max="1" step="0.01"
+        style="width:54px;background:#1a1a1a;color:#ddd;border:1px solid #333;border-radius:2px;padding:.15rem .3rem;font-family:JetBrains Mono"
+        onchange="try{renderHarmonyProg();}catch(e){}">
+      <button onclick="try{renderHarmonyProg();}catch(e){}"
+        style="background:transparent;color:#b08d57;border:1px solid #444;border-radius:2px;padding:.18rem .5rem;font-size:.6rem;cursor:pointer;font-family:JetBrains Mono">更新</button>
+    </span>
+  </div>
+  <div id="hpBody" style="max-height:420px;overflow-y:auto;padding:.3rem">
+    <div style="color:#666;padding:1rem;font-size:.62rem">MIDIを読み込むと、和音ごとの機能と進行が表示されます。</div>
+  </div>
+</div>
+
+<div class="graph"><div class="head"><span class="num">1</span><span class="title">ピッチの地形 — 時間 × ST距離</span><span class="note">低音の下降・和音の波・磁場の旅<span style="margin-left:.4rem;font-size:.5rem;color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓(ズーム/パン)</span></span></div><canvas id="g1" data-h="300"></canvas></div>
+  <div class="graph"><div class="head"><span class="num">★</span><span class="title">磁場推移 — 低音が支配するpc と 変容のきっかけ</span><span class="note">いつ・どこへ・何で移ったか<span style="margin-left:.4rem;font-size:.5rem;color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓(ズーム/パン)</span></span></div><canvas id="g7" data-h="220"></canvas></div>
+  <div class="graph"><div class="head"><span class="num">5</span><span class="title">滞在のヒートマップ — ST × 時間帯</span><span class="note">どのSTに留まったか=磁場<span style="margin-left:.4rem;font-size:.5rem;color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓(ズーム/パン)</span></span></div><canvas id="g5" data-h="230"></canvas></div>
+  <div class="graph"><div class="head"><span class="num">◆</span><span class="title">半音移行の主導と道連れ — 誰が動かし、何%を連れたか</span><span class="note">低/中/上 どこが主導・道連れ率<span style="margin-left:.4rem;font-size:.5rem;color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓(ズーム/パン)</span></span></div><canvas id="g8" data-h="200"></canvas></div>
+  <div class="graph"><div class="head"><span class="num">2</span><span class="title">ベロシティの息 — 時間 × 強弱</span><span class="note">どこで強く弱く<span style="margin-left:.4rem;font-size:.5rem;color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓(ズーム/パン)</span></span></div><canvas id="g2" data-h="150"></canvas></div>
+  <div class="graph"><div class="head"><span class="num">3</span><span class="title">声部間ST — 和音の積み方の数列</span><span class="note">等間隔か・開くか・閉じるか<span style="margin-left:.4rem;font-size:.5rem;color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓(ズーム/パン)</span></span></div><canvas id="g3" data-h="170"></canvas></div>
+  <div class="graph"><div class="head"><span class="num">4</span><span class="title">声部数 — テクスチャの厚みの呼吸</span><span class="note">薄い⇄厚い<span style="margin-left:.4rem;font-size:.5rem;color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓(ズーム/パン)</span></span></div><canvas id="g4" data-h="130"></canvas></div>
+  
+  <div class="graph"><div class="head"><span class="num">6</span><span class="title">ラティス投影 — 3軸 × 5軸（時間で濃淡）</span><span class="note">純正律空間の旅<span style="margin-left:.4rem;font-size:.5rem;color:#9a8a6a;border:1px solid #4a4030;border-radius:2px;padding:.05rem .25rem">▭ 全体固定</span></span></div><canvas id="g6" data-h="320"></canvas></div>
+</div>
+
+<div class="hover-readout" id="hover"></div>
+
+<div class="input-modal" id="modal">
+  <h2>データ差替 — Pianoteq_notes.txt を貼る</h2>
+  <p>君のMacで <b>python3 midi_to_text.py ファイル.mid</b> を実行した出力を、まるごと貼り付け。<br>形式: <b>start_beat | sec | pitch | midi | dur_beats | vel | hand</b> の行を自動で読む。# で始まる行は無視。</p>
+  <textarea id="dataText" placeholder="   2.35 |    1.18 | D2   |  38 |  2.32 |  48 | L&#10;   3.33 |    1.67 | D3   |  50 |  5.01 |  50 | L&#10;..."></textarea>
+  <div class="actions">
+    <button class="btn ghost" id="btnCancel">取消</button>
+    <button class="btn" id="btnLoad">読み込む</button>
+  </div>
+</div>
+
+<script id="viewer">
+'use strict';
+// ─── Minimal SMF (Standard MIDI File) parser — no dependencies ───
+// Returns [{sec, midi, dur, vel, hand}] matching the viewer's format.
+function parseMidiArrayBuffer(buf){
+  const dv=new DataView(buf);
+  let p=0;
+  const u32=()=>{const v=dv.getUint32(p);p+=4;return v;};
+  const u16=()=>{const v=dv.getUint16(p);p+=2;return v;};
+  const u8 =()=>{const v=dv.getUint8(p);p+=1;return v;};
+  const str=(n)=>{let s='';for(let i=0;i<n;i++)s+=String.fromCharCode(u8());return s;};
+  const vlq=()=>{let v=0,c;do{c=u8();v=(v<<7)|(c&0x7f);}while(c&0x80);return v;};
+
+  if(str(4)!=='MThd') throw new Error('Not a MIDI file');
+  u32(); // header length
+  u16(); // format
+  const ntracks=u16();
+  const div=u16(); // ticks per quarter
+
+  // collect tempo map and note events (in ticks)
+  let tempos=[{tick:0, usPerQuarter:500000}]; // default 120bpm
+  const notes=[]; // {tick, dur(ticks), midi, vel}
+
+  for(let t=0;t<ntracks;t++){
+    if(str(4)!=='MTrk'){ break; }
+    const len=u32(); const end=p+len;
+    let tick=0, running=0;
+    const on={}; // key=midi -> {tick,vel}
+    while(p<end){
+      tick+=vlq();
+      let status=dv.getUint8(p);
+      if(status&0x80){ p++; running=status; }
+      else { status=running; }
+      const type=status&0xf0;
+      if(status===0xff){ // meta
+        const meta=u8(); const mlen=vlq();
+        if(meta===0x51){ // tempo
+          const us=(u8()<<16)|(u8()<<8)|u8();
+          tempos.push({tick, usPerQuarter:us});
+        } else { p+=mlen; }
+      } else if(status===0xf0||status===0xf7){ const sl=vlq(); p+=sl; }
+      else if(type===0x90){ // note on
+        const midi=u8(), vel=u8();
+        if(vel>0){ on[midi]=on[midi]||[]; on[midi].push({tick,vel}); }
+        else { closeNote(on,notes,midi,tick); }
+      } else if(type===0x80){ const midi=u8(); u8(); closeNote(on,notes,midi,tick); }
+      else if(type===0xc0||type===0xd0){ u8(); }
+      else if(type===0xa0||type===0xb0||type===0xe0){ u8();u8(); }
+      else { /* unknown, skip a byte to avoid infinite loop */ }
+    }
+    // close any hanging notes
+    for(const m in on){ while(on[m]&&on[m].length) closeNote(on,notes,parseInt(m),tick); }
+    p=end;
+  }
+  function closeNote(on,notes,midi,tick){
+    if(on[midi]&&on[midi].length){ const s=on[midi].shift(); notes.push({tick:s.tick,dur:Math.max(1,tick-s.tick),midi,vel:s.vel}); }
+  }
+
+  // convert ticks → seconds using tempo map
+  tempos.sort((a,b)=>a.tick-b.tick);
+  function tickToSec(tk){
+    let sec=0, last=0, us=500000;
+    for(const tp of tempos){
+      if(tp.tick>tk) break;
+      sec += (tp.tick-last)/div*(us/1e6);
+      last=tp.tick; us=tp.usPerQuarter;
+    }
+    sec += (tk-last)/div*(us/1e6);
+    return sec;
+  }
+  function tickToBeats(tk){ return tk/div; }
+
+  const out=notes.map(n=>{
+    const sec=tickToSec(n.tick);
+    const durBeats=tickToBeats(n.dur);
+    return {sec, midi:n.midi, dur:durBeats, vel:n.vel, hand:n.midi<60?'L':'R'};
+  }).sort((a,b)=>a.sec-b.sec);
+  return out;
+}
+
+
+const $=id=>document.getElementById(id);
+const NN=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const nameOf=m=>NN[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const C={bass:'#c77b4a',inner:'#6a8caf',top:'#d8c48a',gold:'#b08d57',mist:'#7a8a9a',line:'rgba(176,141,87,0.15)',paper:'#f4f1ea'};
+
+// 3-5-7 lattice vectors (JI prime exponents) per ST
+const LAT={0:[0,0,0],7:[1,0,0],5:[-1,0,0],4:[0,1,0],8:[0,-1,0],9:[-1,1,0],3:[1,-1,0],10:[0,0,1],6:[-1,0,1],2:[2,0,0],11:[1,1,0],1:[-1,1,0]};
+
+let RAW=[];        // [{sec,midi,dur,vel,hand}]
+let ROOT=50;       // ST=0 reference (midi)
+let TMIN=0,TMAX=1;
+
+// ─── embedded representative Köln sample (user can replace) ───
+const FREVO_SAMPLE=[[0.24, 72, 1.05, 67, "R"], [0.51, 50, 0.79, 60, "L"], [1.02, 69, 0.42, 79, "R"], [1.58, 64, 0.44, 84, "R"], [1.86, 60, 0.39, 83, "R"], [2.32, 62, 0.39, 85, "R"], [2.81, 48, 0.33, 65, "L"], [2.81, 67, 0.49, 47, "R"], [2.38, 46, 0.28, 92, "L"], [3.48, 45, 0.37, 69, "L"], [4.21, 72, 0.51, 87, "R"], [4.44, 69, 0.49, 88, "R"], [4.72, 64, 0.51, 81, "R"], [5.32, 48, 0.35, 71, "L"], [6.3, 46, 0.7, 74, "L"], [7.31, 45, 0.35, 75, "L"], [8.26, 43, 0.42, 70, "L"], [8.71, 65, 0.39, 80, "R"], [9.17, 61, 0.65, 61, "R"], [9.4, 73, 0.33, 77, "R"], [9.73, 81, 0.28, 71, "R"], [10.12, 53, 0.3, 68, "L"], [10.12, 85, 0.3, 71, "R"], [10.8, 73, 0.39, 73, "R"], [11.08, 74, 0.3, 60, "R"], [11.4, 81, 0.28, 76, "R"], [11.61, 79, 0.28, 78, "R"], [11.76, 77, 0.33, 84, "R"], [12.24, 65, 0.93, 62, "R"], [12.71, 74, 0.35, 52, "R"], [12.72, 56, 0.51, 60, "L"], [13.3, 77, 0.28, 82, "R"], [13.91, 76, 0.72, 75, "R"], [14.13, 55, 0.33, 68, "L"], [15.75, 72, 0.28, 83, "R"], [16.83, 48, 0.28, 66, "L"], [18.36, 88, 0.28, 84, "R"], [20.69, 48, 0.33, 69, "L"], [22.44, 45, 0.39, 73, "L"], [23.54, 43, 0.79, 74, "L"], [25.36, 53, 0.33, 62, "L"], [25.36, 85, 0.3, 69, "R"], [28.35, 88, 0.28, 83, "R"], [29.01, 55, 0.53, 70, "L"], [30.01, 65, 0.72, 65, "R"], [31.39, 70, 0.49, 63, "R"], [32.12, 54, 0.39, 76, "L"], [32.48, 75, 0.49, 64, "R"], [33.03, 58, 0.33, 89, "L"], [33.21, 78, 0.49, 65, "R"], [33.6, 54, 0.44, 84, "L"], [33.93, 53, 0.28, 70, "L"], [34.28, 58, 0.42, 86, "L"], [34.29, 82, 0.72, 56, "R"], [35.63, 77, 0.63, 45, "R"], [37.06, 51, 0.44, 46, "L"], [37.92, 38, 1.37, 63, "L"], [38.5, 72, 0.44, 60, "R"], [38.74, 43, 0.42, 62, "L"], [40.51, 60, 0.39, 83, "R"], [41.21, 68, 0.67, 46, "R"], [41.69, 41, 0.3, 62, "L"], [42.57, 45, 0.56, 68, "L"], [42.72, 38, 0.6, 67, "L"], [42.97, 54, 0.51, 78, "L"], [43.17, 72, 0.28, 73, "R"], [44.4, 55, 0.44, 73, "L"], [45.01, 65, 0.65, 55, "R"], [46.2, 72, 0.46, 92, "R"], [47.53, 48, 0.28, 59, "L"], [50.0, 41, 1.28, 63, "L"], [50.02, 76, 0.3, 63, "R"], [53.59, 58, 0.46, 77, "L"], [53.61, 52, 0.28, 67, "L"], [54.19, 43, 0.42, 69, "L"], [54.64, 82, 0.28, 64, "R"], [55.36, 73, 0.61, 61, "R"], [56.08, 85, 0.28, 70, "R"], [59.74, 69, 1.23, 61, "R"], [60.01, 65, 0.72, 65, "R"], [61.39, 45, 0.7, 84, "L"], [62.21, 36, 0.37, 55, "L"], [62.5, 52, 1.51, 64, "L"], [62.51, 46, 2.23, 55, "L"], [62.64, 41, 2.23, 62, "L"], [63.74, 38, 0.67, 48, "L"], [64.53, 41, 0.93, 50, "L"], [65.17, 50, 0.56, 93, "L"], [66.58, 41, 0.74, 52, "L"], [67.46, 50, 1.14, 77, "L"], [67.81, 38, 0.56, 62, "L"], [68.59, 52, 0.6, 63, "L"], [69.72, 38, 0.7, 69, "L"], [69.74, 38, 0.7, 69, "L"], [70.33, 86, 1.25, 66, "R"], [71.09, 77, 2.02, 60, "R"], [71.38, 86, 1.54, 56, "R"], [72.36, 45, 0.74, 62, "L"], [73.59, 81, 1.28, 55, "R"], [74.1, 53, 0.74, 46, "L"], [74.86, 38, 1.14, 70, "L"], [75.84, 38, 1.37, 63, "L"], [76.4, 72, 0.42, 68, "R"], [78.92, 72, 0.49, 69, "R"], [79.5, 38, 1.88, 56, "L"], [80.45, 38, 1.05, 67, "L"], [81.47, 38, 0.65, 79, "L"], [82.4, 38, 1.93, 58, "L"], [84.37, 38, 1.02, 56, "L"], [85.39, 38, 1.91, 56, "L"], [87.36, 38, 1.26, 53, "L"], [88.34, 45, 0.77, 75, "L"], [90.34, 50, 0.65, 58, "L"], [91.1, 40, 0.42, 65, "L"], [93.5, 38, 0.6, 70, "L"], [94.39, 45, 1.65, 56, "L"], [98.13, 36, 0.56, 49, "L"], [100.06, 36, 0.51, 37, "L"], [104.19, 45, 1.35, 57, "L"], [105.43, 84, 0.28, 63, "R"], [107.05, 38, 0.3, 54, "L"], [110.23, 79, 0.28, 60, "R"], [113.56, 72, 0.56, 68, "R"], [114.57, 86, 0.53, 41, "R"], [115.21, 40, 1.3, 85, "L"], [116.07, 45, 0.91, 67, "L"], [117.1, 45, 2.14, 55, "L"], [118.04, 72, 0.53, 69, "R"], [119.29, 77, 0.81, 56, "R"], [120.02, 47, 0.3, 51, "L"], [120.09, 35, 0.79, 47, "L"], [121.01, 40, 1.86, 72, "L"], [124.09, 38, 1.51, 43, "L"], [125.0, 38, 0.84, 65, "L"], [126.22, 36, 0.3, 46, "L"], [130.01, 36, 2.88, 50, "L"], [130.18, 89, 0.7, 53, "R"], [131.17, 76, 0.42, 56, "R"], [132.21, 41, 1.46, 61, "L"], [132.9, 38, 1.93, 59, "L"], [135.1, 40, 1.14, 67, "L"], [138.27, 38, 1.46, 61, "L"], [141.95, 33, 1.46, 45, "L"], [142.7, 33, 1.68, 53, "L"], [146.55, 50, 1.91, 49, "L"], [146.8, 70, 0.68, 62, "R"], [150.11, 36, 2.49, 62, "L"], [155.37, 57, 2.98, 51, "L"], [158.91, 75, 0.47, 55, "R"], [159.66, 78, 0.72, 59, "R"], [160.69, 82, 0.63, 49, "R"], [162.5, 75, 0.49, 62, "R"], [167.58, 56, 0.67, 59, "L"], [168.16, 82, 0.67, 52, "R"], [169.2, 54, 2.18, 62, "L"], [170.13, 72, 0.28, 35, "R"], [176.11, 60, 0.39, 81, "R"], [180.92, 62, 0.51, 93, "R"], [181.66, 64, 0.58, 84, "R"], [182.16, 85, 0.28, 64, "R"], [189.49, 58, 0.65, 83, "L"], [190.24, 74, 0.49, 80, "R"], [192.31, 45, 1.79, 86, "L"], [193.06, 70, 0.7, 67, "R"], [195.1, 67, 0.56, 73, "R"], [200.06, 72, 0.51, 58, "R"], [203.1, 77, 0.3, 33, "R"], [207.5, 58, 1.05, 62, "L"], [208.01, 85, 0.49, 78, "R"], [210.26, 86, 0.6, 55, "R"], [211.1, 75, 0.65, 76, "R"], [213.18, 48, 0.35, 58, "L"], [216.04, 60, 0.46, 74, "R"], [218.14, 65, 0.46, 74, "R"], [220.28, 58, 0.91, 61, "L"], [223.1, 72, 0.33, 69, "R"], [225.39, 34, 0.28, 49, "L"], [227.62, 31, 0.35, 58, "L"], [229.0, 53, 0.74, 57, "L"], [229.21, 93, 0.3, 81, "R"], [230.0, 46, 1.07, 54, "L"], [232.13, 76, 0.63, 68, "R"], [234.02, 67, 0.51, 81, "R"], [235.3, 58, 0.46, 84, "L"], [240.03, 36, 0.65, 65, "L"], [244.21, 41, 0.89, 65, "L"], [247.13, 40, 0.51, 78, "L"], [250.02, 38, 2.05, 62, "L"], [251.08, 36, 0.86, 76, "L"], [255.6, 70, 0.7, 61, "R"], [257.62, 36, 2.88, 50, "L"], [260.11, 53, 0.35, 69, "L"], [262.51, 37, 1.39, 55, "L"], [264.52, 45, 0.46, 56, "L"], [267.03, 58, 0.3, 74, "L"], [268.54, 67, 0.51, 90, "R"], [270.88, 57, 0.58, 81, "L"], [271.36, 58, 0.65, 78, "L"], [272.5, 45, 0.74, 79, "L"], [275.28, 53, 0.44, 81, "L"], [279.91, 77, 0.47, 63, "R"], [281.61, 60, 0.33, 79, "R"], [284.56, 61, 0.74, 62, "R"], [287.5, 58, 0.39, 85, "L"], [290.48, 76, 0.53, 73, "R"], [292.06, 53, 0.28, 60, "L"], [294.05, 57, 0.39, 81, "L"], [295.13, 56, 0.44, 75, "L"], [300.11, 36, 2.49, 62, "L"], [303.4, 67, 0.42, 41, "R"], [305.54, 64, 0.86, 76, "R"], [308.25, 70, 0.39, 94, "R"], [311.89, 77, 0.26, 72, "R"], [314.23, 76, 0.49, 83, "R"], [316.54, 31, 0.28, 40, "L"], [317.55, 48, 0.33, 72, "L"], [320.11, 45, 0.49, 78, "L"], [323.15, 60, 0.51, 87, "R"], [326.18, 58, 0.42, 82, "L"], [329.68, 29, 0.91, 55, "L"], [332.69, 76, 0.79, 82, "R"], [334.05, 89, 0.53, 75, "R"], [334.98, 40, 0.88, 68, "L"], [337.99, 31, 0.39, 44, "L"], [340.18, 31, 0.74, 45, "L"], [341.87, 60, 0.51, 74, "R"], [344.92, 50, 0.56, 68, "L"], [347.57, 64, 0.47, 94, "R"], [349.21, 67, 1.16, 83, "R"], [352.52, 62, 0.84, 63, "R"], [355.37, 57, 2.98, 51, "L"], [355.39, 81, 1.86, 56, "R"], [357.35, 57, 1.93, 85, "L"], [357.78, 50, 3.46, 85, "L"], [358.28, 45, 2.86, 81, "L"], [359.98, 38, 1.84, 54, "L"]];
+const JOE_SAMPLE=[[0.0, 60, 0.7, 85, "R"], [0.01, 57, 1.39, 55, "L"], [0.81, 31, 0.39, 49, "L"], [1.36, 48, 0.7, 47, "L"], [4.14, 36, 0.28, 36, "L"], [4.58, 74, 5.76, 66, "R"], [5.94, 67, 6.58, 57, "R"], [9.65, 36, 0.63, 44, "L"], [17.39, 84, 2.67, 64, "R"], [17.84, 77, 6.97, 69, "R"], [24.09, 77, 6.92, 70, "R"], [24.61, 55, 4.02, 61, "L"], [40.34, 45, 1.97, 51, "L"], [43.58, 41, 1.79, 49, "L"], [43.77, 64, 6.69, 67, "R"], [45.92, 41, 1.79, 53, "L"], [50.0, 41, 1.28, 63, "L"], [50.69, 40, 0.97, 84, "L"], [51.17, 40, 2.16, 67, "L"], [53.59, 41, 9.39, 61, "L"], [54.73, 48, 7.06, 64, "L"], [58.45, 69, 1.23, 77, "R"], [59.53, 46, 4.65, 78, "L"], [62.8, 45, 7.37, 66, "L"], [67.51, 74, 0.51, 105, "R"], [71.67, 41, 5.51, 54, "L"], [74.9, 41, 2.28, 50, "L"], [80.17, 41, 0.44, 54, "L"], [81.28, 41, 7.44, 56, "L"], [85.16, 48, 4.11, 63, "L"], [85.27, 41, 3.88, 57, "L"], [87.97, 41, 2.09, 47, "L"], [90.13, 48, 5.83, 59, "L"], [92.83, 36, 1.07, 47, "L"], [94.62, 40, 0.51, 49, "L"], [104.32, 40, 0.44, 39, "L"], [104.81, 45, 1.05, 42, "L"], [106.08, 33, 0.35, 41, "L"], [107.26, 33, 1.19, 41, "L"], [111.74, 33, 0.46, 49, "L"], [112.76, 33, 0.28, 45, "L"], [115.65, 40, 0.35, 60, "L"], [117.15, 33, 1.86, 48, "L"], [123.46, 45, 0.63, 54, "L"], [126.54, 33, 0.74, 44, "L"], [127.11, 33, 0.68, 40, "L"], [129.18, 33, 1.14, 40, "L"], [131.16, 67, 0.42, 52, "R"], [134.49, 33, 1.02, 47, "L"], [135.18, 33, 2.27, 49, "L"], [137.77, 33, 0.39, 39, "L"], [138.13, 36, 0.37, 43, "L"], [143.86, 35, 0.42, 45, "L"], [152.21, 77, 0.67, 98, "R"], [152.55, 84, 0.79, 75, "R"], [153.59, 77, 1.7, 75, "R"], [154.06, 55, 1.65, 51, "L"], [162.03, 36, 0.72, 67, "L"], [163.52, 87, 0.37, 69, "R"], [164.05, 63, 1.56, 62, "R"], [167.79, 48, 1.3, 45, "L"], [170.21, 63, 1.95, 65, "R"], [180.55, 48, 0.61, 39, "L"], [182.82, 36, 0.35, 45, "L"], [192.31, 44, 3.79, 56, "L"], [194.72, 36, 0.39, 46, "L"], [199.56, 36, 0.56, 53, "L"], [203.11, 44, 1.49, 61, "L"], [205.64, 58, 1.79, 61, "L"], [205.69, 43, 4.37, 64, "L"], [208.52, 44, 2.44, 59, "L"], [213.18, 41, 6.71, 64, "L"], [228.27, 77, 2.79, 69, "R"], [229.0, 55, 0.51, 47, "L"], [239.67, 63, 3.0, 60, "R"], [242.31, 56, 1.51, 53, "L"], [253.14, 79, 0.3, 40, "R"], [254.22, 58, 2.28, 67, "L"], [258.58, 46, 4.51, 66, "L"], [260.84, 46, 2.86, 72, "L"], [262.74, 43, 3.56, 73, "L"], [264.1, 48, 6.04, 55, "L"], [264.52, 43, 7.67, 76, "L"], [265.62, 41, 4.9, 46, "L"], [270.69, 62, 9.71, 65, "R"], [270.69, 55, 5.2, 53, "L"], [271.0, 70, 9.46, 84, "R"], [276.84, 46, 0.93, 46, "L"], [289.15, 65, 5.62, 49, "R"], [295.0, 67, 1.86, 57, "R"], [303.74, 41, 0.39, 57, "L"], [303.82, 35, 0.7, 51, "L"], [305.35, 35, 0.6, 54, "L"], [307.14, 35, 0.88, 43, "L"], [308.7, 35, 1.0, 44, "L"], [315.33, 35, 0.37, 49, "L"], [323.53, 35, 0.75, 47, "L"], [330.33, 35, 0.28, 42, "L"], [333.78, 35, 0.39, 46, "L"], [342.36, 67, 0.44, 41, "R"], [347.7, 84, 3.34, 76, "R"], [348.31, 77, 2.46, 75, "R"], [348.8, 55, 4.51, 53, "L"], [355.9, 84, 0.33, 51, "R"], [358.32, 64, 1.86, 71, "R"], [362.29, 57, 0.88, 85, "L"], [365.48, 53, 3.07, 64, "L"], [373.06, 38, 2.74, 74, "L"], [375.12, 40, 4.6, 77, "L"], [388.81, 41, 3.74, 54, "L"], [402.15, 67, 7.69, 55, "R"]];
+const SAMPLE=[[1.18, 38, 2.32, 48, "L"], [1.18, 65, 0.4, 67, "R"], [1.67, 50, 5.01, 50, "L"], [1.67, 65, 0.9, 55, "R"], [2.62, 60, 5.39, 56, "R"], [3.56, 62, 0.46, 63, "R"], [4.03, 53, 1.92, 63, "L"], [4.97, 50, 0.5, 64, "L"], [4.97, 65, 1.93, 63, "R"], [6.41, 62, 0.5, 94, "R"], [6.41, 38, 2.99, 78, "L"], [7.35, 57, 1.81, 84, "L"], [7.36, 60, 1.89, 66, "R"], [9.26, 60, 1.73, 50, "R"], [9.73, 57, 1.59, 69, "L"], [9.73, 65, 0.52, 97, "R"], [10.69, 67, 0.54, 70, "R"], [11.64, 38, 4.78, 49, "L"], [11.64, 62, 0.51, 75, "R"], [43.28, 49, 0.47, 50, "L"], [43.28, 50, 0.24, 66, "L"], [43.28, 52, 0.22, 50, "L"], [43.51, 49, 0.39, 37, "L"], [43.51, 50, 0.51, 92, "L"], [44.94, 49, 0.95, 63, "L"], [44.94, 50, 0.83, 40, "L"], [44.94, 62, 0.52, 40, "R"], [68.79, 37, 1.4, 79, "L"], [68.79, 55, 0.21, 48, "L"], [69.03, 48, 0.98, 63, "L"], [69.27, 46, 0.91, 92, "L"], [69.27, 58, 1.89, 66, "L"], [69.27, 65, 0.26, 71, "R"], [69.74, 36, 1.45, 77, "L"], [69.98, 46, 0.99, 96, "L"], [69.98, 48, 1.93, 71, "L"], [92.57, 35, 1.41, 77, "L"], [92.8, 47, 0.92, 71, "L"], [93.03, 56, 0.21, 28, "L"], [93.03, 60, 1.36, 64, "R"], [137.01, 35, 2.31, 50, "L"], [137.47, 48, 1.82, 50, "L"], [137.92, 55, 2.5, 54, "L"], [137.92, 62, 0.97, 97, "R"], [149.27, 34, 2.51, 73, "L"], [149.69, 48, 1.71, 69, "L"], [149.69, 58, 0.85, 88, "L"], [150.12, 55, 2.47, 68, "L"], [154.18, 34, 2.59, 74, "L"], [159.1, 33, 2.55, 72, "L"], [159.74, 57, 2.15, 66, "L"], [159.74, 77, 0.24, 78, "R"], [165.96, 33, 2.06, 48, "L"], [170.87, 32, 2.16, 50, "L"], [186.7, 40, 1.06, 48, "L"], [186.7, 51, 0.1, 66, "L"], [186.7, 54, 0.22, 66, "L"], [186.92, 52, 2.27, 54, "L"], [187.35, 65, 1.16, 56, "R"], [189.06, 41, 2.51, 75, "L"], [189.06, 55, 0.22, 70, "L"], [189.06, 68, 0.81, 53, "R"], [380.46, 48, 2.41, 49, "L"], [380.46, 53, 0.73, 72, "L"], [380.46, 60, 0.94, 59, "R"], [391.33, 48, 2.4, 50, "L"], [391.33, 50, 0.68, 57, "L"], [391.33, 60, 5.44, 56, "R"], [394.05, 53, 2.59, 60, "L"], [394.05, 57, 0.71, 52, "L"], [394.05, 60, 2.08, 57, "R"], [415.76, 38, 6.59, 48, "L"], [415.76, 53, 0.67, 64, "L"], [417.1, 50, 2.76, 50, "L"], [417.11, 48, 0.7, 65, "L"], [417.11, 57, 0.33, 58, "L"], [417.8, 60, 2.73, 55, "R"], [438.87, 48, 0.71, 63, "L"], [438.87, 57, 0.34, 61, "L"], [438.87, 60, 1.79, 48, "R"], [430.46, 41, 2.65, 74, "L"], [430.46, 51, 0.82, 86, "L"], [430.46, 56, 0.2, 54, "L"], [431.65, 58, 0.1, 41, "L"], [363.55, 49, 1.23, 66, "L"], [363.55, 55, 0.12, 79, "L"], [363.55, 64, 0.2, 56, "R"], [366.55, 54, 0.11, 76, "L"], [366.55, 59, 0.21, 54, "L"], [366.98, 66, 0.77, 77, "R"], [369.12, 52, 0.81, 53, "L"], [369.12, 59, 2.56, 64, "L"], [370.84, 56, 0.86, 65, "L"], [371.85, 54, 0.19, 62, "L"], [371.85, 61, 0.9, 98, "R"], [318.21, 33, 2.55, 72, "L"], [318.21, 60, 0.85, 98, "R"], [327.64, 33, 2.51, 74, "L"], [341.74, 32, 2.16, 50, "L"], [345.14, 33, 1.26, 78, "L"], [480.32, 35, 2.48, 75, "L"], [480.32, 46, 0.76, 51, "L"], [480.32, 55, 0.2, 58, "L"], [481.33, 47, 1.19, 70, "L"], [495.89, 35, 2.5, 73, "L"], [495.89, 56, 0.22, 67, "L"], [496.34, 47, 1.21, 70, "L"], [533.27, 35, 2.42, 78, "L"], [533.27, 56, 0.2, 61, "L"], [534.04, 47, 1.2, 70, "L"]];
+function loadSample(){
+  RAW=SAMPLE.map(d=>({sec:d[0],midi:d[1],dur:d[2],vel:d[3],hand:d[4]}));
+  recompute();
+}
+
+// ─── numericize: each note → 7-dim vector ───
+function vec(n){
+  const stAbs=n.midi-ROOT;
+  const st=((stAbs%12)+12)%12;
+  const oct=Math.floor(stAbs/12);
+  const lat=LAT[st]||[0,0,0];
+  return {sec:n.sec,midi:n.midi,st,oct,stAbs,vel:n.vel,dur:n.dur,hand:n.hand,lat};
+}
+let V=[];
+function recompute(){
+  V=RAW.map(vec).sort((a,b)=>a.sec-b.sec);
+  TMIN=Math.min(...V.map(v=>v.sec));
+  TMAX=Math.max(...V.map(v=>v.sec+v.dur));
+  resetView();
+  $('rootName').textContent=nameOf(ROOT);
+  drawAll(); try{renderCrossSections();}catch(e){} try{renderHarmonyProg();}catch(e){}
+}
+
+// group notes into time-slices (chords) by proximity in sec
+function chords(tol=0.25){
+  const out=[]; let cur=[];
+  for(const v of V){
+    if(cur.length===0 || Math.abs(v.sec-cur[0].sec)<=tol){ cur.push(v); }
+    else { out.push(cur); cur=[v]; }
+  }
+  if(cur.length) out.push(cur);
+  return out;
+}
+
+// ════ canvas helpers ════
+function setup(cv){
+  const logicalH = parseInt(cv.dataset.h)||200;
+  const dpr=window.devicePixelRatio||1;
+  // width from parent .graph (stable), fall back safely; never derive from cv's own backing store
+  const parent=cv.parentElement;
+  const W=Math.max(200, (parent&&parent.clientWidth)||cv.clientWidth||700);
+  const needW=Math.round(W*dpr), needH=Math.round(logicalH*dpr);
+  if(cv.width!==needW) cv.width=needW;
+  if(cv.height!==needH) cv.height=needH;
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,W,H:logicalH};
+}
+// shared view window (zoom/pan) — like a trading chart's visible range
+const VIEW={t0:0,t1:1};
+let WIN_SEC=4;     // current "足" window in seconds (for field estimation & heatmap)
+let BPM=120;       // assumed tempo for beat/bar windows (user-adjustable later)
+function winSeconds(){ return WIN_SEC; }
+function resetView(){ VIEW.t0=TMIN; VIEW.t1=TMAX; }
+const xT=(sec,W,pad)=>pad+(sec-VIEW.t0)/(VIEW.t1-VIEW.t0)*(W-pad*1.5);
+const xToTime=(x,W,pad)=>VIEW.t0+(x-pad)/(W-pad*1.5)*(VIEW.t1-VIEW.t0);
+function gridStepSec(){
+  // adaptive: pick a "nice" tick interval so ~6-10 ticks fit the visible span
+  const span=VIEW.t1-VIEW.t0;
+  const targets=[1,2,5,10,15,30,60,120,300];
+  for(const s of targets){ if(span/s<=10) return s; }
+  return 600;
+}
+function fmtTime(t){ const m=Math.floor(t/60),s=Math.floor(t%60); return m+':'+String(s).padStart(2,'0'); }
+function grid(ctx,W,H,pad,yLabels,yOf){
+  ctx.strokeStyle=C.line; ctx.lineWidth=0.5; ctx.fillStyle=C.mist; ctx.font='9px "JetBrains Mono"';
+  const step=gridStepSec();
+  for(let t=Math.ceil(VIEW.t0/step)*step;t<VIEW.t1;t+=step){
+    const x=xT(t,W,pad); ctx.beginPath();ctx.moveTo(x,8);ctx.lineTo(x,H-16);ctx.stroke();
+    ctx.fillText(fmtTime(t),x-10,H-5);
+  }
+  if(yLabels) yLabels.forEach(yl=>{ const y=yOf(yl.v); ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad*0.5,y);ctx.stroke(); ctx.fillStyle=C.mist;ctx.fillText(yl.t,4,y+3); });
+}
+function roleOf(v,chordNotes){
+  // bass=lowest, top=highest, else inner — within its chord
+  const lo=Math.min(...chordNotes.map(n=>n.midi)), hi=Math.max(...chordNotes.map(n=>n.midi));
+  if(v.midi===lo) return 'bass'; if(v.midi===hi) return 'top'; return 'inner';
+}
+
+// ════ GRAPH 1: pitch terrain (time × ST_abs) ════
+function g1(){
+  const cv=$('g1'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const pad=42;
+  const sts=V.map(v=>v.stAbs); const lo=Math.min(...sts)-2,hi=Math.max(...sts)+2;
+  const yOf=s=>8+(hi-s)/(hi-lo)*(H-26);
+  const yl=[]; for(let s=Math.ceil(lo/12)*12;s<=hi;s+=12) yl.push({v:s,t:'ST'+(s>=0?'+':'')+s});
+  grid(ctx,W,H,pad,yl,yOf);
+  const chs=chords();
+  // draw each note as a horizontal bar (length=dur), colored by role
+  chs.forEach(ch=>{
+    ch.forEach(v=>{
+      const role=roleOf(v,ch);
+      const x0=xT(v.sec,W,pad), x1=xT(v.sec+v.dur,W,pad), y=yOf(v.stAbs);
+      ctx.strokeStyle=C[role]; ctx.lineWidth=role==='bass'?2.2:(role==='top'?1.4:1);
+      ctx.globalAlpha=0.4+v.vel/127*0.6;
+      ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(Math.max(x1,x0+2),y);ctx.stroke();
+      ctx.globalAlpha=1;
+    });
+  });
+  // connect bass notes to show the descent
+  ctx.strokeStyle='rgba(199,123,74,0.3)';ctx.lineWidth=0.8;ctx.beginPath();
+  let first=true;
+  chs.forEach(ch=>{ const b=ch.reduce((a,n)=>n.midi<a.midi?n:a); const x=xT(b.sec,W,pad),y=yOf(b.stAbs); if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y); });
+  ctx.stroke();
+  attachHover(cv,W,H,pad,yOf,(s)=>'ST'+(s>=0?'+':'')+Math.round(s));
+}
+
+// ════ GRAPH 2: velocity breath ════
+function g2(){
+  const cv=$('g2'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const pad=42; const yOf=v=>8+(127-v)/127*(H-26);
+  grid(ctx,W,H,pad,[{v:30,t:'30'},{v:64,t:'64'},{v:98,t:'98'}],yOf);
+  // velocity envelope (max per chord)
+  const chs=chords();
+  ctx.strokeStyle=C.gold;ctx.lineWidth=1.2;ctx.beginPath();let f=true;
+  chs.forEach(ch=>{const mv=Math.max(...ch.map(n=>n.vel));const x=xT(ch[0].sec,W,pad),y=yOf(mv);if(f){ctx.moveTo(x,y);f=false;}else ctx.lineTo(x,y);});
+  ctx.stroke();
+  // dots per note
+  V.forEach(v=>{ctx.fillStyle='rgba(216,196,138,0.4)';ctx.beginPath();ctx.arc(xT(v.sec,W,pad),yOf(v.vel),1.4,0,7);ctx.fill();});
+}
+
+// ════ GRAPH 3: inter-voice ST (stacking) ════
+function g3(){
+  const cv=$('g3'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const pad=42; const yOf=g=>H-16-(g/14)*(H-26);
+  grid(ctx,W,H,pad,[{v:2,t:'2'},{v:5,t:'5'},{v:7,t:'7'},{v:12,t:'12'}].map(o=>({v:o.v,t:'ST'+o.t})),yOf);
+  const chs=chords();
+  chs.forEach(ch=>{
+    if(ch.length<2)return;
+    const ms=ch.map(n=>n.midi).sort((a,b)=>a-b);
+    for(let i=0;i<ms.length-1;i++){
+      const gap=ms[i+1]-ms[i]; const x=xT(ch[0].sec,W,pad),y=yOf(Math.min(gap,14));
+      // color: tight(1-2)=warm, even(3-4)=gold, wide(5+)=blue
+      ctx.fillStyle = gap<=2?'#c77b4a':gap<=4?C.gold:'#6a8caf';
+      ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(x,y,2.2,0,7);ctx.fill();ctx.globalAlpha=1;
+    }
+  });
+  // ideal "equal spacing" band 2-4
+  ctx.fillStyle='rgba(176,141,87,0.06)';ctx.fillRect(pad,yOf(4),W-pad*1.5,yOf(2)-yOf(4));
+  ctx.fillStyle=C.mist;ctx.font='8px "JetBrains Mono"';ctx.fillText('等間隔帯 2-4',pad+4,yOf(4)+10);
+}
+
+// ════ GRAPH 4: voice count ════
+function g4(){
+  const cv=$('g4'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const pad=42; const yOf=c=>H-16-(c/7)*(H-26);
+  grid(ctx,W,H,pad,[{v:2,t:'2声'},{v:4,t:'4声'},{v:6,t:'6声'}],yOf);
+  const chs=chords();
+  ctx.strokeStyle=C.inner;ctx.lineWidth=1.2;ctx.beginPath();let f=true;
+  chs.forEach(ch=>{const x=xT(ch[0].sec,W,pad),y=yOf(ch.length);if(f){ctx.moveTo(x,y);f=false;}else ctx.lineTo(x,y);});
+  ctx.stroke();
+  chs.forEach(ch=>{ctx.fillStyle=C.inner;ctx.beginPath();ctx.arc(xT(ch[0].sec,W,pad),yOf(ch.length),2,0,7);ctx.fill();});
+}
+
+// ════ GRAPH 5: dwell heatmap (ST × time-bins) ════
+function g5(){
+  const cv=$('g5'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const pad=42; const bins=60; const stRange=12;
+  // accumulate dwell (duration) per (ST, timebin)
+  const grid2=Array.from({length:stRange},()=>new Array(bins).fill(0));
+  V.forEach(v=>{if(v.sec<VIEW.t0||v.sec>VIEW.t1)return;const b=Math.floor((v.sec-VIEW.t0)/(VIEW.t1-VIEW.t0)*(bins-1));grid2[v.st][b]+=v.dur;});
+  let mx=0;grid2.forEach(r=>r.forEach(c=>{if(c>mx)mx=c;}));
+  const cw=(W-pad*1.5)/bins, ch=(H-26)/stRange;
+  for(let s=0;s<stRange;s++)for(let b=0;b<bins;b++){
+    const val=grid2[s][b]/mx; if(val<=0)continue;
+    ctx.fillStyle=`rgba(176,141,87,${0.08+val*0.9})`;
+    ctx.fillRect(pad+b*cw,8+(stRange-1-s)*ch,cw+0.5,ch+0.5);
+  }
+  ctx.fillStyle=C.mist;ctx.font='9px "JetBrains Mono"';
+  for(let s=0;s<stRange;s++)ctx.fillText('ST+'+s,4,8+(stRange-1-s)*ch+ch*0.7);
+}
+
+// ════ GRAPH 6: lattice projection (3-axis × 5-axis) ════
+function g6(){
+  const cv=$('g6'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,u=Math.min(W,H)/7;
+  // axes
+  ctx.strokeStyle=C.line;ctx.lineWidth=0.5;
+  for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(cx+i*u,8);ctx.lineTo(cx+i*u,H-8);ctx.stroke();ctx.beginPath();ctx.moveTo(8,cy+i*u);ctx.lineTo(W-8,cy+i*u);ctx.stroke();}
+  ctx.fillStyle=C.mist;ctx.font='9px "JetBrains Mono"';
+  ctx.fillText('3軸(5度)→',cx+u*2.2,cy-6); ctx.fillText('5軸(3度)↑',cx+6,cy-u*2.2);
+  // plot each note by lattice [3-axis, 5-axis], time→opacity, role→color
+  const chs=chords();
+  chs.forEach((ch,ci)=>{
+    const tFrac=ci/chs.length;
+    ch.forEach(v=>{
+      const role=roleOf(v,ch);
+      const x=cx+v.lat[0]*u, y=cy-v.lat[1]*u;
+      ctx.fillStyle=C[role];ctx.globalAlpha=0.15+tFrac*0.7;
+      ctx.beginPath();ctx.arc(x,y,v.lat[2]!==0?5:3.2,0,7);ctx.fill();ctx.globalAlpha=1;
+      // 7-axis (septimal) = ring
+      if(v.lat[2]!==0){ctx.strokeStyle=C.top;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.stroke();}
+    });
+  });
+  // origin = root
+  ctx.strokeStyle=C.gold;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,4,0,7);ctx.stroke();
+  ctx.fillStyle=C.gold;ctx.fillText('root',cx+8,cy+4);
+}
+
+// ─── 磁場推定エンジン ───
+function estimateFields(win=winSeconds(), lowMax=52){
+  const fields=[]; let t=TMIN;
+  while(t<TMAX){
+    const notes=V.filter(v=>t<=v.sec&&v.sec<t+win&&v.midi<=lowMax);
+    if(notes.length){
+      const w={}; notes.forEach(n=>{const pc=((n.midi%12)+12)%12; w[pc]=(w[pc]||0)+n.dur;});
+      let pc=0,mx=0; for(const k in w){if(w[k]>mx){mx=w[k];pc=+k;}}
+      fields.push({t,pc,strength:mx});
+    }
+    t+=win/2;
+  }
+  // collapse into regions
+  const regions=[];
+  fields.forEach(f=>{
+    if(regions.length&&regions[regions.length-1].pc===f.pc){ regions[regions.length-1].end=f.t+win; }
+    else regions.push({pc:f.pc,start:f.t,end:f.t+win});
+  });
+  return regions;
+}
+// detect what triggered each change: strike(vel), top-excursion, or smooth
+function changeTrigger(changeT){
+  const pre=V.filter(v=>changeT-4<=v.sec&&v.sec<changeT);
+  if(!pre.length) return '';
+  const velmax=Math.max(...pre.map(v=>v.vel));
+  const himax=Math.max(...pre.map(v=>v.midi));
+  if(velmax>78) return '強打';
+  if(himax>78) return '上声跳躍';
+  return '';
+}
+function g7(){
+  const cv=$('g7'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const pad=42;
+  const regions=estimateFields();
+  // y = pitch class 0-11 (low at bottom)
+  const yOf=pc=>H-18-(pc/11)*(H-32);
+  // pc gridlines
+  ctx.font='9px "JetBrains Mono"';
+  for(let pc=0;pc<12;pc++){ const y=yOf(pc); ctx.strokeStyle=C.line;ctx.lineWidth=0.4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-8,y);ctx.stroke(); ctx.fillStyle=C.mist;ctx.fillText(NN[pc],6,y+3); }
+  // time grid — 共有VIEW窓に追従(他グラフと統一。旧: TMIN〜TMAX固定60秒刻み)
+  {const step=gridStepSec();
+   for(let t=Math.ceil(VIEW.t0/step)*step;t<VIEW.t1;t+=step){const x=xT(t,W,pad);ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(x,8);ctx.lineTo(x,H-18);ctx.stroke();ctx.fillStyle=C.mist;ctx.fillText(fmtTime(t),x-8,H-5);}}
+  // draw field regions as horizontal bars + connecting transition lines
+  let prev=null;
+  regions.forEach(r=>{
+    const x0=xT(r.start,W,pad), x1=xT(r.end,W,pad), y=yOf(r.pc);
+    // bar (longer dwell = brighter)
+    const dwell=r.end-r.start;
+    ctx.strokeStyle=C.gold; ctx.lineWidth=Math.min(6,2+dwell/12);
+    ctx.globalAlpha=0.85; ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.globalAlpha=1;
+    // dwell label
+    ctx.fillStyle=C.paper;ctx.font='8px "JetBrains Mono"';
+    if(dwell>10) ctx.fillText(Math.round(dwell)+'s',x0+2,y-5);
+    // transition from prev
+    if(prev){
+      const px=xT(prev.end,W,pad), py=yOf(prev.pc);
+      const d=((r.pc-prev.pc)%12+12)%12; const dd=d>6?d-12:d;
+      const trig=changeTrigger(r.start);
+      // semitone moves = thin smooth line; big jumps = dashed; strike = red dot
+      ctx.strokeStyle = Math.abs(dd)<=1 ? 'rgba(106,140,175,0.6)' : 'rgba(199,123,74,0.7)';
+      ctx.lineWidth=1; ctx.setLineDash(Math.abs(dd)<=1?[]:[3,3]);
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(x0,y);ctx.stroke();ctx.setLineDash([]);
+      // transition label (semitone delta)
+      ctx.fillStyle=C.mist;ctx.font='8px "JetBrains Mono"';
+      ctx.fillText((dd>=0?'+':'')+dd,(px+x0)/2-4,(py+y)/2-3);
+      if(trig){ ctx.fillStyle=trig==='強打'?'#c77b4a':'#d8c48a'; ctx.beginPath();ctx.arc(x0,y,3,0,7);ctx.fill();
+        ctx.fillStyle=C.mist;ctx.fillText(trig,x0-6,y+14); }
+    }
+    prev=r;
+  });
+  ctx.fillStyle=C.mist;ctx.font='italic 9px "IM Fell English"';
+  ctx.fillText('青線=半音移行  橙破線=跳躍  ●=強打のきっかけ',pad,14);
+}
+
+// ─── ズーム/パン(TradingView風) — ピッチ系3グラフで共有 ───
+function clampView(){
+  const span=VIEW.t1-VIEW.t0;
+  const minSpan=0.5; // don't zoom in past half a second
+  if(span<minSpan){ const c=(VIEW.t0+VIEW.t1)/2; VIEW.t0=c-minSpan/2; VIEW.t1=c+minSpan/2; }
+  if(VIEW.t0<TMIN) VIEW.t0=TMIN;
+  if(VIEW.t1>TMAX) VIEW.t1=TMAX;
+  if(VIEW.t1-VIEW.t0<minSpan) VIEW.t1=VIEW.t0+minSpan;
+}
+function attachZoomPan(cv){
+  const pad=42;
+  cv.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const parent=cv.parentElement; const W=Math.max(200,(parent&&parent.clientWidth)||700);
+    const rect=cv.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    const tCursor=xToTime(mx,W,pad); // time under cursor (zoom anchor)
+    const factor=e.deltaY<0?0.82:1.22; // wheel up = zoom in
+    VIEW.t0=tCursor-(tCursor-VIEW.t0)*factor;
+    VIEW.t1=tCursor+(VIEW.t1-tCursor)*factor;
+    clampView(); drawAll();
+  },{passive:false});
+  let dragging=false,lastX=0;
+  cv.addEventListener('mousedown',e=>{ dragging=true;lastX=e.clientX;cv.style.cursor='grabbing'; });
+  window.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const parent=cv.parentElement; const W=Math.max(200,(parent&&parent.clientWidth)||700);
+    const dx=e.clientX-lastX; lastX=e.clientX;
+    const dt=-dx/(W-pad*1.5)*(VIEW.t1-VIEW.t0);
+    VIEW.t0+=dt; VIEW.t1+=dt; clampView(); drawAll();
+  });
+  window.addEventListener('mouseup',()=>{ if(dragging){dragging=false;cv.style.cursor='crosshair';} });
+  cv.style.cursor='crosshair';
+}
+
+
+// ─── 半音移行の主導と道連れ分析 ───
+function regionOf(midi){ if(midi<48)return 'low'; if(midi<67)return 'mid'; return 'top'; }
+function analyzeMigrations(){
+  // cluster into chords
+  const cl=[]; let cur=[];
+  V.forEach(v=>{ if(!cur.length||Math.abs(v.sec-cur[0].sec)<=0.4)cur.push(v); else {cl.push(cur);cur=[v];} });
+  if(cur.length)cl.push(cur);
+  const events=[];
+  for(let i=1;i<cl.length;i++){
+    const prev=cl[i-1],curr=cl[i];
+    if(curr[0].sec-prev[0].sec>3.0) continue;
+    const rep=c=>{
+      const d={};
+      const lows=c.filter(n=>regionOf(n.midi)==='low');
+      const mids=c.filter(n=>regionOf(n.midi)==='mid');
+      const tops=c.filter(n=>regionOf(n.midi)==='top');
+      if(lows.length)d.low=Math.min(...lows.map(n=>n.midi));
+      if(mids.length){const ms=mids.map(n=>n.midi).sort((a,b)=>a-b);d.mid=ms[ms.length>>1];}
+      if(tops.length)d.top=Math.max(...tops.map(n=>n.midi));
+      return d;
+    };
+    const rp=rep(prev),rc=rep(curr),moved={};
+    ['low','mid','top'].forEach(reg=>{ if(reg in rp&&reg in rc){const dd=rc[reg]-rp[reg]; if(Math.abs(dd)>=0.5)moved[reg]=Math.round(dd);} });
+    const semi=Object.keys(moved).filter(r=>Math.abs(moved[r])<=2&&moved[r]!==0);
+    if(!semi.length)continue;
+    const order=['low','mid','top'];
+    const leader=order.find(r=>semi.includes(r));
+    const ld=moved[leader];
+    const followers=Object.keys(moved).filter(r=>r!==leader&&(moved[r]>0)===(ld>0)&&Math.abs(moved[r])<=2);
+    const total=curr.length;
+    const involved=curr.filter(n=>n.midi&&(regionOf(n.midi)===leader||followers.includes(regionOf(n.midi)))).length;
+    const pct=Math.round(involved/Math.max(1,total)*100);
+    events.push({sec:curr[0].sec,leader,dir:ld,followers,pct,total,moved});
+  }
+  return events;
+}
+function g8(){
+  const cv=$('g8'),{ctx,W,H}=setup(cv); ctx.clearRect(0,0,W,H);
+  const pad=42;
+  const yOf=p=>H-18-(p/100)*(H-32); // follow %
+  // grid
+  ctx.font='9px "JetBrains Mono"';
+  [0,25,50,75,100].forEach(p=>{const y=yOf(p);ctx.strokeStyle=C.line;ctx.lineWidth=0.4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-8,y);ctx.stroke();ctx.fillStyle=C.mist;ctx.fillText(p+'%',6,y+3);});
+  for(let t=Math.ceil(VIEW.t0/gridStepSec())*gridStepSec();t<VIEW.t1;t+=gridStepSec()){const x=xT(t,W,pad);ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(x,8);ctx.lineTo(x,H-18);ctx.stroke();ctx.fillStyle=C.mist;ctx.fillText(fmtTime(t),x-8,H-5);}
+  const regColor={low:C.bass,mid:C.inner,top:C.top};
+  const regName={low:'低',mid:'中',top:'上'};
+  const ev=analyzeMigrations();
+  ev.forEach(e=>{
+    if(e.sec<VIEW.t0||e.sec>VIEW.t1)return;
+    const x=xT(e.sec,W,pad), y=yOf(e.pct);
+    // bar height = follow %, color = leader region
+    ctx.fillStyle=regColor[e.leader];ctx.globalAlpha=0.8;
+    ctx.fillRect(x-3,y,6,H-18-y); ctx.globalAlpha=1;
+    // arrow for direction
+    ctx.fillStyle=C.paper;ctx.font='9px "JetBrains Mono"';
+    ctx.fillText(e.dir<0?'↓':'↑',x-3,y-3);
+    // leader label
+    ctx.fillStyle=regColor[e.leader];ctx.font='8px "JetBrains Mono"';
+    ctx.fillText(regName[e.leader],x-3,H-20);
+  });
+  // legend
+  ctx.font='italic 9px "IM Fell English"';
+  ctx.fillStyle=C.bass;ctx.fillText('■低部主導',pad,14);
+  ctx.fillStyle=C.inner;ctx.fillText('■中部主導',pad+70,14);
+  ctx.fillStyle=C.top;ctx.fillText('■上部主導',pad+140,14);
+  ctx.fillStyle=C.mist;ctx.fillText('棒の高さ=道連れ率  ↓↑=方向',pad+210,14);
+}
+
+
+
+// ═══ STセット → スケール同定 + 充足率 ═══
+const SCALE_DB=[
+  ['Ionian',[0,2,4,5,7,9,11]],['Dorian',[0,2,3,5,7,9,10]],['Phrygian',[0,1,3,5,7,8,10]],
+  ['Lydian',[0,2,4,6,7,9,11]],['Mixolydian',[0,2,4,5,7,9,10]],['Aeolian',[0,2,3,5,7,8,10]],
+  ['Locrian',[0,1,3,5,6,8,10]],['HarmMinor',[0,2,3,5,7,8,11]],['MelMinor',[0,2,3,5,7,9,11]],
+  ['HarmMajor',[0,2,4,5,7,8,11]],['PhrygDom',[0,1,4,5,7,8,10]],['LydDom',[0,2,4,6,7,9,10]],
+  ['Altered',[0,1,3,4,6,8,10]],['WholeTone',[0,2,4,6,8,10]],['Dim(HW)',[0,1,3,4,6,7,9,10]],
+  ['Dim(WH)',[0,2,3,5,6,8,9,11]],['MajPenta',[0,2,4,7,9]],['MinPenta',[0,3,5,7,10]],
+  ['Blues',[0,3,5,6,7,10]],['Chromatic',[0,1,2,3,4,5,6,7,8,9,10,11]],
+];
+function identifyScale(sts){
+  // STセットを完全に含む全スケールをタイト順に返す
+  if(!sts||!sts.length) return {list:[], outsideOnly:false};
+  const set=new Set(sts);
+  const matches=SCALE_DB.map(([name,scale])=>{
+    const ss=new Set(scale);
+    const allIn=sts.every(x=>ss.has(x));
+    const used=scale.filter(x=>set.has(x)).length;
+    return {name,scaleLen:scale.length,allIn,used};
+  }).filter(c=>c.allIn && c.name!=='Chromatic')
+    .sort((a,b)=>(a.scaleLen-b.scaleLen)||a.name.localeCompare(b.name));
+  // クロマチックしか含まない(=どの7音スケールにも入らない)場合
+  const outsideOnly = matches.length===0;
+  return {
+    list: matches.map(m=>({name:m.name,used:m.used,total:m.scaleLen})),
+    outsideOnly
+  };
+}
+
+// ═══ ST断面分析: 窓ごとに磁場・STセット・出入り ═══
+function analyzeCrossSections(winSec){
+  if(!V||!V.length) return [];
+  const tmax=Math.max(...V.map(v=>v.sec+v.dur));
+  const tmin=Math.min(...V.map(v=>v.sec));
+  const sections=[];
+  for(let t=tmin;t<tmax;t+=winSec){
+    const seg=V.filter(v=>v.sec>=t&&v.sec<t+winSec);
+    if(!seg.length) continue;
+    const bw={};
+    seg.forEach(v=>{ if(v.midi<55){const pc=((v.midi%12)+12)%12; bw[pc]=(bw[pc]||0)+v.dur;} });
+    let root=null,mx=0;
+    for(const k in bw){ if(bw[k]>mx){mx=bw[k];root=+k;} }
+    if(root===null){ const lo=Math.min(...seg.map(v=>v.midi)); root=((lo%12)+12)%12; }
+    const sts=[...new Set(seg.map(v=>(((v.midi-root)%12)+12)%12))].sort((a,b)=>a-b);
+    const scale=identifyScale(sts);
+    sections.push({t,root,sts,scale,n:seg.length});
+  }
+  return sections.map((s,i)=>{
+    let entered=[],exited=[],shift=null;
+    if(i>0){
+      const ps=new Set(sections[i-1].sts),cs=new Set(s.sts);
+      entered=[...cs].filter(x=>!ps.has(x)).sort((a,b)=>a-b);
+      exited=[...ps].filter(x=>!cs.has(x)).sort((a,b)=>a-b);
+      if(sections[i-1].root!==s.root){
+        let d=((s.root-sections[i-1].root)%12+12)%12; if(d>6)d-=12;
+        shift={from:sections[i-1].root,to:s.root,st:d};
+      }
+    }
+    return {...s,entered,exited,shift};
+  });
+}
+function renderCrossSections(){
+  const box=document.getElementById('csBody'); if(!box) return;
+  const win=parseFloat(document.getElementById('csWin').value)||5;
+  const secs=analyzeCrossSections(win);
+  if(!secs.length){ box.innerHTML='<div style="color:#666;padding:1rem">データなし。MIDIを読み込むかルートを設定してください。</div>'; return; }
+  let h='<table style="width:100%;border-collapse:collapse;font-size:.62rem;font-family:JetBrains Mono,monospace">';
+  h+='<tr style="color:#b08d57;border-bottom:1px solid #333"><th style="text-align:left;padding:.2rem">時間</th><th style="text-align:left">磁場</th><th style="text-align:left">移行</th><th style="text-align:left">STセット</th><th style="text-align:left;color:#b0a0d0">候補スケール(タイト順 · 使用/全)</th><th style="text-align:left;color:#a0b0c0">確定度</th><th style="text-align:left;color:#7aa87a">入</th><th style="text-align:left;color:#c77b4a">抜</th></tr>';
+  secs.forEach(s=>{
+    const rn=NN[s.root];
+    const shift = s.shift? `${NN[s.shift.from]}<b style="color:#c77b4a">${s.shift.st>=0?'+':''}${s.shift.st}</b>` : '';
+    const stset='{'+s.sts.join(',')+'}';
+    let scName='—', scRatio='';
+    if(s.scale){
+      if(s.scale.outsideOnly){ scName='<i style="color:#c77b4a">Chromatic/混成</i>'; scRatio=''; }
+      else if(s.scale.list.length){
+        // 全候補をタイト順に。最初(最もタイト)を強調、残りは淡く
+        const items=s.scale.list.map((m,i)=>{
+          const txt=`${m.name}(${m.used}/${m.total})`;
+          return i===0? `<b style="color:#c0a8e0">${txt}</b>` : `<span style="color:#7a7090">${txt}</span>`;
+        });
+        scName=items.join('<span style="color:#555"> · </span>');
+        scRatio=s.scale.list.length>1?`<span style="color:#888">${s.scale.list.length}候補</span>`:`<span style="color:#7a9a7a">確定</span>`;
+      }
+    }
+    const ent=s.entered.length?s.entered.join(','):'';
+    const exi=s.exited.length?s.exited.join(','):'';
+    const hl = s.shift? 'background:rgba(199,123,74,.08)':'';
+    h+=`<tr style="border-bottom:1px solid #1e1e1e;${hl}"><td style="padding:.18rem;color:#888">${s.t.toFixed(0)}s</td><td style="color:#b08d57"><b>${rn}</b></td><td>${shift}</td><td style="color:#aaa">${stset}</td><td style="color:#b0a0d0">${scName}</td><td style="color:#a0b0c0">${scRatio}</td><td style="color:#7aa87a">${ent}</td><td style="color:#c77b4a">${exi}</td></tr>`;
+  });
+  h+='</table>';
+  // サマリ: 磁場の旅
+  const roots=secs.filter(s=>s.root!==null).map(s=>NN[s.root]);
+  const journey=[]; let last=null;
+  roots.forEach(r=>{ if(r!==last){journey.push(r);last=r;} });
+  h+=`<div style="margin-top:.6rem;padding:.5rem;background:rgba(106,124,156,.08);font-size:.6rem;color:#9ab"><b>磁場の旅:</b> ${journey.join(' → ')}</div>`;
+  box.innerHTML=h;
+}
+
+// ═══ 和声進行分析: 各和音の機能(度数)・品質・ルート省略・進行 ═══
+// コード品質をST構成集合から推定(ルートはベース、または最頻pc)
+function chordQuality(stsSet){
+  const has=x=>stsSet.includes(((x%12)+12)%12);
+  const m3=has(3), M3=has(4), p5=has(7), tri=has(6), m7=has(10), M7=has(11), M2=has(2), p4=has(5), M6=has(9);
+  let q='';
+  // 3度の性格
+  if(M3&&!m3) q='maj'; else if(m3&&!M3) q='min';
+  else if(!M3&&!m3){ if(p4||M2) q='sus'; else if(p5) q='5(no3)'; else q='?'; }
+  else q='maj/min混';   // 両方=混成
+  // 7度/テンション
+  if(M7) q+='7M'; else if(m7) q+='7';
+  if(tri && !(q.includes('7'))) q+='(♭5)'; else if(tri) q+'♭5';
+  if(M2&&q.startsWith('maj')) q+='add9';
+  if(M6&&!m7&&!M7) q+='6';
+  return q||'?';
+}
+// ルートからの度数をローマ数字的に(ST→度数記号)
+const ROMAN={0:'I',1:'♭II',2:'II',3:'♭III',4:'III',5:'IV',6:'♯IV',7:'V',8:'♭VI',9:'VI',10:'♭VII',11:'VII'};
+function harmonyProgression(tol){
+  if(typeof V==='undefined' || !V.length) return [];
+  const groups=chords(tol);            // 既存の和音グループ化を流用
+  const out=[];
+  groups.forEach(g=>{
+    if(g.length<2) return;             // 単音は和音と見なさない(旋律)
+    const midis=g.map(n=>n.midi);
+    const bassMidi=Math.min(...midis);
+    const bassPc=((bassMidi%12)+12)%12;
+    const rootPc=((ROOT%12)+12)%12;
+    // ルートからのST集合(重複除去・昇順)
+    const sts=[...new Set(midis.map(m=>(((m-ROOT)%12)+12)%12))].sort((a,b)=>a-b);
+    // ベースのルートからの度数
+    const bassST=(((bassMidi-ROOT)%12)+12)%12;
+    // ルート(ST0)が鳴っているか
+    const rootPresent=sts.includes(0);
+    const quality=chordQuality(sts);
+    out.push({
+      sec:g[0].sec,
+      bassName:NN[bassPc], bassST,
+      degree:ROMAN[bassST]||('ST'+bassST),   // ベース基準の度数
+      sts, rootPresent, quality, n:g.length
+    });
+  });
+  return out;
+}
+function renderHarmonyProg(){
+  const box=document.getElementById('hpBody'); if(!box) return;
+  const tol=parseFloat(document.getElementById('hpTol').value)||0.28;
+  const prog=harmonyProgression(tol);
+  if(!prog.length){ box.innerHTML='<div style="color:#666;padding:1rem">和音データなし。MIDIを読み込むかルートを設定してください。</div>'; return; }
+  let h='<table style="width:100%;border-collapse:collapse;font-size:.62rem;font-family:JetBrains Mono,monospace">';
+  h+='<tr style="color:#b08d57;border-bottom:1px solid #333">'
+   +'<th style="text-align:left;padding:.2rem">時間</th>'
+   +'<th style="text-align:left">ベース</th>'
+   +'<th style="text-align:left;color:#b0a0d0">度数</th>'
+   +'<th style="text-align:left">推定コード</th>'
+   +'<th style="text-align:left;color:#aaa">ルートからのST</th>'
+   +'<th style="text-align:left;color:#c77b4a">ルート省略</th>'
+   +'<th style="text-align:left;color:#7aa87a">音数</th></tr>';
+  let prevDeg=null;
+  prog.forEach(p=>{
+    const rootless = p.rootPresent ? '' : '<b style="color:#c77b4a">抜</b>';
+    const hl = p.rootPresent ? '' : 'background:rgba(199,123,74,.08)';  // ルート抜きを強調
+    const stset='{'+p.sts.join(',')+'}';
+    // 進行の矢印(度数が変わった時)
+    const move = (prevDeg!==null && prevDeg!==p.degree) ? `<span style="color:#6a7c9c">${prevDeg}→</span>` : '';
+    h+=`<tr style="border-bottom:1px solid #1e1e1e;${hl}">`
+     +`<td style="padding:.18rem;color:#888">${p.sec.toFixed(1)}s</td>`
+     +`<td style="color:#b08d57"><b>${p.bassName}</b></td>`
+     +`<td style="color:#b0a0d0">${move}<b>${p.degree}</b></td>`
+     +`<td style="color:#ddd">${p.quality}</td>`
+     +`<td style="color:#aaa">${stset}</td>`
+     +`<td>${rootless}</td>`
+     +`<td style="color:#7aa87a">${p.n}</td></tr>`;
+    prevDeg=p.degree;
+  });
+  h+='</table>';
+  // サマリ: 進行の旅(度数列) + ルート省略率
+  const degs=prog.map(p=>p.degree); const journey=[]; let last=null;
+  degs.forEach(d=>{ if(d!==last){journey.push(d);last=d;} });
+  const rootlessCount=prog.filter(p=>!p.rootPresent).length;
+  const pct=prog.length?Math.round(rootlessCount/prog.length*100):0;
+  h+=`<div style="margin-top:.6rem;padding:.5rem;background:rgba(106,124,156,.08);font-size:.6rem;color:#9ab"><b>進行:</b> ${journey.join(' → ')}</div>`;
+  h+=`<div style="margin-top:.3rem;padding:.5rem;background:rgba(199,123,74,.06);font-size:.6rem;color:#c0a890"><b>ルート省略:</b> ${rootlessCount}/${prog.length} 和音 (${pct}%) — Jarrett的「ルートを隠した緊張」の出現率</div>`;
+  box.innerHTML=h;
+}
+
+
+function drawAll(){ try{renderCrossSections();}catch(e){} try{renderHarmonyProg();}catch(e){} g1();g7();g5();g8();g2();g3();g4();g6(); }
+
+// ─── hover readout (graph 1) ───
+function attachHover(cv,W,H,pad,yOf,fmt){
+  const hv=$('hover');
+  cv.onmousemove=e=>{
+    const r=cv.getBoundingClientRect();
+    const mx=e.clientX-r.left;
+    const sec=VIEW.t0+(mx-pad)/(W-pad*1.5)*(VIEW.t1-VIEW.t0);
+    // nearest note
+    let best=null,bd=1e9;
+    V.forEach(v=>{const d=Math.abs(v.sec-sec);if(d<bd){bd=d;best=v;}});
+    if(best&&bd<3){
+      hv.style.display='block';hv.style.left=(e.clientX+12)+'px';hv.style.top=(e.clientY+12)+'px';
+      hv.innerHTML=`<b>${nameOf(best.midi)}</b> t=${best.sec.toFixed(1)}s<br>ST=<b>${best.st}</b> OCT=<b>${best.oct>=0?'+':''}${best.oct}</b> ST_abs=<b>${best.stAbs}</b><br>vel=<b>${best.vel}</b> dur=<b>${best.dur.toFixed(2)}</b><br>JI(3,5,7)=<b>[${best.lat.join(',')}]</b>`;
+    } else hv.style.display='none';
+  };
+  cv.onmouseleave=()=>{$('hover').style.display='none';};
+}
+
+// ─── root estimation: most common pitch class weighted by duration ───
+function autoRoot(){
+  const w=new Array(12).fill(0);
+  RAW.forEach(n=>{w[((n.midi%12)+12)%12]+=n.dur;});
+  let bestPc=0,bv=0;w.forEach((x,i)=>{if(x>bv){bv=x;bestPc=i;}});
+  // pick a root midi in a low octave matching that pc
+  const lowest=Math.min(...RAW.map(n=>n.midi));
+  let r=lowest; while(((r%12)+12)%12!==bestPc) r++;
+  ROOT=r; $('rootInput').value=r; recompute();
+}
+
+// ─── data parsing ───
+function parseData(txt){
+  const out=[];
+  txt.split('\n').forEach(line=>{
+    if(!line.trim()||line.trim().startsWith('#'))return;
+    const p=line.split('|').map(s=>s.trim());
+    if(p.length<7)return;
+    const sec=parseFloat(p[1]),midi=parseInt(p[3]),dur=parseFloat(p[4]),vel=parseInt(p[5]),hand=p[6];
+    if(isNaN(sec)||isNaN(midi))return;
+    out.push({sec,midi,dur:dur||0.5,vel:vel||64,hand:hand||'?'});
+  });
+  return out;
+}
+
+// ─── wiring ───
+$('rootInput').addEventListener('input',e=>{ROOT=parseInt(e.target.value)||50;recompute();});
+$('btnAuto').addEventListener('click',autoRoot);
+let CURRENT_PIECE='koln';
+function loadPiece(which){
+  CURRENT_PIECE=which;
+  if(which==='joe'){ RAW=JOE_SAMPLE.map(d=>({sec:d[0],midi:d[1],dur:d[2],vel:d[3],hand:d[4]})); ROOT=41; }
+  else if(which==='frevo'){ RAW=FREVO_SAMPLE.map(d=>({sec:d[0],midi:d[1],dur:d[2],vel:d[3],hand:d[4]})); ROOT=38; }
+  else { RAW=SAMPLE.map(d=>({sec:d[0],midi:d[1],dur:d[2],vel:d[3],hand:d[4]})); ROOT=50; }
+  $('rootInput').value=ROOT;
+  recompute();
+}
+document.querySelectorAll('#pieceSeg button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#pieceSeg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); loadPiece(b.dataset.piece);
+  });
+});
+
+// ─── MIDI file loading (button + drag-drop) ───
+function loadMidiArrayBuffer(ab, fname){
+  try{
+    const notes=parseMidiArrayBuffer(ab);
+    if(notes.length===0){ alert('音符が見つかりませんでした。'); return; }
+    RAW=notes;
+    document.querySelectorAll('#pieceSeg button').forEach(x=>x.classList.remove('on'));
+    autoRoot();
+    const title=document.querySelector('.masthead .sub');
+    if(title) title.textContent='読込: '+(fname||'midi')+' — '+notes.length+'音';
+  }catch(e){ alert('MIDI読み込みエラー: '+e.message); }
+}
+$('btnMidi').addEventListener('click',()=>$('midiFile').click());
+$('midiFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const fr=new FileReader();
+  fr.onload=()=>loadMidiArrayBuffer(fr.result, f.name);
+  fr.readAsArrayBuffer(f);
+});
+// drag & drop anywhere
+window.addEventListener('dragover',e=>{e.preventDefault();});
+window.addEventListener('drop',e=>{
+  e.preventDefault();
+  const f=e.dataTransfer.files[0]; if(!f)return;
+  if(!/\.midi?$/i.test(f.name)){ alert('.mid ファイルをドロップしてください。'); return; }
+  const fr=new FileReader();
+  fr.onload=()=>loadMidiArrayBuffer(fr.result, f.name);
+  fr.readAsArrayBuffer(f);
+});
+$('btnData').addEventListener('click',()=>$('modal').classList.add('show'));
+$('btnCancel').addEventListener('click',()=>$('modal').classList.remove('show'));
+$('btnLoad').addEventListener('click',()=>{
+  const txt=$('dataText').value; const parsed=parseData(txt);
+  if(parsed.length>0){ RAW=parsed; $('modal').classList.remove('show'); autoRoot(); }
+  else alert('読めるデータがありません。形式を確認してください。');
+});
+window.addEventListener('resize',()=>{ clearTimeout(window._rt); window._rt=setTimeout(drawAll,150); });
+
+['g1','g7','g5','g8','g2','g3','g4'].forEach(id=>{ const cv=$(id); if(cv) attachZoomPan(cv); });
+
+// g8 hover: show full migration detail
+(function(){
+  const cv=$('g8'); if(!cv)return;
+  const rn={low:'低部',mid:'中部',top:'上部'};
+  cv.addEventListener('mousemove',e=>{
+    const pad=42; const parent=cv.parentElement; const W=Math.max(200,(parent&&parent.clientWidth)||700);
+    const rect=cv.getBoundingClientRect(); const mx=e.clientX-rect.left;
+    const sec=VIEW.t0+(mx-pad)/(W-pad*1.5)*(VIEW.t1-VIEW.t0);
+    const ev=analyzeMigrations();
+    let best=null,bd=1e9;
+    ev.forEach(m=>{const d=Math.abs(m.sec-sec);if(d<bd){bd=d;best=m;}});
+    const hv=$('hover');
+    if(best&&bd<(VIEW.t1-VIEW.t0)*0.03){
+      const fol=best.followers.length?best.followers.map(f=>rn[f]).join('+'):'なし(単独)';
+      const moves=Object.keys(best.moved).map(k=>rn[k]+(best.moved[k]>=0?'+':'')+best.moved[k]).join(' ');
+      const purpose=best.dir<0?'下降(重力/内面化)':'上昇(展開/高揚)';
+      hv.style.display='block';hv.style.left=(e.clientX+12)+'px';hv.style.top=(e.clientY+12)+'px';
+      hv.innerHTML=`<b>${best.sec.toFixed(1)}s 半音移行</b><br>主導=<b>${rn[best.leader]}</b> ${best.dir<0?'↓':'↑'}<br>道連れ=<b>${fol}</b> (${best.pct}%)<br>目的: ${purpose}<br>全動き: ${moves} / ${best.total}声`;
+    } else hv.style.display='none';
+  });
+  cv.addEventListener('mouseleave',()=>{$('hover').style.display='none';});
+})();
+
+// 足(窓)UIは削除。WIN_SEC=4の既定で磁場推定/ヒートマップは動作
+$('btnReset').addEventListener('click',()=>{ resetView(); drawAll(); });
+// ═══ JSON書き出し: 解剖の全成果を一つに ═══
+function exportJSON(){
+  if(!V||!V.length){ alert('先にMIDIを読み込んでください'); return; }
+  const NNx=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  const csWin=parseFloat(document.getElementById('csWin').value)||5;
+  const hpTol=parseFloat(document.getElementById('hpTol').value)||0.28;
+  let fields=[], sections=[], harmony=[];
+  try{ fields=estimateFields(); }catch(e){}
+  try{ sections=analyzeCrossSections(csWin); }catch(e){}
+  try{ harmony=harmonyProgression(hpTol); }catch(e){}
+  const data={
+    meta:{
+      tool:'KÖLN — 数値化解剖台 (koln3)',
+      generated:new Date().toISOString(),
+      rootMidi:ROOT, rootName:NNx[((ROOT%12)+12)%12],
+      noteCount:V.length,
+      stNotation:'全ST = ルート(midi '+ROOT+')からの半音距離',
+      params:{ crossSectionWindowSec:csWin, harmonyChordGapSec:hpTol }
+    },
+    // 生ノート
+    rawNotes: RAW.map(n=>({sec:n.sec, midi:n.midi, dur:n.dur, vel:n.vel, hand:n.hand})),
+    // 処理済みノート(ST・オクターブ・ラティス座標[3軸,5軸,7軸]込み)
+    processedNotes: V.map(v=>({
+      sec:v.sec, midi:v.midi, st:v.st, oct:v.oct, stAbs:v.stAbs,
+      vel:v.vel, dur:v.dur, hand:v.hand,
+      lattice:{ axis3_fifths:v.lat[0], axis5_thirds:v.lat[1], axis7_septimal:v.lat[2] }
+    })),
+    // 磁場の旅(低音が支配するpc の推移)
+    fieldJourney: fields.map(r=>({ pc:r.pc, name:NNx[r.pc], startSec:r.start, endSec:r.end })),
+    // ST断面(窓ごとの磁場・STセット・候補スケール・出入り)
+    crossSections: sections.map(s=>({
+      sec:s.t, root:s.root, rootName:NNx[((s.root%12)+12)%12],
+      sts:s.sts, scale:s.scale||null, noteCount:s.n,
+      entering:s.enter||null, leaving:s.leave||null
+    })),
+    // 和声進行(各和音の機能・度数・ルート省略)
+    harmonyProgression: harmony.map(p=>({
+      sec:p.sec, bass:p.bassName, bassST:p.bassST, degree:p.degree,
+      quality:p.quality, sts:p.sts, rootPresent:p.rootPresent, noteCount:p.n
+    }))
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='koln3_analysis_'+Date.now()+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+const _bx=$('btnExportJSON'); if(_bx) _bx.addEventListener('click', exportJSON);
+loadSample();
+
+</script>
+</body>
+</html><div style="margin:.4rem 1.3rem;padding:.4rem .6rem;background:rgba(0,0,0,.15);border:1px solid var(--line);border-radius:3px;font-size:.56rem;color:#9ab;display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
+  <span style="color:#b08d57;font-weight:bold">時間軸の種別:</span>
+  <span><span style="color:#7a9a7a;border:1px solid #3a4a3a;border-radius:2px;padding:.05rem .25rem">⇆ 共有窓</span> = 上部のズーム/パンが連動(g1〜g5,g7,g8)</span>
+  <span><span style="color:#9a8a6a;border:1px solid #4a4030;border-radius:2px;padding:.05rem .25rem">▭ 全体固定</span> = 常に全体表示(g6ラティス)</span>
+  <span><span style="color:#9a7ab0;border:1px solid #4a3a5a;border-radius:2px;padding:.05rem .25rem">◷ 独立窓</span> = 専用の窓設定(断面csWin / 和声hpTol)</span>
+</div>
+
